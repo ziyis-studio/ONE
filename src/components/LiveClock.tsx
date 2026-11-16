@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
+import { useMotionPreference } from "../lib/motion-preference";
 import { timeKey } from "../domain/time";
 
 function ClockDigit({ value }: { value: string }) {
-  const reduced = useReducedMotion();
+  const reduced = useMotionPreference();
   return (
     <span className="clock-second-digit">
       {reduced ? (
@@ -55,9 +56,9 @@ export default function LiveClock({ zone }: { zone: string }) {
         {minutes}
       </span>
       <span className="clock-seconds" aria-hidden="true">
-        <span className="clock-second-colon">:</span>
         <ClockDigit value={seconds[0]} />
         <ClockDigit value={seconds[1]} />
+        <span className="clock-second-unit">s</span>
       </span>
     </time>
   );

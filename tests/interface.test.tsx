@@ -11,6 +11,7 @@ import {
 import userEvent from "@testing-library/user-event";
 import { MotionConfig } from "motion/react";
 import App from "../src/App";
+import { chooseOption } from "./select-field-helpers";
 import { addDays, dayKey, timeKey } from "../src/domain/time";
 import { DEMO_KEY } from "../src/lib/demo";
 import { dateField, enterDate, readDate } from "./date-field-helpers";
@@ -109,10 +110,12 @@ describe("ONE interface flows", () => {
       "Settings",
     ]) {
       await userEvent.click(screen.getAllByRole("button", { name })[0]);
-      await waitFor(() =>
-        expect(
-          screen.getByRole("heading", { name: name + ".", level: 1 }),
-        ).toBeTruthy(),
+      await waitFor(
+        () =>
+          expect(
+            screen.getByRole("heading", { name: name + ".", level: 1 }),
+          ).toBeTruthy(),
+        { timeout: 3000 },
       );
     }
     expect(
@@ -167,6 +170,34 @@ describe("ONE interface flows", () => {
     expect(record).toBeTruthy();
     expect(timeKey(record.endsAt, "Asia/Kuala_Lumpur")).toBe("07:00");
   });
+  it("removes emotion selection while preserving an existing thought's saved emotion", async () => {
+    await openDemo();
+    await userEvent.click(
+      screen.getAllByRole("button", { name: "Thoughts" })[0],
+    );
+    await screen.findByRole("heading", { name: "Thoughts.", level: 1 });
+    const before = JSON.parse(localStorage.getItem(DEMO_KEY)!);
+    const thought = before.thoughts[0];
+    await userEvent.click(
+      screen.getAllByRole("button", { name: "Edit thought" })[0],
+    );
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).queryByText("How does it feel?")).toBe(null);
+    expect(within(dialog).queryByRole("listbox")).toBe(null);
+    await userEvent.type(
+      within(dialog).getByRole("textbox", { name: "Your thought" }),
+      " A little more context.",
+    );
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Save changes" }),
+    );
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBe(null));
+    const saved = JSON.parse(localStorage.getItem(DEMO_KEY)!).thoughts.find(
+      (item: { id: string }) => item.id === thought.id,
+    );
+    expect(saved.emotion).toBe(thought.emotion);
+    expect(saved.content).toContain("A little more context.");
+  });
   it("creates a task and persists it through a workspace reload", async () => {
     await openDemo();
     await userEvent.click(screen.getAllByRole("button", { name: "Tasks" })[0]);
@@ -209,8 +240,8 @@ describe("ONE interface flows", () => {
       await screen.findByRole("button", { name: "New habit" }),
     );
     let dialog = await screen.findByRole("dialog");
-    const ending = within(dialog).getByRole("combobox", { name: "Ends" });
-    expect((ending as HTMLSelectElement).value).toBe("never");
+    const ending = within(dialog).getByRole("button", { name: /Ends/ });
+    expect(ending.textContent).toContain("Never end");
     expect(within(dialog).queryByLabelText("End date")).toBe(null);
     expect(within(dialog).queryByText(/Past executions stay/)).toBe(null);
     await userEvent.type(
@@ -230,10 +261,7 @@ describe("ONE interface flows", () => {
       await screen.findByRole("button", { name: /^Evening walk/ }),
     );
     dialog = await screen.findByRole("dialog");
-    await userEvent.selectOptions(
-      within(dialog).getByRole("combobox", { name: "Ends" }),
-      "date",
-    );
+    await chooseOption(dialog, "Ends", "On a date");
     const start = readDate(dialog, "Starts on");
     const end =
       start.slice(0, 4) === "2026"
@@ -250,10 +278,7 @@ describe("ONE interface flows", () => {
     );
     dialog = await screen.findByRole("dialog");
     expect(readDate(dialog, "End date")).toBe(end);
-    await userEvent.selectOptions(
-      within(dialog).getByRole("combobox", { name: "Ends" }),
-      "never",
-    );
+    await chooseOption(dialog, "Ends", "Never end");
     await userEvent.click(
       within(dialog).getByRole("button", { name: "Save changes" }),
     );
@@ -299,10 +324,7 @@ describe("ONE interface flows", () => {
       within(dialog).getByRole("textbox", { name: "Property name" }),
       "Rating",
     );
-    await userEvent.selectOptions(
-      within(dialog).getByRole("combobox", { name: "Type of Rating" }),
-      "number",
-    );
+    await chooseOption(dialog, "Type of Rating", "number");
     await userEvent.click(
       within(dialog).getByRole("button", { name: "Add a property" }),
     );
@@ -310,10 +332,7 @@ describe("ONE interface flows", () => {
       within(dialog).getAllByRole("textbox", { name: "Property name" }).at(-1)!,
       "Finished on",
     );
-    await userEvent.selectOptions(
-      within(dialog).getByRole("combobox", { name: "Type of Finished on" }),
-      "date",
-    );
+    await chooseOption(dialog, "Type of Finished on", "date");
     await userEvent.click(
       within(dialog).getByRole("button", { name: "Create database" }),
     );

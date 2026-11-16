@@ -112,7 +112,7 @@ export function DateTimeField({
           className="one-date-popover"
           placement="bottom start"
           offset={8}
-          data-one-date-owner={owner}
+          data-one-dialog-owner={owner}
         >
           <Dialog className="one-date-dialog" aria-label={`${label} picker`}>
             <Calendar className="one-calendar" firstDayOfWeek="mon">

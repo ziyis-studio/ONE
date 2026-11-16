@@ -101,3 +101,45 @@ Local captures and verification scripts: `test-results/navigation-date/` (ignore
 Verification used demo records in local Chromium, not a credentialed production
 session. Physical phone keyboards and Safari/Firefox were not tested. The hosting
 status is checked separately through Vercel after the commit is pushed.
+
+# Annotated workspace polish
+
+Plan and source references: [workspace-polish-plan.md](../../docs/workspace-polish-plan.md).
+
+- Unified every visible native select (including multi-task selection, database
+  properties, inline task status and timezone settings) with one React Aria
+  control. The opening/row rhythm follows useLayouts smooth-dropdown; the
+  existing MIT license remains retained. Real keyboard selection, typeahead,
+  disabled fields, focus return, and parent-dialog Escape behavior are preserved.
+- Actual Chromium testing caught a rapid close/reopen focus race while an exit
+  animation retained the old popover. Immediate dismissal now gives reopening a
+  fresh focus scope; opening and the trigger chevron remain animated. Checked
+  selection → immediate reopen → Escape with actual CSS loaded.
+- One delegated chart tooltip serves sleep bars, sleep/habit heatmaps, small
+  habit history marks and project progress. It displays real dates and durations
+  or completion values, supports focus, cleans up event listeners, and observes
+  updated values. Hover no longer relies on browser title bubbles on these marks.
+- Clock seconds use separate rolling digits with a quiet rule and seconds unit.
+  All main pages show today's weekday/date. The sidebar toggle is in the top
+  workspace toolbar; the decorative homepage footer has been removed.
+- Thoughts no longer asks for an emotion. Existing emotion metadata survives an
+  edit. Timestamp text, dots and rules share grid geometry on desktop and phone.
+- Day and week share the same timeline track, hour scale, overlap layout and
+  gesture behavior. The week has seven timed columns and horizontal scrolling on
+  phones, with the hour gutter retained. Month remains the default view.
+- Schedule tasks appear to the right on wide screens and below on narrow screens.
+  Real HTML drag/drop attaches a task to a block with revision checking and keeps
+  its time, existing task links, habit-occurrence links and task status intact.
+  Repeating a drop is idempotent. The Plan button also supports keyboard/touch
+  users and opens a new block with the task already selected.
+
+Verification: 78 tests across 23 files and the production build passed. Local
+Chromium 156 at 1703×1000, 921×764, 390×844 and reduced motion covered all module
+headings, no visible native selects, clock/chart appearance, tooltip bounds,
+thought-axis geometry, dropdown keyboard selection and rapid reopening, week
+layout, actual drag-to-link persistence, duplicate drop and mobile multi-select.
+A spring DST gap is reported through ONE feedback without crashing its drag
+preview or saving an invalid time. No browser runtime errors were observed.
+Captures and scripts are in ignored
+`test-results/workspace-polish/`. These checks used local demo records, not a
+credentialed production session or a physical phone; Safari/Firefox were not tested.

@@ -24,8 +24,13 @@ import { WorkspaceProvider, useOne } from "./lib/workspace";
 import type { EditorKind } from "./lib/workspace";
 import { Logo, Dialog, Spinner } from "./components/ui";
 import { MorphMenu } from "./components/interactions";
+import { ChartTooltipScope } from "./components/ChartTooltip";
 import Dashboard from "./components/Dashboard";
-import Navigation, { useSidebar, navigation } from "./components/Navigation";
+import Navigation, {
+  useSidebar,
+  navigation,
+  SidebarToggle,
+} from "./components/Navigation";
 const Auth = lazy(() => import("./components/Auth"));
 const Editor = lazy(() => import("./components/Editor"));
 const Settings = lazy(() => import("./components/Settings"));
@@ -182,10 +187,11 @@ function Shell({
   const [sidebarExpanded, setSidebarExpanded] = useSidebar();
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      if (e.defaultPrevented) return;
       const input =
         e.target instanceof Element
           ? e.target.closest(
-              'input,textarea,select,[contenteditable],[role="menu"],[role="listbox"]',
+              'input,textarea,select,[contenteditable],[role="menu"],[role="listbox"],[aria-haspopup="listbox"]',
             )
           : null;
       const modal = document.querySelector('[aria-modal="true"]');
@@ -265,6 +271,10 @@ function Shell({
         <div className="workspace-wrap">
           <header className="topbar">
             <div className="topbar-brand">
+              <SidebarToggle
+                expanded={sidebarExpanded}
+                onToggle={() => setSidebarExpanded((expanded) => !expanded)}
+              />
               <span className="brand-word">ONE</span>
               <span className="topbar-divider" />
               <span className="workspace-label">Personal workspace</span>
@@ -325,39 +335,42 @@ function Shell({
             </div>
           )}
           <div id="main-content" tabIndex={-1}>
-            {error ? (
-              <div className="workspace-error" role="alert">
-                <CircleAlert size={32} strokeWidth={1} />
-                <h1>Your space is still here.</h1>
-                <p>{error}</p>
-                <p className="fine">
-                  Refresh to load the latest data before making another change.
-                </p>
-                <button
-                  className="primary-button"
-                  onClick={() => void reload()}
-                >
-                  <RefreshCw size={14} />
-                  Try again
-                </button>
-                <button className="text-button" onClick={onExit}>
-                  Back to sign in
-                </button>
-              </div>
-            ) : loading ? (
-              <LoadingWorkspace />
-            ) : (
-              <Suspense fallback={<LoadingWorkspace />}>
-                <motion.div
-                  key={page}
-                  initial={{ opacity: 0, y: 7 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.24 }}
-                >
-                  {pageContent}
-                </motion.div>
-              </Suspense>
-            )}
+            <ChartTooltipScope key={page}>
+              {error ? (
+                <div className="workspace-error" role="alert">
+                  <CircleAlert size={32} strokeWidth={1} />
+                  <h1>Your space is still here.</h1>
+                  <p>{error}</p>
+                  <p className="fine">
+                    Refresh to load the latest data before making another
+                    change.
+                  </p>
+                  <button
+                    className="primary-button"
+                    onClick={() => void reload()}
+                  >
+                    <RefreshCw size={14} />
+                    Try again
+                  </button>
+                  <button className="text-button" onClick={onExit}>
+                    Back to sign in
+                  </button>
+                </div>
+              ) : loading ? (
+                <LoadingWorkspace />
+              ) : (
+                <Suspense fallback={<LoadingWorkspace />}>
+                  <motion.div
+                    key={page}
+                    initial={{ opacity: 0, y: 7 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.24 }}
+                  >
+                    {pageContent}
+                  </motion.div>
+                </Suspense>
+              )}
+            </ChartTooltipScope>
           </div>
         </div>
       </main>

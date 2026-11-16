@@ -1,0 +1,261 @@
+.one-schedule-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.one-schedule-layout.with-tasks {
+  grid-template-columns: minmax(0, 1fr) 255px;
+}
+.one-schedule-layout > .calendar-workspace {
+  min-width: 0;
+  margin: 0;
+}
+.calendar-view-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.one-tasks-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.one-timeline-zone {
+  padding: 11px 18px;
+  font-size: 10px;
+  color: #858585;
+  border-bottom: 1px solid #ffffff09;
+}
+.one-timeline-scroll {
+  height: 595px;
+  overflow: auto;
+}
+.one-timeline-header,
+.one-time-grid {
+  display: grid;
+}
+.one-timeline-week .one-timeline-header,
+.one-timeline-week .one-time-grid {
+  min-width: 754px;
+}
+.one-timeline-header {
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  background: #1c1c1c;
+  border-bottom: 1px solid #ffffff10;
+}
+.one-timeline-header > button {
+  min-height: 54px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 5px;
+  border-left: 1px solid #ffffff08;
+  color: #aaa;
+}
+.one-timeline-header > button span {
+  font-size: 10px;
+}
+.one-timeline-header > button strong {
+  font-size: 15px;
+  font-weight: 500;
+  color: #ddd;
+}
+.one-timeline-header > button.is-today {
+  background: #ffffff04;
+  color: #eee;
+}
+.one-time-grid {
+  height: 1440px;
+}
+.one-time-grid .day-track {
+  min-width: 0;
+}
+.one-time-grid .scheduled-block {
+  padding: 0;
+}
+.one-timeline-week .schedule-block-main {
+  padding: 7px 6px;
+}
+.one-timeline-week .schedule-block-main strong {
+  font-size: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.one-timeline-week .schedule-block-main small {
+  font-size: 8px;
+}
+.one-timeline-week .block-resize {
+  height: 9px;
+}
+.schedule-task-count {
+  display: block;
+  font-size: 9px;
+  color: #a0a0a0;
+  margin: 3px 0;
+}
+.scheduled-block[data-task-over],
+.month-event.task-drop-target {
+  outline: 1px solid #dedede;
+  outline-offset: 2px;
+  background: #3b3b3b;
+}
+.one-schedule-tasks {
+  position: sticky;
+  top: 20px;
+  min-width: 0;
+  border: 1px solid #ffffff0e;
+  border-radius: 16px;
+  background: #1c1c1c;
+  padding: 17px 14px;
+}
+.one-schedule-tasks > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.one-schedule-tasks h2 {
+  font-size: 13px;
+  font-weight: 500;
+  margin: 0;
+}
+.one-schedule-tasks header > span {
+  font-size: 10px;
+  color: #888;
+}
+.one-schedule-tasks > p {
+  font-size: 11px;
+  color: #858585;
+  line-height: 1.6;
+  margin: 11px 0 15px;
+}
+.one-schedule-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #ffffff0d;
+  background: #151515;
+  border-radius: 9px;
+  padding: 0 9px;
+  color: #777;
+}
+.one-schedule-search > input {
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  font-size: 11px;
+  padding: 10px 0;
+}
+.one-planning-task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  max-height: 535px;
+  overflow-y: auto;
+  margin-top: 14px;
+}
+.one-planning-task {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  padding: 11px 6px;
+  border: 1px solid #ffffff0b;
+  border-radius: 10px;
+  background: #242424;
+}
+.one-task-grip {
+  color: #666;
+  flex-shrink: 0;
+  margin-top: 3px;
+  cursor: grab;
+}
+.one-planning-task > div {
+  flex: 1;
+  min-width: 0;
+}
+.one-planning-task-title {
+  display: block;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #d6d6d6;
+  padding: 0;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.one-planning-task > div > span,
+.one-planning-task small {
+  display: block;
+  font-size: 9px;
+  color: #777;
+  margin-top: 5px;
+}
+.one-planning-task small {
+  color: #aaa;
+}
+.one-task-plan {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 6px;
+  color: #aaa;
+}
+.one-task-plan:hover {
+  color: #fff;
+  background: #3c3c3c;
+}
+@media (max-width: 1150px) {
+  .one-schedule-layout.with-tasks {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .one-schedule-tasks {
+    position: static;
+  }
+  .one-planning-task-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-height: 260px;
+  }
+}
+@media (max-width: 700px) {
+  .calendar-view-actions {
+    gap: 6px;
+  }
+  .calendar-view-actions .one-tasks-toggle {
+    font-size: 0;
+    gap: 0;
+    width: 30px;
+    min-height: 30px;
+    justify-content: center;
+  }
+  .calendar-view-actions .one-tasks-toggle svg {
+    width: 15px;
+  }
+  .one-timeline-scroll {
+    height: 530px;
+  }
+  .one-planning-task-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.one-time-grid > .hour-labels {
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  background: #1b1b1b;
+  border-right: 1px solid #ffffff08;
+}
+.one-timeline-header > span:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 6;
+  background: #1c1c1c;
+}

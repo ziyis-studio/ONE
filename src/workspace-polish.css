@@ -1,0 +1,119 @@
+.page-intro .page-date {
+  margin: 0 0 14px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #919191;
+}
+.one-sidebar-toggle {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  margin-right: 8px;
+  color: #999;
+  border-radius: 8px;
+  transition:
+    background 0.18s,
+    color 0.18s;
+}
+.one-sidebar-toggle:hover {
+  color: #eee;
+  background: #292929;
+}
+.clock-card .clock-time {
+  align-items: flex-end;
+  gap: 0;
+  font-variant-numeric: tabular-nums;
+}
+.clock-time > .clock-seconds {
+  align-items: center;
+  gap: 0;
+  padding: 0 0 0.2em 9px;
+  margin: 0 0 0 10px;
+  font-size: clamp(16px, 1.5vw, 21px);
+  line-height: 1;
+  position: relative;
+}
+.clock-seconds::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: calc(100% - 0.2em);
+  width: 1px;
+  background: #ffffff20;
+}
+.clock-second-digit {
+  height: 1.1em;
+  line-height: 1.1;
+  width: 0.64em;
+}
+.clock-second-unit {
+  font-size: 9px;
+  margin-left: 3px;
+  color: #777;
+  align-self: flex-end;
+  padding-bottom: 2px;
+}
+.thought-entry {
+  --thought-time: 42px;
+  --thought-axis: 10px;
+  --thought-gap: 15px;
+  --thought-dot: 5px;
+  --thought-anchor: 22px;
+  grid-template-columns: var(--thought-time) var(--thought-axis) minmax(0, 1fr);
+  gap: var(--thought-gap);
+}
+.thought-entry::before {
+  left: calc(
+    var(--thought-time) + var(--thought-gap) + var(--thought-axis) / 2
+  );
+  transform: translateX(-50%);
+  top: var(--thought-anchor);
+  bottom: calc(-1 * var(--thought-anchor));
+}
+.thought-entry .entry-dot {
+  justify-self: center;
+  width: var(--thought-dot);
+  height: var(--thought-dot);
+  margin-top: calc(var(--thought-anchor) - var(--thought-dot) / 2);
+}
+.thought-entry > time {
+  padding-top: 0;
+  position: relative;
+  top: calc(var(--thought-anchor) - 7px);
+  line-height: 14px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.thought-entry-card footer > button:not(.icon-button) {
+  margin-left: auto;
+}
+.one-settings-zone {
+  width: min(270px, 55%);
+}
+@media (max-width: 700px) {
+  .one-sidebar-toggle {
+    display: none;
+  }
+  .page-intro .page-date {
+    font-size: 10px;
+    margin-bottom: 12px;
+  }
+  .thought-entry {
+    --thought-time: 30px;
+    --thought-axis: 8px;
+    --thought-gap: 11px;
+    --thought-dot: 4px;
+  }
+  .one-settings-zone {
+    width: 55%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .one-sidebar-toggle {
+    transition: none;
+  }
+}

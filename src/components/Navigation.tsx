@@ -57,6 +57,32 @@ export function useSidebar() {
   return [expanded, setExpanded] as const;
 }
 
+export function SidebarToggle({
+  expanded,
+  onToggle,
+}: {
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      className="one-sidebar-toggle"
+      type="button"
+      onClick={onToggle}
+      aria-label={expanded ? "Collapse sidebar" : "Expand sidebar"}
+      aria-expanded={expanded}
+      aria-controls="one-workspace-navigation"
+      title={`${expanded ? "Collapse" : "Expand"} sidebar (Ctrl/⌘ B)`}
+    >
+      {expanded ? (
+        <PanelLeftClose size={18} strokeWidth={1.6} />
+      ) : (
+        <PanelLeftOpen size={18} strokeWidth={1.6} />
+      )}
+    </button>
+  );
+}
+
 export default function Navigation({
   page,
   navigate,
@@ -101,7 +127,7 @@ export default function Navigation({
         document.querySelector('[role="dialog"]') ||
         (event.target instanceof Element &&
           event.target.closest(
-            'input,textarea,select,[contenteditable],[role="menu"],[role="listbox"]',
+            'input,textarea,select,[contenteditable],[role="menu"],[role="listbox"],[aria-haspopup="listbox"]',
           ))
       )
         return;
@@ -207,33 +233,13 @@ export default function Navigation({
         <LayoutGroup id={`${id}-sidebar`}>
           <motion.nav
             layoutScroll
-            id={`${id}-destinations`}
+            id="one-workspace-navigation"
             aria-label="Your workspace"
             className="one-side-destinations"
           >
             {destinations.slice(0, -1).map(link)}
           </motion.nav>
           <div className="one-side-footer">
-            <button
-              className="one-side-link one-side-toggle"
-              type="button"
-              onClick={onToggle}
-              aria-label={expanded ? "Collapse sidebar" : "Expand sidebar"}
-              aria-expanded={expanded}
-              aria-controls={`${id}-destinations`}
-              title={`${expanded ? "Collapse" : "Expand"} sidebar (Ctrl/⌘ B)`}
-            >
-              <span className="one-side-icon">
-                {expanded ? (
-                  <PanelLeftClose size={18} />
-                ) : (
-                  <PanelLeftOpen size={18} />
-                )}
-              </span>
-              <span className="one-side-label" aria-hidden="true">
-                Collapse <kbd>⌘ B</kbd>
-              </span>
-            </button>
             {link(destinations[8])}
             <MorphMenu
               label="Your account settings"

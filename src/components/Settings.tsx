@@ -12,6 +12,7 @@ import { api } from "../lib/api";
 import { supabase } from "../lib/auth";
 import { DEMO_KEY } from "../lib/demo";
 import { PageIntro } from "./Pages";
+import { SelectField } from "./SelectField";
 import { Spinner } from "./ui";
 export default function Settings({ onExit }: { onExit: () => void }) {
   const { data, zone, setZone, session, demo, notify, reload } = useOne();
@@ -111,18 +112,22 @@ export default function Settings({ onExit }: { onExit: () => void }) {
               <p>Dates and times, wherever you are.</p>
             </div>
           </header>
-          <label className="settings-row">
+          <div className="settings-row">
             <span>
               Time zone<small>New plans use this time zone.</small>
             </span>
-            <select value={zone} onChange={(e) => setZone(e.target.value)}>
-              {zones.map((z) => (
-                <option value={z} key={z}>
-                  {z.replaceAll("_", " ")}
-                </option>
-              ))}
-            </select>
-          </label>
+            <SelectField
+              label="Time zone"
+              hideLabel
+              className="one-settings-zone"
+              value={zone}
+              onChange={setZone}
+              options={zones.map((zone) => ({
+                value: zone,
+                label: zone.replaceAll("_", " "),
+              }))}
+            />
+          </div>
           <div className="settings-row">
             <span>
               Motion

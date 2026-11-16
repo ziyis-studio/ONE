@@ -12,7 +12,10 @@ import {
 import userEvent from "@testing-library/user-event";
 import { MotionConfig } from "motion/react";
 import { useState } from "react";
-import Navigation, { useSidebar } from "../src/components/Navigation";
+import Navigation, {
+  useSidebar,
+  SidebarToggle,
+} from "../src/components/Navigation";
 import type { Page } from "../src/lib/workspace";
 let mobile = false;
 let resize: (() => void) | undefined;
@@ -38,6 +41,10 @@ function Example() {
   const [page, setPage] = useState<Page>("home");
   return (
     <MotionConfig reducedMotion="always">
+      <SidebarToggle
+        expanded={expanded}
+        onToggle={() => setExpanded((value) => !value)}
+      />
       <Navigation
         page={page}
         navigate={setPage}

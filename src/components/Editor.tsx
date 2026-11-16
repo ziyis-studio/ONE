@@ -14,6 +14,7 @@ import {
 import { useOne } from "../lib/workspace";
 import { useActions, stages, taskStage } from "../lib/actions";
 import { Dialog, IconButton, CheckButton, EntityIcon } from "./ui";
+import { SelectField, MultiSelectField } from "./SelectField";
 import { DayPicker, SaveButton } from "./interactions";
 import { DateTimeField, invalidDateField } from "./DateTimeField";
 import type { SaveState } from "./interactions";
@@ -68,7 +69,11 @@ export default function Editor() {
                     : record;
   const [revision, setRevision] = useState(entity?.updatedAt);
   const [title, setTitle] = useState(
-    entity && "title" in entity ? entity.title : "",
+    entity && "title" in entity
+      ? entity.title
+      : editor!.taskId
+        ? data.tasks.find((task) => task.id === editor!.taskId)?.title || ""
+        : "",
   );
   const [description, setDescription] = useState(
     entity && "description" in entity ? entity.description : "",
@@ -91,7 +96,7 @@ export default function Editor() {
   const [icon, setIcon] = useState<string>(
     habit?.icon || project?.icon || (kind === "habit" ? "repeat" : "folder"),
   );
-  const [emotion, setEmotion] = useState(thought?.emotion || "");
+  const emotion = thought?.emotion || "";
   const [weekdays, setWeekdays] = useState(
     habit?.isoWeekdays || [1, 2, 3, 4, 5, 6, 7],
   );
@@ -125,9 +130,13 @@ export default function Editor() {
   const [awake, setAwake] = useState(sleep?.awakeMinutes || 0),
     [sleepNote, setSleepNote] = useState(sleep?.note || "");
   const [taskIds, setTaskIds] = useState(
-    data.blockTaskLinks
-      .filter((l) => l.timeBlockId === id)
-      .map((l) => l.taskId),
+    id
+      ? data.blockTaskLinks
+          .filter((l) => l.timeBlockId === id)
+          .map((l) => l.taskId)
+      : editor!.taskId
+        ? [editor!.taskId]
+        : [],
   );
   const [fields, setFields] = useState<DatabaseField[]>(database?.fields || []);
   const [noteId, setNoteId] = useState(database?.noteId || "");
@@ -581,15 +590,18 @@ export default function Editor() {
           )}
           {(kind === "task" || kind === "project") && (
             <div className="form-grid">
-              <Field label="Status">
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value as typeof status)}
-                >
-                  <option value="active">Active</option>
-                  <option value="on_hold">On hold</option>
-                </select>
-              </Field>
+              <SelectField
+                label="Status"
+                value={status}
+                onChange={(value) => setStatus(value as typeof status)}
+                options={[
+                  { value: "active", label: "Active" },
+                  { value: "on_hold", label: "On hold" },
+                ]}
+                disabled={
+                  busy || saveState === "saving" || saveState === "saved"
+                }
+              />
               <Field label="Tags">
                 <input
                   value={tags}
@@ -600,19 +612,21 @@ export default function Editor() {
               </Field>
               {kind === "task" && (
                 <>
-                  <Field label="Project">
-                    <select
-                      value={projectId}
-                      onChange={(e) => setProjectId(e.target.value)}
-                    >
-                      <option value="">No project</option>
-                      {data.projects.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.title}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
+                  <SelectField
+                    label="Project"
+                    value={projectId}
+                    onChange={setProjectId}
+                    options={[
+                      { value: "", label: "No project" },
+                      ...data.projects.map((p) => ({
+                        value: p.id,
+                        label: p.title,
+                      })),
+                    ]}
+                    disabled={
+                      busy || saveState === "saving" || saveState === "saved"
+                    }
+                  />
                   <DateTimeField
                     label="Due date"
                     value={deadline}
@@ -846,17 +860,18 @@ export default function Editor() {
                     busy || saveState === "saving" || saveState === "saved"
                   }
                 />
-                <Field label="Ends">
-                  <select
-                    value={neverEnd ? "never" : "date"}
-                    onChange={(event) =>
-                      setNeverEnd(event.target.value === "never")
-                    }
-                  >
-                    <option value="never">Never end</option>
-                    <option value="date">On a date</option>
-                  </select>
-                </Field>
+                <SelectField
+                  label="Ends"
+                  value={neverEnd ? "never" : "date"}
+                  onChange={(value) => setNeverEnd(value === "never")}
+                  options={[
+                    { value: "never", label: "Never end" },
+                    { value: "date", label: "On a date" },
+                  ]}
+                  disabled={
+                    busy || saveState === "saving" || saveState === "saved"
+                  }
+                />
                 {!neverEnd && (
                   <div className="habit-end-date">
                     <DateTimeField
@@ -926,30 +941,23 @@ export default function Editor() {
                   </Field>
                 </>
               ) : (
-                <Field label="Linked tasks · optional">
-                  <select
-                    multiple
+                <div className="field-block">
+                  <MultiSelectField
+                    label="Linked tasks · optional"
+                    placeholder="Choose tasks"
                     value={taskIds}
-                    onChange={(e) =>
-                      setTaskIds(
-                        Array.from(e.target.selectedOptions, (o) => o.value),
-                      )
-                    }
-                    size={Math.min(4, Math.max(2, data.tasks.length))}
-                  >
-                    {data.tasks
+                    onChange={setTaskIds}
+                    options={data.tasks
                       .filter((t) => !t.completedAt || taskIds.includes(t.id))
-                      .map((t) => (
-                        <option key={t.id} value={t.id}>
-                          {t.title}
-                        </option>
-                      ))}
-                  </select>
-                  <span className="field-help">
-                    Hold Ctrl / ⌘ to select more than one. Planning time does
-                    not complete a task.
-                  </span>
-                </Field>
+                      .map((t) => ({ value: t.id, label: t.title }))}
+                    disabled={
+                      busy || saveState === "saving" || saveState === "saved"
+                    }
+                  />
+                  <p className="field-help">
+                    Planning time does not complete a task.
+                  </p>
+                </div>
               )}
             </>
           )}
@@ -965,29 +973,6 @@ export default function Editor() {
                 required
                 maxLength={500000}
               />
-              <Field label="How does it feel?">
-                <select
-                  value={emotion}
-                  onChange={(e) => setEmotion(e.target.value)}
-                >
-                  <option value="">Just a thought</option>
-                  {[
-                    ...new Set([
-                      "Curious",
-                      "Inspired",
-                      "Grateful",
-                      "Calm",
-                      "Excited",
-                      "Unsure",
-                      "Overwhelmed",
-                      "Reflective",
-                      ...(emotion ? [emotion] : []),
-                    ]),
-                  ].map((e) => (
-                    <option key={e}>{e}</option>
-                  ))}
-                </select>
-              </Field>
             </>
           )}
           {(kind === "note" || kind === "record") && (
@@ -1036,19 +1021,18 @@ export default function Editor() {
           )}
           {kind === "database" && (
             <>
-              <Field label="Keep with a note · optional">
-                <select
-                  value={noteId}
-                  onChange={(e) => setNoteId(e.target.value)}
-                >
-                  <option value="">Standalone database</option>
-                  {data.notes.map((n) => (
-                    <option value={n.id} key={n.id}>
-                      {n.title}
-                    </option>
-                  ))}
-                </select>
-              </Field>
+              <SelectField
+                label="Keep with a note · optional"
+                value={noteId}
+                onChange={setNoteId}
+                options={[
+                  { value: "", label: "Standalone database" },
+                  ...data.notes.map((n) => ({ value: n.id, label: n.title })),
+                ]}
+                disabled={
+                  busy || saveState === "saving" || saveState === "saved"
+                }
+              />
               <div className="editor-section-title">
                 <h3>Properties</h3>
                 <span>{fields.length}/30</span>
@@ -1066,22 +1050,26 @@ export default function Editor() {
                         updateField(field.id, { name: e.target.value })
                       }
                     />
-                    <select
-                      aria-label={"Type of " + field.name}
+                    <SelectField
+                      hideLabel
+                      label={"Type of " + field.name}
                       value={field.type}
                       disabled={
+                        busy ||
+                        saveState === "saving" ||
+                        saveState === "saved" ||
                         !!database?.fields.some((f) => f.id === field.id)
                       }
-                      onChange={(e) =>
+                      onChange={(value) =>
                         updateField(field.id, {
-                          type: e.target.value as DatabaseField["type"],
+                          type: value as DatabaseField["type"],
                         })
                       }
-                    >
-                      {databaseFieldTypes.map((t) => (
-                        <option key={t}>{t}</option>
-                      ))}
-                    </select>
+                      options={databaseFieldTypes.map((type) => ({
+                        value: type,
+                        label: type,
+                      }))}
+                    />
                     <IconButton
                       label="Remove property"
                       onClick={() => {
@@ -1156,6 +1144,25 @@ export default function Editor() {
                       busy || saveState === "saving" || saveState === "saved"
                     }
                   />
+                ) : field.type === "status" ? (
+                  <SelectField
+                    key={field.id}
+                    label={field.name}
+                    value={String(values[field.id] || "")}
+                    onChange={(value) =>
+                      setValues({ ...values, [field.id]: value })
+                    }
+                    options={[
+                      { value: "", label: "Select a status" },
+                      ...field.options.map((option) => ({
+                        value: option,
+                        label: option,
+                      })),
+                    ]}
+                    disabled={
+                      busy || saveState === "saving" || saveState === "saved"
+                    }
+                  />
                 ) : (
                   <Field label={field.name} key={field.id}>
                     {field.type === "checkbox" ? (
@@ -1166,18 +1173,6 @@ export default function Editor() {
                           setValues({ ...values, [field.id]: e.target.checked })
                         }
                       />
-                    ) : field.type === "status" ? (
-                      <select
-                        value={String(values[field.id] || "")}
-                        onChange={(e) =>
-                          setValues({ ...values, [field.id]: e.target.value })
-                        }
-                      >
-                        <option value="">Select a status</option>
-                        {field.options.map((option) => (
-                          <option key={option}>{option}</option>
-                        ))}
-                      </select>
                     ) : (
                       <input
                         type={field.type === "number" ? "number" : "text"}

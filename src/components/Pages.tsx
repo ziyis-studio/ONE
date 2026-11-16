@@ -37,6 +37,8 @@ import {
   useSettle,
 } from "./interactions";
 import ProjectCard from "./ProjectCard";
+import { SelectField } from "./SelectField";
+import { PageDate } from "./PageDate";
 
 export function PageIntro({
   title,
@@ -52,6 +54,7 @@ export function PageIntro({
   return (
     <div className="page-intro">
       <div>
+        <PageDate />
         <h1>
           {title}
           <span className="accent">.</span>
@@ -262,23 +265,20 @@ export function TasksPage() {
                         </div>
                       </td>
                       <td>
-                        <select
-                          aria-label={"Status of " + task.title}
+                        <SelectField
+                          label={"Status of " + task.title}
+                          hideLabel
+                          className="one-select-inline"
                           disabled={busy}
-                          className="status-select"
                           value={taskStage(task)}
-                          onChange={(e) =>
-                            safely(() =>
-                              moveTask(task, e.target.value as Stage),
-                            )
+                          onChange={(value) =>
+                            safely(() => moveTask(task, value as Stage))
                           }
-                        >
-                          {stages.map((s) => (
-                            <option value={s.id} key={s.id}>
-                              {s.title}
-                            </option>
-                          ))}
-                        </select>
+                          options={stages.map((stage) => ({
+                            value: stage.id,
+                            label: stage.title,
+                          }))}
+                        />
                       </td>
                       <td>
                         {data.projects.find((p) => p.id === task.projectId)
@@ -638,9 +638,9 @@ export function ThoughtsPage() {
                         <p>{thought.content}</p>
                       </button>
                       <footer>
-                        <span className="tag">
-                          {thought.emotion || "Just a thought"}
-                        </span>
+                        {thought.emotion && (
+                          <span className="tag">{thought.emotion}</span>
+                        )}
                         <button
                           disabled={busy}
                           onClick={() =>

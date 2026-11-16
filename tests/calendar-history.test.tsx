@@ -54,6 +54,7 @@ beforeEach(() => {
     }
   }
   vi.stubGlobal("PointerEvent", TestPointerEvent);
+  vi.stubGlobal("DragEvent", window.MouseEvent);
   window.scrollTo = vi.fn();
   Element.prototype.scrollTo = vi.fn();
   Element.prototype.setPointerCapture = vi.fn();
@@ -202,6 +203,113 @@ describe("calendar and history interactions", () => {
     await waitFor(() =>
       expect(timeKey(saved().timeBlocks[0].endsAt, zone)).toBe("12:00"),
     );
+  });
+  it("shows seven timed week tracks and moves a block to an exact time without losing links", async () => {
+    const { container, state } = await openSchedule();
+    await userEvent.click(screen.getByRole("button", { name: "Week" }));
+    const tracks = container.querySelectorAll<HTMLElement>(".day-track");
+    expect(tracks.length).toBe(7);
+    expect(screen.getByText("23:00")).toBeTruthy();
+    const day = addDays(dayKey(state.timeBlocks[0].startsAt, zone), 1);
+    const target = container.querySelector<HTMLElement>(
+      `.day-track[data-date="${day}"]`,
+    )!;
+    vi.spyOn(target, "getBoundingClientRect").mockReturnValue({
+      top: 0,
+      left: 0,
+      bottom: 1440,
+      right: 600,
+      height: 1440,
+      width: 600,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    });
+    fireEvent.drop(target, {
+      clientY: 11 * 60,
+      dataTransfer: {
+        getData: (type: string) =>
+          type === "text/one-block" ? state.timeBlocks[0].id : "",
+      },
+    });
+    await waitFor(() =>
+      expect(dayKey(saved().timeBlocks[0].startsAt, zone)).toBe(day),
+    );
+    expect(timeKey(saved().timeBlocks[0].startsAt, zone)).toBe("11:00");
+    expect(saved().blockTaskLinks).toEqual(state.blockTaskLinks);
+    expect(saved().blockOccurrenceLinks).toEqual(state.blockOccurrenceLinks);
+  });
+  it("drops a task into a block idempotently and preserves its times and all other links", async () => {
+    const { container, state } = await openSchedule();
+    const block = state.timeBlocks[0],
+      task = state.tasks.find((item) => item.id !== state.tasks[0].id)!;
+    let target = container.querySelector<HTMLElement>(
+      `[data-block-id="${block.id}"]`,
+    )!;
+    const dataTransfer = {
+      getData: (type: string) => (type === "text/one-task" ? task.id : ""),
+    };
+    fireEvent.drop(target, { dataTransfer });
+    await waitFor(() =>
+      expect(
+        saved().blockTaskLinks.some(
+          (link: { timeBlockId: string; taskId: string }) =>
+            link.timeBlockId === block.id && link.taskId === task.id,
+        ),
+      ).toBe(true),
+    );
+    const first = saved();
+    expect(first.timeBlocks[0].startsAt).toBe(block.startsAt);
+    expect(first.timeBlocks[0].endsAt).toBe(block.endsAt);
+    expect(first.blockOccurrenceLinks).toEqual(state.blockOccurrenceLinks);
+    expect(first.blockTaskLinks).toEqual(
+      expect.arrayContaining(state.blockTaskLinks),
+    );
+    target = container.querySelector<HTMLElement>(
+      `[data-block-id="${block.id}"]`,
+    )!;
+    fireEvent.drop(target, { dataTransfer });
+    expect(saved().blockTaskLinks).toEqual(first.blockTaskLinks);
+    expect(saved().tasks).toEqual(state.tasks);
+  });
+  it("plans a task from the side panel and keeps the task incomplete", async () => {
+    const { state } = await openSchedule();
+    const task = state.tasks.find((item) => !item.completedAt)!;
+    const panel = screen.getByRole("complementary", {
+      name: "Tasks to schedule",
+    });
+    await userEvent.click(
+      within(panel).getByRole("button", { name: "Plan " + task.title }),
+    );
+    const dialog = await screen.findByRole("dialog");
+    expect(
+      (
+        within(dialog).getByRole("textbox", {
+          name: "Title",
+        }) as HTMLInputElement
+      ).value,
+    ).toBe(task.title);
+    expect(
+      within(dialog).getByRole("button", { name: /Linked tasks/ }).textContent,
+    ).toContain(task.title);
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Create time block" }),
+    );
+    await waitFor(() =>
+      expect(saved().timeBlocks.length).toBe(state.timeBlocks.length + 1),
+    );
+    const block = saved().timeBlocks.find(
+      (item: { id: string }) =>
+        !state.timeBlocks.some((original) => original.id === item.id),
+    );
+    expect(saved().blockTaskLinks).toContainEqual({
+      taskId: task.id,
+      timeBlockId: block.id,
+    });
+    expect(
+      saved().tasks.find((item: { id: string }) => item.id === task.id)
+        .completedAt,
+    ).toBe(null);
   });
   it("cancels a timeline drag with Escape without writing changes", async () => {
     const { track, state } = await openDay();

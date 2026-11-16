@@ -1,3 +1,4 @@
+import { PageDate } from "./PageDate";
 import { useMemo, useState } from "react";
 import { Plus, ArrowUpRight } from "lucide-react";
 import type { Habit, HabitOccurrence, Workspace } from "../domain/model";
@@ -92,6 +93,7 @@ export default function HabitsPage() {
     <>
       <div className="page-intro">
         <div>
+          <PageDate />
           <h1>
             Habits<span className="accent">.</span>
           </h1>
@@ -230,7 +232,11 @@ export default function HabitsPage() {
                           date
                         }
                         aria-pressed={cell.level === 2 ? "mixed" : allDone}
-                        title={title}
+                        data-chart-title={habit.title + " · " + dateLabel(date)}
+                        data-chart-detail={title
+                          .split(" · ")
+                          .slice(1)
+                          .join(" · ")}
                         disabled={busy || date > today || !cell.planned}
                         onClick={() => void selectDay(habit, date)}
                       >

@@ -42,6 +42,7 @@ export type Editor = {
   kind: EditorKind;
   id?: string;
   projectId?: string;
+  taskId?: string;
   databaseId?: string;
   date?: string;
   startsAt?: string;

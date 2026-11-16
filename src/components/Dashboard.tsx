@@ -1,14 +1,7 @@
 import { useState } from "react";
 import { motion } from "motion/react";
 import { ContentSwitch, DiscreteTabs, useSettle } from "./interactions";
-import {
-  Plus,
-  ArrowUpRight,
-  Moon,
-  ArrowRight,
-  Sparkles,
-  Clock3,
-} from "lucide-react";
+import { Plus, ArrowUpRight, Moon, ArrowRight, Clock3 } from "lucide-react";
 import { useOne } from "../lib/workspace";
 import { useActions } from "../lib/actions";
 import { blocksOnDay } from "../lib/schedule";
@@ -21,6 +14,7 @@ import {
 } from "../domain/time";
 import { Card, CheckButton, Empty, EntityIcon } from "./ui";
 import WeatherCard from "./WeatherCard";
+import { PageDate } from "./PageDate";
 export default function Dashboard() {
   const { data, today, zone, now, edit, navigate, busy } = useOne();
   const { toggleTask, toggleHabit, safely } = useActions();
@@ -66,14 +60,7 @@ export default function Dashboard() {
     <>
       <div className="page-intro home-intro">
         <div>
-          <p className="date-line">
-            {dateLabel(today, {
-              weekday: "long",
-              month: "long",
-              day: "numeric",
-              year: "numeric",
-            })}
-          </p>
+          <PageDate />
           <h1>
             Today<span className="accent">.</span>
           </h1>
@@ -116,7 +103,23 @@ export default function Dashboard() {
                       {days.map((d) => (
                         <i
                           key={d}
-                          title={dateLabel(d)}
+                          data-chart-title={dateLabel(d)}
+                          data-chart-detail={
+                            data.occurrences.some(
+                              (x) =>
+                                x.habitId === habit.id &&
+                                x.plannedOn === d &&
+                                executed.has(x.id),
+                            )
+                              ? "Completed"
+                              : data.occurrences.some(
+                                    (x) =>
+                                      x.habitId === habit.id &&
+                                      x.plannedOn === d,
+                                  )
+                                ? "Not completed"
+                                : "Not scheduled"
+                          }
                           className={
                             (data.occurrences.some(
                               (x) =>
@@ -196,46 +199,44 @@ export default function Dashboard() {
               </p>
               <div
                 className="sleep-chart"
-                role="img"
+                role="group"
                 aria-label="Your recent sleep durations"
               >
-                {sleep.map((s, i) => (
-                  <div
-                    key={s.id}
-                    title={
-                      dateLabel(dayKey(s.endsAt, zone)) +
-                      ": " +
-                      Math.round(
-                        (minutesBetween(s.startsAt, s.endsAt) -
-                          s.awakeMinutes) /
-                          6,
-                      ) /
-                        10 +
-                      " hours"
-                    }
-                  >
-                    <motion.i
-                      initial={false}
-                      transition={transition}
-                      className={i === sleep.length - 1 ? "latest" : ""}
-                      animate={{
-                        height:
-                          Math.max(
-                            10,
-                            Math.min(
-                              55,
-                              (minutesBetween(s.startsAt, s.endsAt) -
-                                s.awakeMinutes) /
-                                10,
-                            ),
-                          ) + "px",
-                      }}
-                    />
-                    <span>
-                      {dateLabel(dayKey(s.endsAt, zone), { weekday: "narrow" })}
-                    </span>
-                  </div>
-                ))}
+                {sleep.map((record, index) => {
+                  const minutes =
+                    minutesBetween(record.startsAt, record.endsAt) -
+                    record.awakeMinutes;
+                  const date = dateLabel(dayKey(record.endsAt, zone), {
+                    weekday: "long",
+                    month: "short",
+                    day: "numeric",
+                  });
+                  const duration = `${Math.floor(minutes / 60)}h ${minutes % 60}m net sleep`;
+                  return (
+                    <button
+                      key={record.id}
+                      type="button"
+                      aria-label={`${date} · ${duration}`}
+                      data-chart-title={date}
+                      data-chart-detail={duration}
+                      onClick={() => edit({ kind: "sleep", id: record.id })}
+                    >
+                      <motion.i
+                        initial={false}
+                        transition={transition}
+                        className={index === sleep.length - 1 ? "latest" : ""}
+                        animate={{
+                          height: Math.max(10, Math.min(76, minutes / 7.5)),
+                        }}
+                      />
+                      <span>
+                        {dateLabel(dayKey(record.endsAt, zone), {
+                          weekday: "narrow",
+                        })}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </>
           ) : (
@@ -518,11 +519,6 @@ export default function Dashboard() {
             />
           )}
         </Card>
-      </div>
-      <div className="workspace-footer">
-        <Sparkles size={12} />
-        <span>Little by little, a life well made.</span>
-        <span className="footer-brand">ONE</span>
       </div>
     </>
   );

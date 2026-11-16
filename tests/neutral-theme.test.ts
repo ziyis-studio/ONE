@@ -5,6 +5,10 @@ describe("neutral ONE palette", () => {
     for (const file of [
       "src/styles.css",
       "src/workspace.css",
+      "src/workspace-polish.css",
+      "src/components/select-field.css",
+      "src/components/chart-tooltip.css",
+      "src/components/schedule-planning.css",
       "src/components/auth.css",
       "src/components/interactions.css",
       "src/components/logo-motion.css",

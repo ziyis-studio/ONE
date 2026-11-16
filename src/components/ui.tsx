@@ -215,15 +215,15 @@ export function Dialog({
     document.body.style.overflow = "hidden";
     (
       ref.current?.querySelector<HTMLElement>(
-        'input:not([type="hidden"]):not([tabindex="-1"]), textarea, select, [contenteditable="true"][tabindex="0"]',
+        'input:not([type="hidden"]):not([tabindex="-1"]), textarea, select:not([tabindex="-1"]), [contenteditable="true"][tabindex="0"]',
       ) || ref.current?.querySelector<HTMLElement>("button")
     )?.focus();
     const key = (event: KeyboardEvent) => {
-      // The portalled calendar is a child dialog and owns its own focus scope.
+      // An owned popup handles Escape and focus before its parent editor.
       if (
         event.defaultPrevented ||
-        [...document.querySelectorAll("[data-one-date-owner]")].some(
-          (popup) => popup.getAttribute("data-one-date-owner") === titleId,
+        [...document.querySelectorAll("[data-one-dialog-owner]")].some(
+          (popup) => popup.getAttribute("data-one-dialog-owner") === titleId,
         )
       )
         return;
@@ -238,7 +238,7 @@ export function Dialog({
       if (event.key !== "Tab") return;
       const focusables = Array.from(
         ref.current?.querySelectorAll<HTMLElement>(
-          'button:not(:disabled), input:not(:disabled):not([type="hidden"]):not([tabindex="-1"]), textarea:not(:disabled), select:not(:disabled), a[href], [contenteditable="true"][tabindex="0"]',
+          'button:not(:disabled), input:not(:disabled):not([type="hidden"]):not([tabindex="-1"]), textarea:not(:disabled), select:not(:disabled):not([tabindex="-1"]), a[href], [contenteditable="true"][tabindex="0"]',
         ) || [],
       );
       const first = focusables[0],

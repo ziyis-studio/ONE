@@ -1,0 +1,80 @@
+.one-chart-scope {
+  display: contents;
+}
+.one-chart-tooltip {
+  position: fixed;
+  z-index: 150;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: max-content;
+  max-width: 220px;
+  padding: 11px 13px;
+  border: 1px solid #4b4b4b;
+  border-radius: 11px;
+  background: #292929;
+  color: #ddd;
+  box-shadow: 0 8px 24px #0005;
+  pointer-events: none;
+  text-align: left;
+}
+.one-chart-tooltip > span {
+  font-size: 10px;
+  line-height: 1.4;
+  color: #999;
+}
+.one-chart-tooltip > strong {
+  font-size: 12px;
+  line-height: 1.4;
+  font-weight: 500;
+}
+.sleep-chart > button {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  flex: 1;
+  padding: 0;
+  min-width: 0;
+  border-radius: 7px;
+}
+.sleep-chart > button i {
+  transition:
+    background 0.15s,
+    filter 0.15s;
+}
+.sleep-chart > button:hover i,
+.sleep-chart > button:focus-visible i {
+  background: #d0d0d0;
+}
+.sleep-chart > button:hover span,
+.sleep-chart > button:focus-visible span {
+  color: #eee;
+}
+.sleep-chart > button:focus-visible {
+  outline: 1px solid #999;
+  outline-offset: 5px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sleep-chart > button i {
+    transition: none;
+  }
+}
+
+.sleep-chart {
+  height: 94px;
+}
+.sleep-chart > button {
+  gap: 6px;
+}
+.sleep-chart > button i {
+  flex-shrink: 0;
+}
+
+svg[data-chart-title]:focus-visible {
+  outline: 1px solid #bcbcbc;
+  outline-offset: 3px;
+  border-radius: 50%;
+}

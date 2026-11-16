@@ -1,3 +1,4 @@
+import { PageDate } from "./PageDate";
 import { useState } from "react";
 import type { KeyboardEvent } from "react";
 import {
@@ -68,6 +69,7 @@ export default function SleepPage() {
     <>
       <div className="page-intro">
         <div>
+          <PageDate />
           <h1>
             Sleep<span className="accent">.</span>
           </h1>
@@ -190,7 +192,12 @@ export default function SleepPage() {
                       disabled={future}
                       aria-label={label}
                       aria-pressed={date === selected}
-                      title={label}
+                      data-chart-title={dateLabel(date)}
+                      data-chart-detail={
+                        current
+                          ? sleepDuration(current.minutes) + " net sleep"
+                          : "No sleep logged"
+                      }
                       tabIndex={date === focusDay ? 0 : -1}
                       onFocus={() => setFocusDay(date)}
                       onKeyDown={(event) => keyboard(event, date)}
@@ -210,7 +217,8 @@ export default function SleepPage() {
               <i
                 className={"level-" + level}
                 key={level}
-                title={
+                data-chart-title="Sleep duration"
+                data-chart-detail={
                   [
                     "No data",
                     "Under 4 hours",

@@ -78,6 +78,9 @@ export default function ProjectCard({
           fill="none"
           role="img"
           aria-label={`${percent}% complete`}
+          tabIndex={0}
+          data-chart-title={project.title}
+          data-chart-detail={`${percent}% complete`}
         >
           <path
             d="M 71.064 77.952 A 35 35 0 1 1 63.111 17.549"
