@@ -8,6 +8,8 @@ describe("neutral ONE palette", () => {
       "src/components/auth.css",
       "src/components/interactions.css",
       "src/components/logo-motion.css",
+      "src/components/navigation.css",
+      "src/components/date-time-field.css",
     ]) {
       const source = readFileSync(file, "utf8");
       const colors = [

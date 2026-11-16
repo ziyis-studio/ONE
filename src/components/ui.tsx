@@ -214,10 +214,19 @@ export function Dialog({
     const overflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     (
-      ref.current?.querySelector<HTMLElement>("input, textarea, select") ||
-      ref.current?.querySelector<HTMLElement>("button")
+      ref.current?.querySelector<HTMLElement>(
+        'input:not([type="hidden"]):not([tabindex="-1"]), textarea, select, [contenteditable="true"][tabindex="0"]',
+      ) || ref.current?.querySelector<HTMLElement>("button")
     )?.focus();
     const key = (event: KeyboardEvent) => {
+      // The portalled calendar is a child dialog and owns its own focus scope.
+      if (
+        event.defaultPrevented ||
+        [...document.querySelectorAll("[data-one-date-owner]")].some(
+          (popup) => popup.getAttribute("data-one-date-owner") === titleId,
+        )
+      )
+        return;
       if (event.key === "Escape") {
         event.preventDefault();
         if (
@@ -229,7 +238,7 @@ export function Dialog({
       if (event.key !== "Tab") return;
       const focusables = Array.from(
         ref.current?.querySelectorAll<HTMLElement>(
-          "button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled), a[href]",
+          'button:not(:disabled), input:not(:disabled):not([type="hidden"]):not([tabindex="-1"]), textarea:not(:disabled), select:not(:disabled), a[href], [contenteditable="true"][tabindex="0"]',
         ) || [],
       );
       const first = focusables[0],
@@ -269,6 +278,7 @@ export function Dialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
+        data-one-dialog={titleId}
         ref={ref}
       >
         <header>

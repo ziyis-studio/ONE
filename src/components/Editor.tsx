@@ -15,6 +15,7 @@ import { useOne } from "../lib/workspace";
 import { useActions, stages, taskStage } from "../lib/actions";
 import { Dialog, IconButton, CheckButton, EntityIcon } from "./ui";
 import { DayPicker, SaveButton } from "./interactions";
+import { DateTimeField, invalidDateField } from "./DateTimeField";
 import type { SaveState } from "./interactions";
 import { useMotionPreference } from "../lib/motion-preference";
 import {
@@ -240,6 +241,17 @@ export default function Editor() {
       setError(messages[name] || `Complete “${name}” to continue.`);
       setSaveState("error");
       missing.focus();
+      return;
+    }
+    const invalidDate = invalidDateField(
+      event.currentTarget as HTMLFormElement,
+    );
+    if (invalidDate) {
+      setError(invalidDate.message);
+      setSaveState("error");
+      invalidDate.field
+        .querySelector<HTMLElement>('[role="spinbutton"]')
+        ?.focus();
       return;
     }
     saving.current = true;
@@ -601,13 +613,15 @@ export default function Editor() {
                       ))}
                     </select>
                   </Field>
-                  <Field label="Due date">
-                    <input
-                      type="date"
-                      value={deadline}
-                      onChange={(e) => setDeadline(e.target.value)}
-                    />
-                  </Field>
+                  <DateTimeField
+                    label="Due date"
+                    value={deadline}
+                    onChange={setDeadline}
+                    today={today}
+                    disabled={
+                      busy || saveState === "saving" || saveState === "saved"
+                    }
+                  />
                 </>
               )}
             </div>
@@ -822,14 +836,16 @@ export default function Editor() {
             <>
               <DayPicker value={weekdays} onChange={setWeekdays} />
               <div className="form-grid habit-date-fields">
-                <Field label="Starts on">
-                  <input
-                    type="date"
-                    value={startsOn}
-                    onChange={(e) => setStartsOn(e.target.value)}
-                    required
-                  />
-                </Field>
+                <DateTimeField
+                  label="Starts on"
+                  value={startsOn}
+                  onChange={setStartsOn}
+                  required
+                  today={today}
+                  disabled={
+                    busy || saveState === "saving" || saveState === "saved"
+                  }
+                />
                 <Field label="Ends">
                   <select
                     value={neverEnd ? "never" : "date"}
@@ -843,15 +859,17 @@ export default function Editor() {
                 </Field>
                 {!neverEnd && (
                   <div className="habit-end-date">
-                    <Field label="End date">
-                      <input
-                        type="date"
-                        min={startsOn}
-                        value={endsOn}
-                        onChange={(event) => setEndsOn(event.target.value)}
-                        required
-                      />
-                    </Field>
+                    <DateTimeField
+                      label="End date"
+                      value={endsOn}
+                      onChange={setEndsOn}
+                      required
+                      min={startsOn}
+                      today={today}
+                      disabled={
+                        busy || saveState === "saving" || saveState === "saved"
+                      }
+                    />
                   </div>
                 )}
               </div>
@@ -860,22 +878,28 @@ export default function Editor() {
           {(kind === "block" || kind === "sleep") && (
             <>
               <div className="form-grid time-fields">
-                <Field label={kind === "sleep" ? "Fell asleep" : "Starts at"}>
-                  <input
-                    type="datetime-local"
-                    value={start}
-                    onChange={(e) => setStart(e.target.value)}
-                    required
-                  />
-                </Field>
-                <Field label={kind === "sleep" ? "Woke up" : "Ends at"}>
-                  <input
-                    type="datetime-local"
-                    value={end}
-                    onChange={(e) => setEnd(e.target.value)}
-                    required
-                  />
-                </Field>
+                <DateTimeField
+                  label={kind === "sleep" ? "Fell asleep" : "Starts at"}
+                  value={start}
+                  onChange={setStart}
+                  withTime
+                  required
+                  today={today}
+                  disabled={
+                    busy || saveState === "saving" || saveState === "saved"
+                  }
+                />
+                <DateTimeField
+                  label={kind === "sleep" ? "Woke up" : "Ends at"}
+                  value={end}
+                  onChange={setEnd}
+                  withTime
+                  required
+                  today={today}
+                  disabled={
+                    busy || saveState === "saving" || saveState === "saved"
+                  }
+                />
               </div>
               <p className="field-help">Times are shown in {zone}.</p>
               {kind === "sleep" ? (
@@ -1118,61 +1142,74 @@ export default function Editor() {
           )}
           {kind === "record" && database && (
             <div className="record-properties">
-              {database.fields.map((field) => (
-                <Field label={field.name} key={field.id}>
-                  {field.type === "checkbox" ? (
-                    <input
-                      type="checkbox"
-                      checked={!!values[field.id]}
-                      onChange={(e) =>
-                        setValues({ ...values, [field.id]: e.target.checked })
-                      }
-                    />
-                  ) : field.type === "status" ? (
-                    <select
-                      value={String(values[field.id] || "")}
-                      onChange={(e) =>
-                        setValues({ ...values, [field.id]: e.target.value })
-                      }
-                    >
-                      <option value="">Select a status</option>
-                      {field.options.map((option) => (
-                        <option key={option}>{option}</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <input
-                      type={
-                        field.type === "number"
-                          ? "number"
-                          : field.type === "date"
-                            ? "date"
-                            : "text"
-                      }
-                      step={field.type === "number" ? "any" : undefined}
-                      value={
-                        Array.isArray(values[field.id])
-                          ? (values[field.id] as string[]).join(", ")
-                          : String(values[field.id] ?? "")
-                      }
-                      onChange={(e) =>
-                        setValues({
-                          ...values,
-                          [field.id]:
-                            field.type === "number" && e.target.value !== ""
-                              ? Number(e.target.value)
-                              : field.type === "tags"
-                                ? e.target.value.split(",").map((v) => v.trim())
-                                : e.target.value,
-                        })
-                      }
-                      placeholder={
-                        field.type === "tags" ? "Separate tags with commas" : ""
-                      }
-                    />
-                  )}
-                </Field>
-              ))}
+              {database.fields.map((field) =>
+                field.type === "date" ? (
+                  <DateTimeField
+                    key={field.id}
+                    label={field.name}
+                    value={String(values[field.id] ?? "")}
+                    onChange={(value) =>
+                      setValues({ ...values, [field.id]: value })
+                    }
+                    today={today}
+                    disabled={
+                      busy || saveState === "saving" || saveState === "saved"
+                    }
+                  />
+                ) : (
+                  <Field label={field.name} key={field.id}>
+                    {field.type === "checkbox" ? (
+                      <input
+                        type="checkbox"
+                        checked={!!values[field.id]}
+                        onChange={(e) =>
+                          setValues({ ...values, [field.id]: e.target.checked })
+                        }
+                      />
+                    ) : field.type === "status" ? (
+                      <select
+                        value={String(values[field.id] || "")}
+                        onChange={(e) =>
+                          setValues({ ...values, [field.id]: e.target.value })
+                        }
+                      >
+                        <option value="">Select a status</option>
+                        {field.options.map((option) => (
+                          <option key={option}>{option}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type={field.type === "number" ? "number" : "text"}
+                        step={field.type === "number" ? "any" : undefined}
+                        value={
+                          Array.isArray(values[field.id])
+                            ? (values[field.id] as string[]).join(", ")
+                            : String(values[field.id] ?? "")
+                        }
+                        onChange={(e) =>
+                          setValues({
+                            ...values,
+                            [field.id]:
+                              field.type === "number" && e.target.value !== ""
+                                ? Number(e.target.value)
+                                : field.type === "tags"
+                                  ? e.target.value
+                                      .split(",")
+                                      .map((v) => v.trim())
+                                  : e.target.value,
+                          })
+                        }
+                        placeholder={
+                          field.type === "tags"
+                            ? "Separate tags with commas"
+                            : ""
+                        }
+                      />
+                    )}
+                  </Field>
+                ),
+              )}
             </div>
           )}
           {error && (

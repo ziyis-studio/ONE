@@ -3,7 +3,6 @@ import type { ReactNode, ErrorInfo } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { AnimatePresence, motion } from "motion/react";
 import {
-  House,
   CheckSquare2,
   CalendarDays,
   FolderClosed,
@@ -11,12 +10,10 @@ import {
   Moon,
   Lightbulb,
   FileText,
-  Settings2,
   Search,
   Plus,
   ArrowUpRight,
   ChevronRight,
-  MoreHorizontal,
   Check,
   CircleAlert,
   RefreshCw,
@@ -24,10 +21,11 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { supabase } from "./lib/auth";
 import { WorkspaceProvider, useOne } from "./lib/workspace";
-import type { Page, EditorKind } from "./lib/workspace";
+import type { EditorKind } from "./lib/workspace";
 import { Logo, Dialog, Spinner } from "./components/ui";
 import { MorphMenu } from "./components/interactions";
 import Dashboard from "./components/Dashboard";
+import Navigation, { useSidebar, navigation } from "./components/Navigation";
 const Auth = lazy(() => import("./components/Auth"));
 const Editor = lazy(() => import("./components/Editor"));
 const Settings = lazy(() => import("./components/Settings"));
@@ -52,16 +50,6 @@ const Thoughts = lazy(() =>
 const Notes = lazy(() =>
   import("./components/Pages").then((m) => ({ default: m.NotesPage })),
 );
-const navigation: { id: Page; label: string; icon: LucideIcon }[] = [
-  { id: "home", label: "Home", icon: House },
-  { id: "tasks", label: "Tasks", icon: CheckSquare2 },
-  { id: "schedule", label: "Schedule", icon: CalendarDays },
-  { id: "projects", label: "Projects", icon: FolderClosed },
-  { id: "habits", label: "Habits", icon: Repeat2 },
-  { id: "sleep", label: "Sleep", icon: Moon },
-  { id: "thoughts", label: "Thoughts", icon: Lightbulb },
-  { id: "notes", label: "Notes", icon: FileText },
-];
 export default function App() {
   return (
     <ErrorBoundary>
@@ -190,8 +178,8 @@ function Shell({
   useEffect(() => {
     if (accountError) notify(accountError, true);
   }, [accountError, notify]);
-  const [search, setSearch] = useState(false),
-    [more, setMore] = useState(false);
+  const [search, setSearch] = useState(false);
+  const [sidebarExpanded, setSidebarExpanded] = useSidebar();
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const input =
@@ -200,7 +188,13 @@ function Shell({
               'input,textarea,select,[contenteditable],[role="menu"],[role="listbox"]',
             )
           : null;
-      if ((e.metaKey || e.ctrlKey) && e.key === "k" && !editor) {
+      const modal = document.querySelector('[aria-modal="true"]');
+      if (
+        (e.metaKey || e.ctrlKey) &&
+        e.key === "k" &&
+        !editor &&
+        (!modal || search)
+      ) {
         e.preventDefault();
         setSearch((s) => !s);
       } else if (
@@ -208,6 +202,7 @@ function Shell({
         !input &&
         !editor &&
         !search &&
+        !modal &&
         !e.metaKey &&
         !e.ctrlKey
       ) {
@@ -248,65 +243,24 @@ function Shell({
       <Settings onExit={onExit} />
     );
   return (
-    <div className="app-shell">
+    <div
+      className="app-shell one-shell"
+      data-sidebar={sidebarExpanded ? "expanded" : "collapsed"}
+    >
       <a className="skip-link" href="#main-content">
         Skip to content
       </a>
-      <aside className="nav-rail">
-        <button
-          className="rail-brand"
-          onClick={() => navigate("home")}
-          aria-label="ONE home"
-        >
-          <Logo size={32} />
-        </button>
-        <nav aria-label="Your workspace">
-          {navigation.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              className={"rail-link " + (page === id ? "active" : "")}
-              aria-label={label}
-              title={label}
-              aria-current={page === id ? "page" : undefined}
-              onClick={() => navigate(id)}
-            >
-              <Icon size={19} strokeWidth={1.6} />
-              <span className="rail-tooltip">{label}</span>
-            </button>
-          ))}
-        </nav>
-        <div className="rail-bottom">
-          <button
-            className={"rail-link " + (page === "settings" ? "active" : "")}
-            aria-label="Settings"
-            title="Settings"
-            onClick={() => navigate("settings")}
-          >
-            <Settings2 size={19} strokeWidth={1.5} />
-            <span className="rail-tooltip">Settings</span>
-          </button>
-          <MorphMenu
-            label="Your account settings"
-            className="one-account-menu"
-            align="start"
-            trigger={
-              demo ? "Y" : session?.user.email?.slice(0, 1).toUpperCase() || "Y"
-            }
-            items={[
-              {
-                label: "Account settings",
-                icon: <Settings2 size={15} />,
-                onSelect: () => navigate("settings"),
-              },
-              {
-                label: demo ? "Leave demo" : "Sign out",
-                icon: <ArrowUpRight size={15} />,
-                onSelect: onExit,
-              },
-            ]}
-          />
-        </div>
-      </aside>
+      <Navigation
+        page={page}
+        navigate={navigate}
+        expanded={sidebarExpanded}
+        onToggle={() => setSidebarExpanded((expanded) => !expanded)}
+        initial={
+          demo ? "Y" : session?.user.email?.slice(0, 1).toUpperCase() || "Y"
+        }
+        demo={demo}
+        onExit={onExit}
+      />
       <main className="workspace">
         <div className="workspace-wrap">
           <header className="topbar">
@@ -407,34 +361,6 @@ function Shell({
           </div>
         </div>
       </main>
-      <nav className="mobile-nav" aria-label="Mobile workspace">
-        {navigation
-          .filter((n) =>
-            ["home", "tasks", "schedule", "thoughts"].includes(n.id),
-          )
-          .map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              className={page === id ? "active" : ""}
-              aria-current={page === id ? "page" : undefined}
-              onClick={() => navigate(id)}
-            >
-              <Icon size={20} strokeWidth={1.6} />
-              <span>{label}</span>
-            </button>
-          ))}
-        <button
-          onClick={() => setMore(true)}
-          className={
-            !["home", "tasks", "schedule", "thoughts"].includes(page)
-              ? "active"
-              : ""
-          }
-        >
-          <MoreHorizontal size={20} />
-          <span>More</span>
-        </button>
-      </nav>
       <AnimatePresence>
         {notice && (
           <motion.div
@@ -462,28 +388,6 @@ function Shell({
         </Suspense>
       )}
       {search && <SearchDialog onClose={() => setSearch(false)} />}
-      {more && (
-        <Dialog title="A LITTLE MORE SPACE" onClose={() => setMore(false)}>
-          <div className="more-navigation">
-            {[
-              ...navigation,
-              { id: "settings" as const, label: "Settings", icon: Settings2 },
-            ].map(({ id, label, icon: Icon }) => (
-              <button
-                key={id}
-                onClick={() => {
-                  setMore(false);
-                  navigate(id);
-                }}
-              >
-                <Icon size={19} />
-                {label}
-                <ChevronRight size={15} />
-              </button>
-            ))}
-          </div>
-        </Dialog>
-      )}
     </div>
   );
 }

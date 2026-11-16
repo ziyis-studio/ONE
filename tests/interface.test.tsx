@@ -11,6 +11,9 @@ import {
 import userEvent from "@testing-library/user-event";
 import { MotionConfig } from "motion/react";
 import App from "../src/App";
+import { addDays, dayKey, timeKey } from "../src/domain/time";
+import { DEMO_KEY } from "../src/lib/demo";
+import { dateField, enterDate, readDate } from "./date-field-helpers";
 const { signIn } = vi.hoisted(() => ({ signIn: vi.fn() }));
 vi.mock("../src/lib/auth", () => ({
   signIn,
@@ -120,6 +123,50 @@ describe("ONE interface flows", () => {
       ),
     ).toBe(true);
   });
+  it("saves overnight sleep with exact minutes and closes the calendar before its editor", async () => {
+    await openDemo();
+    await userEvent.click(screen.getAllByRole("button", { name: "Sleep" })[0]);
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Log sleep" }),
+    );
+    const dialog = await screen.findByRole("dialog");
+    const start = readDate(dialog, "Fell asleep", true);
+    const end = readDate(dialog, "Woke up", true);
+    expect(start.slice(0, 10) < end.slice(0, 10)).toBe(true);
+    fireEvent.keyDown(
+      within(dateField(dialog, "Fell asleep")).getByRole("spinbutton", {
+        name: /minute/i,
+      }),
+      { key: "ArrowUp" },
+    );
+    await userEvent.click(
+      within(dateField(dialog, "Fell asleep")).getByRole("button"),
+    );
+    await screen.findByRole("dialog", { name: "Fell asleep picker" });
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog", { name: "Fell asleep picker" })).toBe(
+        null,
+      ),
+    );
+    expect(screen.getByRole("dialog", { name: "NEW SLEEP" })).toBeTruthy();
+    await enterDate(dialog, "Fell asleep", addDays(start.slice(0, 10), -14));
+    await enterDate(dialog, "Woke up", addDays(end.slice(0, 10), -14));
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Create sleep" }),
+    );
+    expect(within(dialog).queryByRole("alert")?.textContent || "").toBe("");
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBe(null));
+    const records = JSON.parse(localStorage.getItem(DEMO_KEY)!).sleepRecords;
+    const record = records.find(
+      (item: { startsAt: string; endsAt: string }) =>
+        dayKey(item.startsAt, "Asia/Kuala_Lumpur") ===
+          addDays(start.slice(0, 10), -14) &&
+        timeKey(item.startsAt, "Asia/Kuala_Lumpur") === "23:01",
+    );
+    expect(record).toBeTruthy();
+    expect(timeKey(record.endsAt, "Asia/Kuala_Lumpur")).toBe("07:00");
+  });
   it("creates a task and persists it through a workspace reload", async () => {
     await openDemo();
     await userEvent.click(screen.getAllByRole("button", { name: "Tasks" })[0]);
@@ -135,6 +182,7 @@ describe("ONE interface flows", () => {
       within(dialog).getByRole("textbox", { name: "New completion condition" }),
       "Save the first condition",
     );
+    await enterDate(dialog, "Due date", "2026-12-25");
     await userEvent.click(
       within(dialog).getByRole("button", { name: "Create task" }),
     );
@@ -146,6 +194,7 @@ describe("ONE interface flows", () => {
     const task = saved.tasks.find(
       (t: { title: string }) => t.title === "A meaningful little test",
     );
+    expect(task.deadline).toBe("2026-12-25");
     expect(
       saved.conditions.some(
         (c: { taskId: string; description: string }) =>
@@ -185,16 +234,12 @@ describe("ONE interface flows", () => {
       within(dialog).getByRole("combobox", { name: "Ends" }),
       "date",
     );
-    const start = (
-      within(dialog).getByLabelText("Starts on") as HTMLInputElement
-    ).value;
+    const start = readDate(dialog, "Starts on");
     const end =
       start.slice(0, 4) === "2026"
         ? "2027-12-31"
         : Number(start.slice(0, 4)) + 1 + "-12-31";
-    fireEvent.change(within(dialog).getByLabelText("End date"), {
-      target: { value: end },
-    });
+    await enterDate(dialog, "End date", end);
     await userEvent.click(
       within(dialog).getByRole("button", { name: "Save changes" }),
     );
@@ -204,9 +249,7 @@ describe("ONE interface flows", () => {
       screen.getByRole("button", { name: /^Evening walk/ }),
     );
     dialog = await screen.findByRole("dialog");
-    expect(
-      (within(dialog).getByLabelText("End date") as HTMLInputElement).value,
-    ).toBe(end);
+    expect(readDate(dialog, "End date")).toBe(end);
     await userEvent.selectOptions(
       within(dialog).getByRole("combobox", { name: "Ends" }),
       "never",
@@ -261,6 +304,17 @@ describe("ONE interface flows", () => {
       "number",
     );
     await userEvent.click(
+      within(dialog).getByRole("button", { name: "Add a property" }),
+    );
+    await userEvent.type(
+      within(dialog).getAllByRole("textbox", { name: "Property name" }).at(-1)!,
+      "Finished on",
+    );
+    await userEvent.selectOptions(
+      within(dialog).getByRole("combobox", { name: "Type of Finished on" }),
+      "date",
+    );
+    await userEvent.click(
       within(dialog).getByRole("button", { name: "Create database" }),
     );
     await userEvent.click(
@@ -276,9 +330,16 @@ describe("ONE interface flows", () => {
       within(dialog).getByRole("spinbutton", { name: "Rating" }),
       "4.5",
     );
+    await enterDate(dialog, "Finished on", "2026-11-12");
     await userEvent.click(
       within(dialog).getByRole("button", { name: "Create record" }),
     );
     expect(await screen.findByText("4.5")).toBeTruthy();
+    const savedRecord = JSON.parse(
+      localStorage.getItem(DEMO_KEY)!,
+    ).databaseRecords.find(
+      (record: { title: string }) => record.title === "A good book",
+    );
+    expect(Object.values(savedRecord.values)).toContain("2026-11-12");
   });
 });

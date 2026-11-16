@@ -10,6 +10,7 @@ import {
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import App from "../src/App";
+import { readDate } from "./date-field-helpers";
 import { createDemo, DEMO_KEY } from "../src/lib/demo";
 import { addDays, dayKey, timeKey } from "../src/domain/time";
 vi.mock("../src/lib/auth", () => ({
@@ -154,12 +155,8 @@ describe("calendar and history interactions", () => {
     fireEvent.pointerMove(track, { pointerId: 1, clientY: 1200 });
     fireEvent.pointerUp(track, { pointerId: 1, clientY: 1200 });
     const dialog = await screen.findByRole("dialog");
-    expect(
-      (within(dialog).getByLabelText("Starts at") as HTMLInputElement).value,
-    ).toMatch(/T19:00$/);
-    expect(
-      (within(dialog).getByLabelText("Ends at") as HTMLInputElement).value,
-    ).toMatch(/T20:00$/);
+    expect(readDate(dialog, "Starts at", true)).toMatch(/T19:00$/);
+    expect(readDate(dialog, "Ends at", true)).toMatch(/T20:00$/);
     await userEvent.type(
       within(dialog).getByRole("textbox", { name: "Title" }),
       "New timeline block",
@@ -236,21 +233,15 @@ describe("calendar and history interactions", () => {
       container.querySelector<HTMLButtonElement>(".sleep-entry")!,
     );
     const dialog = await screen.findByRole("dialog");
-    expect(
-      (within(dialog).getByLabelText("Fell asleep") as HTMLInputElement).value,
-    ).toBe(
+    expect(readDate(dialog, "Fell asleep", true)).toBe(
       dayKey(record.startsAt, zone) + "T" + timeKey(record.startsAt, zone),
     );
     await userEvent.click(
       within(dialog).getByRole("button", { name: "Cancel" }),
     );
     await userEvent.click(screen.getByRole("button", { name: "Add entry" }));
-    expect(
-      (
-        within(await screen.findByRole("dialog")).getByLabelText(
-          "Woke up",
-        ) as HTMLInputElement
-      ).value,
-    ).toBe(date + "T07:00");
+    expect(readDate(await screen.findByRole("dialog"), "Woke up", true)).toBe(
+      date + "T07:00",
+    );
   });
 });

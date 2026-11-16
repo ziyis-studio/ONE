@@ -44,6 +44,11 @@ export default defineConfig({
               test: /node_modules\/(motion|motion-dom|motion-utils|framer-motion)\//,
               priority: 20,
             },
+            {
+              name: "calendar",
+              test: /node_modules\/(react-aria|react-stately|@react-aria|@react-stately|@internationalized|@react-types)[/-]/,
+              priority: 20,
+            },
             { name: "validation", test: /node_modules\/zod\//, priority: 20 },
           ],
         },

@@ -67,3 +67,37 @@ Captures: `test-results/workspace-motion/` (ignored local artifacts). No real
 credentialed writes, physical phone keyboard, Safari/Firefox, or independent
 visual reviewer were used. These are real app flows, rather than faux UI scenes;
 Stageshow's isolated demo gate is not used to claim full app verification.
+
+# Navigation and shared date/time controls
+
+Plan and references: [navigation-date-motion.md](../../docs/navigation-date-motion.md).
+
+- Desktop sidebar animates from 80 to 224 px without scaling page text; explicit
+  toggle, local preference, Ctrl/Cmd+B, active destination, and account actions
+  remain connected to the current workspace. Short viewports scroll the route list.
+- Mobile More expands from the bottom navigation and closes on selection, Escape,
+  backdrop, or desktop resize. Focus containment, return, and scroll restoration
+  were exercised. Primary destinations remain available in the dock.
+- Task deadlines, habit dates, schedule dates/times, sleep dates/times, and database
+  date properties now use the same styled React Aria control, loaded with the lazy
+  editor. Date values remain civil strings; the existing workspace timezone logic
+  performs conversion at save. React Aria's hidden autofill inputs are not visible
+  controls and never open from the calendar button.
+- Chromium 156 local app checks at 1440×1000, 1024×1000, 768×1000, and 390×844:
+  sidebar width interpolation, reload preference, no horizontal overflow, overnight
+  sleep persistence with exact minutes, custom calendar, nested Escape, mobile
+  sheet bounds, navigation resize, and OS reduced motion. Additional 320×568 and
+  844×390 checks reached the picker controls and exercised its nested Tab scope.
+  No browser runtime errors.
+- Visual review moved the phone calendar into a bottom sheet so the entire time
+  control and Done button remain visible. Partial time edits keep the picker open
+  with an inline message; Clear also resets partially filled optional date segments.
+- All 70 automated tests across 20 files and the production build passed. Coverage
+  includes custom calendar keyboard editing, minimum dates, required/incomplete
+  dates, optional Clear, exact minutes, timezone preservation, actual demo sleep
+  saves, task deadlines, habit endings, typed database dates, and navigation state.
+
+Local captures and verification scripts: `test-results/navigation-date/` (ignored).
+Verification used demo records in local Chromium, not a credentialed production
+session. Physical phone keyboards and Safari/Firefox were not tested. The hosting
+status is checked separately through Vercel after the commit is pushed.
