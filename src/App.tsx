@@ -73,7 +73,8 @@ function SessionApp() {
     [booting, setBooting] = useState(true),
     [demo, setDemo] = useState(false),
     [recovery, setRecovery] = useState(false),
-    [authError, setAuthError] = useState("");
+    [authError, setAuthError] = useState(""),
+    [authPending, setAuthPending] = useState(false);
   useEffect(() => {
     let active = true;
     const {
@@ -88,7 +89,8 @@ function SessionApp() {
       .getSession()
       .then(({ data, error }) => {
         if (!active) return;
-        if (error) setAuthError(error.message);
+        if (error)
+          setAuthError("Could not restore your session. Please sign in again.");
         setSession(data.session);
         setBooting(false);
       })
@@ -124,7 +126,7 @@ function SessionApp() {
         <Spinner />
       </div>
     );
-  if ((!session && !demo) || recovery)
+  if ((!session && !demo) || recovery || authPending)
     return (
       <Suspense
         fallback={
@@ -134,18 +136,21 @@ function SessionApp() {
         }
       >
         <Auth
+          key={recovery ? "recovery" : "login"}
           onDemo={() => {
             setDemo(true);
             location.hash = "/home";
           }}
           recovery={recovery}
           onRecovered={() => setRecovery(false)}
+          onTransitionChange={setAuthPending}
+          onAuthenticated={() => {
+            setAuthPending(false);
+            setAuthError("");
+            location.hash = "/home";
+          }}
+          initialError={authError}
         />
-        {authError && (
-          <p className="auth-restore-error" role="alert">
-            {authError}
-          </p>
-        )}
       </Suspense>
     );
   return (

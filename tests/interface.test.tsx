@@ -77,9 +77,11 @@ describe("ONE interface flows", () => {
     await userEvent.click(screen.getByRole("button", { name: "Sign in" }));
     expect(signIn).toHaveBeenCalledWith("one-user", "wrong-password");
     expect((await screen.findByRole("alert")).textContent).toContain(
-      "Check your username and password.",
+      "Check your email or username and password, then try again.",
     );
-    await screen.findByText("Check your username and password.");
+    await screen.findByText(
+      "Check your email or username and password, then try again.",
+    );
   });
   it("opens every workspace module from a populated sample without a cloud request", async () => {
     const fetch = vi.fn(async () =>

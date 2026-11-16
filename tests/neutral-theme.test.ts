@@ -2,7 +2,11 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 describe("neutral ONE palette", () => {
   it("uses only achromatic colors throughout the interface", () => {
-    for (const file of ["src/styles.css", "src/workspace.css"]) {
+    for (const file of [
+      "src/styles.css",
+      "src/workspace.css",
+      "src/components/auth.css",
+    ]) {
       const source = readFileSync(file, "utf8");
       const colors = [
         ...source.matchAll(
