@@ -68,9 +68,6 @@ export default function SleepPage() {
     <>
       <div className="page-intro">
         <div>
-          <p className="eyebrow">
-            YOUR WORKSPACE <span>/ SLEEP</span>
-          </p>
           <h1>
             Sleep<span className="accent">.</span>
           </h1>

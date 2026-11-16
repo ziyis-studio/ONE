@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import {
   Plus,
   Search,
@@ -13,7 +13,6 @@ import {
   MoreHorizontal,
   Table2,
   FileText,
-  Sparkles,
   Filter,
 } from "lucide-react";
 import type { ReactNode } from "react";
@@ -22,12 +21,10 @@ import { useOne } from "../lib/workspace";
 import { useActions, stages, taskStage } from "../lib/actions";
 import type { Stage } from "../lib/actions";
 import {
-  addDays,
   addMonths,
   dayKey,
   dateLabel,
   timeKey,
-  weekDays,
   monthDays,
 } from "../domain/time";
 import { CheckButton, Empty, EntityIcon, IconButton } from "./ui";
@@ -46,9 +43,6 @@ export function PageIntro({
   return (
     <div className="page-intro">
       <div>
-        <p className="eyebrow">
-          YOUR WORKSPACE <span>/ {title.toUpperCase()}</span>
-        </p>
         <h1>
           {title}
           <span className="accent">.</span>
@@ -493,161 +487,7 @@ function ProjectCard({ project }: { project: Project }) {
   );
 }
 export { default as SchedulePage } from "./Schedule";
-export function HabitsPage() {
-  const { data, today, edit, execute, busy } = useOne();
-  const { toggleHabit, safely } = useActions();
-  const [offset, setOffset] = useState(0);
-  const days = weekDays(addDays(today, offset * 7));
-  const range = days[0];
-  const attempted = useRef(new Set<string>());
-  useEffect(() => {
-    if (offset === 0 || attempted.current.has(range)) return;
-    attempted.current.add(range);
-    void execute({
-      type: "occurrences.materialize",
-      from: range,
-      to: addDays(range, 6),
-    }).catch(() => {});
-  }, [range, offset, execute]);
-  const executed = new Set(data.executions.map((e) => e.occurrenceId));
-  const weekOcc = data.occurrences.filter(
-    (o) => days.includes(o.plannedOn) && o.plannedOn <= today,
-  );
-  const done = weekOcc.filter((o) => executed.has(o.id)).length;
-  return (
-    <>
-      <PageIntro
-        title="Habits"
-        subtitle="Not perfection. Just a little more consistency."
-        action={() => edit({ kind: "habit" })}
-        label="New habit"
-      />
-      <div className="habit-stats">
-        <div>
-          <span>YOUR WEEK, SO FAR</span>
-          <strong>
-            {done}
-            <small>little promises kept</small>
-          </strong>
-        </div>
-        <div>
-          <span>SHOWING UP</span>
-          <strong>
-            {weekOcc.length ? Math.round((done / weekOcc.length) * 100) : 0}
-            <small>% of planned rituals</small>
-          </strong>
-        </div>
-        <div className="habit-stat-note">
-          <Sparkles size={26} strokeWidth={1} />
-          <p>
-            Some days are easier than others.
-            <br />
-            Every little step still counts.
-          </p>
-        </div>
-      </div>
-      <div className="section-toolbar">
-        <h2>
-          {dateLabel(days[0])} – {dateLabel(days[6])}
-        </h2>
-        <div className="date-navigation">
-          <IconButton
-            label="Previous week"
-            onClick={() => setOffset(offset - 1)}
-          >
-            <ChevronLeft size={16} />
-          </IconButton>
-          <button className="tiny-pill" onClick={() => setOffset(0)}>
-            This week
-          </button>
-          <IconButton label="Next week" onClick={() => setOffset(offset + 1)}>
-            <ChevronRight size={16} />
-          </IconButton>
-        </div>
-      </div>
-      <div className="table-shell">
-        <table className="data-table habit-table">
-          <thead>
-            <tr>
-              <th>Your ritual</th>
-              {days.map((day) => (
-                <th key={day} className={day === today ? "accent" : ""}>
-                  {dateLabel(day, { weekday: "short" })}
-                  <small>{Number(day.slice(-2))}</small>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {data.habits.map((habit) => (
-              <tr key={habit.id}>
-                <td>
-                  <button
-                    className="habit-title-button"
-                    onClick={() => edit({ kind: "habit", id: habit.id })}
-                  >
-                    <span className="ritual-icon">
-                      <EntityIcon name={habit.icon || "repeat"} />
-                    </span>
-                    <span>
-                      {habit.title}
-                      <small>
-                        {habit.isoWeekdays.length === 7
-                          ? "Every day"
-                          : habit.isoWeekdays.length + " days a week"}
-                      </small>
-                    </span>
-                  </button>
-                </td>
-                {days.map((day) => {
-                  const occurrence = data.occurrences.find(
-                    (o) => o.habitId === habit.id && o.plannedOn === day,
-                  );
-                  return (
-                    <td key={day} className={day === today ? "today-cell" : ""}>
-                      {occurrence ? (
-                        <CheckButton
-                          circle
-                          disabled={busy || day > today}
-                          checked={executed.has(occurrence.id)}
-                          label={
-                            (executed.has(occurrence.id)
-                              ? "Undo "
-                              : "Complete ") +
-                            habit.title +
-                            " for " +
-                            day
-                          }
-                          onClick={() =>
-                            safely(() => toggleHabit(occurrence.id))
-                          }
-                        />
-                      ) : (
-                        <span className="not-planned">—</span>
-                      )}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {!data.habits.length && (
-          <Empty
-            title="Build a kinder routine."
-            detail="Start small. Make it something you can come back to."
-            action={() => edit({ kind: "habit" })}
-            label="New habit"
-          />
-        )}
-      </div>
-      <p className="page-footnote">
-        A check records when you actually did it. Your original plan stays
-        intact.
-      </p>
-    </>
-  );
-}
+export { default as HabitsPage } from "./Habits";
 export { default as SleepPage } from "./SleepHistory";
 export function ThoughtsPage() {
   const { data, edit, zone, today, execute, busy, notify } = useOne();

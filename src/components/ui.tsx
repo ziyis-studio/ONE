@@ -164,13 +164,12 @@ export function Empty({
 }) {
   return (
     <div className="empty">
-      <span className="empty-mark">
-        <Sparkles size={20} strokeWidth={1.3} />
-      </span>
-      <h3>{title}</h3>
-      {detail && <p>{detail}</p>}
+      <div className="empty-copy">
+        <h3>{title}</h3>
+        {detail && <p>{detail}</p>}
+      </div>
       {action && (
-        <button className="text-button" onClick={action}>
+        <button className="empty-action" onClick={action}>
           <Plus size={14} />
           {label}
         </button>

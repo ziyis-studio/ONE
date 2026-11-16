@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { Sun, Cloud, CloudRain, RefreshCw } from "lucide-react";
 import { useOne } from "../lib/workspace";
-import { timeKey } from "../domain/time";
 import { weatherLocations, weatherDescription } from "../lib/weather";
 import { Card } from "./ui";
+import LiveClock from "./LiveClock";
 type CurrentWeather = { temperature: number; code: number; updatedAt: string };
 export default function WeatherCard() {
-  const { zone, now } = useOne();
+  const { zone } = useOne();
   const location = weatherLocations[zone];
   const [weather, setWeather] = useState<CurrentWeather | null>(null);
   const [loading, setLoading] = useState(!!location);
@@ -77,9 +77,7 @@ export default function WeatherCard() {
         {location?.name || zone.split("/").at(-1)?.replaceAll("_", " ")}
       </div>
       <div className="time-weather-row">
-        <time className="clock-time" dateTime={now.toISOString()}>
-          {timeKey(now, zone)}
-        </time>
+        <LiveClock zone={zone} />
         <div className="weather-readout" aria-live="polite">
           {weather ? (
             <>

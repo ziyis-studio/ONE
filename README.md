@@ -21,12 +21,12 @@ npm run build
 
 ## Included
 
-- A neutral dark interface with white/gray type, a time-and-weather card first, varied dashboard card widths, sidebar and mobile navigation, keyboard search (⌘/Ctrl K), and quick creation (N).
+- A neutral dark interface with white/gray type, a time-and-weather card with animated seconds first, varied dashboard card widths, sidebar and mobile navigation, keyboard search (⌘/Ctrl K), and quick creation (N).
 - Email/username password login, signup, password reset and recovery, session refresh, and local sign-out.
 - Task board and list, drag between statuses, project filters, due dates, tags, completion conditions, and server revision checks.
 - Projects with task progress and completion gates.
 - Month/week/day scheduling with month view as the default. Drag blocks between dates, move/resize them directly on the day timeline, or drag empty desktop timeline space to create a time block. Changes snap to 15 minutes; linked tasks/occurrences and revision checks are preserved.
-- Weekly habits with separate planned dates and actual executions. Sleep history uses an interactive year heatmap with wake-date grouping, net duration, year navigation, and editable day details.
+- Habit activity heatmaps with This week, This month, and Last 30 days presets, completion/undo by date, and separate planned dates and actual executions. Sleep history uses an interactive year heatmap with wake-date grouping, net duration, year navigation, and editable day details.
 - Thought timeline, date filtering, emotion labels, and conversion into tasks.
 - Markdown notes, typed databases (text, number, date, status, checkbox, tags), and record editing.
 - Profile username editing and JSON export.

@@ -134,9 +134,22 @@ export default function Dashboard() {
             </div>
           ) : (
             <Empty
-              title="Small steps, every day."
-              action={() => edit({ kind: "habit" })}
-              label="Start a ritual"
+              title={
+                data.habits.length
+                  ? "No habits scheduled today"
+                  : "No habits yet"
+              }
+              detail={
+                data.habits.length
+                  ? "See your routines and upcoming days."
+                  : "Create a habit to start tracking your days."
+              }
+              action={() =>
+                data.habits.length
+                  ? navigate("habits")
+                  : edit({ kind: "habit" })
+              }
+              label={data.habits.length ? "View habits" : "New habit"}
             />
           )}
           {occurrences.length > 0 && (
@@ -213,9 +226,10 @@ export default function Dashboard() {
             </>
           ) : (
             <Empty
-              title="Rest matters, too."
+              title="No sleep logged"
+              detail="Log your rest to see it here."
               action={() => edit({ kind: "sleep" })}
-              label="Log your sleep"
+              label="Log sleep"
             />
           )}
         </Card>
@@ -288,8 +302,8 @@ export default function Dashboard() {
             </>
           ) : (
             <Empty
-              title="A fresh page for today."
-              detail="Give one small thing your attention."
+              title="No tasks planned today"
+              detail="Add a task or schedule an existing one."
               action={() => edit({ kind: "task", date: today })}
               label="Add a task"
             />
@@ -350,10 +364,10 @@ export default function Dashboard() {
             </div>
           ) : (
             <Empty
-              title="Room for possibility."
-              detail="A few time blocks can bring a little clarity."
+              title="No time blocks today"
+              detail="Plan a time block for your day."
               action={() => edit({ kind: "block", date: today })}
-              label="Plan some time"
+              label="Plan time"
             />
           )}
         </Card>
@@ -398,8 +412,8 @@ export default function Dashboard() {
             </div>
           ) : (
             <Empty
-              title="Let it out."
-              detail="A place for ideas, reflections, and everything between."
+              title="No thoughts yet"
+              detail="Capture an idea or something on your mind."
               action={() => edit({ kind: "thought" })}
               label="Capture a thought"
             />
@@ -454,9 +468,10 @@ export default function Dashboard() {
             </>
           ) : (
             <Empty
-              title="Some things are worth keeping."
+              title="No notes yet"
+              detail="Keep ideas, references, and details here."
               action={() => edit({ kind: "note" })}
-              label="Start a note"
+              label="New note"
             />
           )}
         </Card>

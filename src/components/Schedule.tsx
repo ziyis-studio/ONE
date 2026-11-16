@@ -252,9 +252,6 @@ export default function SchedulePage() {
     <>
       <div className="page-intro">
         <div>
-          <p className="eyebrow">
-            YOUR WORKSPACE <span>/ SCHEDULE</span>
-          </p>
           <h1>
             Schedule<span className="accent">.</span>
           </h1>
