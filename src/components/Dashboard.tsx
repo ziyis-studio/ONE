@@ -15,6 +15,7 @@ import {
 import { Card, CheckButton, Empty, EntityIcon } from "./ui";
 import WeatherCard from "./WeatherCard";
 import { PageDate } from "./PageDate";
+import PomodoroCard from "./PomodoroCard";
 export default function Dashboard() {
   const { data, today, zone, now, edit, navigate, busy } = useOne();
   const { toggleTask, toggleHabit, safely } = useActions();
@@ -76,6 +77,78 @@ export default function Dashboard() {
       </div>
       <div className="dashboard-grid">
         <WeatherCard />
+        <PomodoroCard />
+        <Card
+          title="Sleep"
+          action={() => navigate("sleep")}
+          className="sleep-card"
+        >
+          {lastSleep ? (
+            <>
+              <div className="sleep-readout">
+                <Moon size={17} />
+                <strong>
+                  {Math.floor(netMinutes / 60)}
+                  <small>h</small> {netMinutes % 60}
+                  <small>m</small>
+                </strong>
+              </div>
+              <p className="sleep-caption">
+                {timeKey(lastSleep.startsAt, zone)} –{" "}
+                {timeKey(lastSleep.endsAt, zone)}
+                <span> · net sleep</span>
+              </p>
+              <div
+                className="sleep-chart"
+                role="group"
+                aria-label="Your recent sleep durations"
+              >
+                {sleep.map((record, index) => {
+                  const minutes =
+                    minutesBetween(record.startsAt, record.endsAt) -
+                    record.awakeMinutes;
+                  const date = dateLabel(dayKey(record.endsAt, zone), {
+                    weekday: "long",
+                    month: "short",
+                    day: "numeric",
+                  });
+                  const duration = `${Math.floor(minutes / 60)}h ${minutes % 60}m net sleep`;
+                  return (
+                    <button
+                      key={record.id}
+                      type="button"
+                      aria-label={`${date} · ${duration}`}
+                      data-chart-title={date}
+                      data-chart-detail={duration}
+                      onClick={() => edit({ kind: "sleep", id: record.id })}
+                    >
+                      <motion.i
+                        initial={false}
+                        transition={transition}
+                        className={index === sleep.length - 1 ? "latest" : ""}
+                        animate={{
+                          height: Math.max(10, Math.min(76, minutes / 7.5)),
+                        }}
+                      />
+                      <span>
+                        {dateLabel(dayKey(record.endsAt, zone), {
+                          weekday: "narrow",
+                        })}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            <Empty
+              title="No sleep logged"
+              detail="Log your rest to see it here."
+              action={() => edit({ kind: "sleep" })}
+              label="Log sleep"
+            />
+          )}
+        </Card>
         <Card
           title="Habits"
           action={() => navigate("habits")}
@@ -178,77 +251,6 @@ export default function Dashboard() {
               A little consistency goes a long way
               <ArrowRight size={13} />
             </button>
-          )}
-        </Card>
-        <Card
-          title="Sleep"
-          action={() => navigate("sleep")}
-          className="sleep-card"
-        >
-          {lastSleep ? (
-            <>
-              <div className="sleep-readout">
-                <Moon size={17} />
-                <strong>
-                  {Math.floor(netMinutes / 60)}
-                  <small>h</small> {netMinutes % 60}
-                  <small>m</small>
-                </strong>
-              </div>
-              <p className="sleep-caption">
-                {timeKey(lastSleep.startsAt, zone)} –{" "}
-                {timeKey(lastSleep.endsAt, zone)}
-                <span> · net sleep</span>
-              </p>
-              <div
-                className="sleep-chart"
-                role="group"
-                aria-label="Your recent sleep durations"
-              >
-                {sleep.map((record, index) => {
-                  const minutes =
-                    minutesBetween(record.startsAt, record.endsAt) -
-                    record.awakeMinutes;
-                  const date = dateLabel(dayKey(record.endsAt, zone), {
-                    weekday: "long",
-                    month: "short",
-                    day: "numeric",
-                  });
-                  const duration = `${Math.floor(minutes / 60)}h ${minutes % 60}m net sleep`;
-                  return (
-                    <button
-                      key={record.id}
-                      type="button"
-                      aria-label={`${date} · ${duration}`}
-                      data-chart-title={date}
-                      data-chart-detail={duration}
-                      onClick={() => edit({ kind: "sleep", id: record.id })}
-                    >
-                      <motion.i
-                        initial={false}
-                        transition={transition}
-                        className={index === sleep.length - 1 ? "latest" : ""}
-                        animate={{
-                          height: Math.max(10, Math.min(76, minutes / 7.5)),
-                        }}
-                      />
-                      <span>
-                        {dateLabel(dayKey(record.endsAt, zone), {
-                          weekday: "narrow",
-                        })}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </>
-          ) : (
-            <Empty
-              title="No sleep logged"
-              detail="Log your rest to see it here."
-              action={() => edit({ kind: "sleep" })}
-              label="Log sleep"
-            />
           )}
         </Card>
         <Card

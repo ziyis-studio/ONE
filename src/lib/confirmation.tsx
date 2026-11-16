@@ -12,6 +12,7 @@ import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { CircleAlert } from "lucide-react";
 import "../components/confirmation.css";
+import { usePopupExit } from "./popup-exit";
 
 type Confirmation = {
   title: string;
@@ -84,6 +85,7 @@ function ConfirmationPrompt({
     cancel = useRef<HTMLButtonElement>(null);
   const title = useId(),
     description = useId();
+  usePopupExit(ref, "confirmation");
   useLayoutEffect(() => {
     const root = ref.current!,
       overflow = document.body.style.overflow;

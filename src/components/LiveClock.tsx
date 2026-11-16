@@ -45,6 +45,7 @@ export default function LiveClock({ zone }: { zone: string }) {
     };
   }, []);
   const minutes = timeKey(now, zone);
+  const [hours, minuteDigits] = minutes.split(":");
   const seconds = String(now.getUTCSeconds()).padStart(2, "0");
   return (
     <time
@@ -53,7 +54,9 @@ export default function LiveClock({ zone }: { zone: string }) {
       aria-label={minutes + ":" + seconds}
     >
       <span className="clock-main" aria-hidden="true">
-        {minutes}
+        <span>{hours}</span>
+        <span className="clock-separator">:</span>
+        <span>{minuteDigits}</span>
       </span>
       <span className="clock-seconds" aria-hidden="true">
         <ClockDigit value={seconds[0]} />

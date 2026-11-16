@@ -34,6 +34,7 @@ import { databaseFieldTypes } from "../domain/note-databases";
 import type { DatabaseField, DatabaseValue } from "../domain/note-databases";
 import type { NoteTarget } from "../domain/model";
 import type { Command } from "../domain/commands";
+import EmotionPicker from "./EmotionPicker";
 export default function Editor() {
   const { editor, edit, data, execute, busy, notify, zone, today, reload } =
     useOne();
@@ -102,7 +103,7 @@ export default function Editor() {
   const [icon, setIcon] = useState<string>(
     habit?.icon || project?.icon || (kind === "habit" ? "repeat" : "folder"),
   );
-  const emotion = thought?.emotion || "";
+  const [emotion, setEmotion] = useState(thought?.emotion || "");
   const [weekdays, setWeekdays] = useState(
     habit?.isoWeekdays || [1, 2, 3, 4, 5, 6, 7],
   );
@@ -1002,6 +1003,7 @@ export default function Editor() {
                 required
                 maxLength={500000}
               />
+              <EmotionPicker value={emotion} onChange={setEmotion} />
             </>
           )}
           {(kind === "note" || kind === "record") && (

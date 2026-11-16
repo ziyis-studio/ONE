@@ -28,6 +28,7 @@ import {
 } from "@internationalized/date";
 import { CalendarDays, ChevronLeft, ChevronRight, Clock3 } from "lucide-react";
 import "./date-time-field.css";
+import { PopoverExit } from "../lib/popup-exit";
 
 function parse(value: string, withTime: boolean): DateValue | null {
   if (!value) return null;
@@ -115,6 +116,7 @@ export function DateTimeField({
           data-one-dialog-owner={owner}
         >
           <Dialog className="one-date-dialog" aria-label={`${label} picker`}>
+            <PopoverExit kind="date" />
             <Calendar className="one-calendar" firstDayOfWeek="mon">
               <header className="one-calendar-heading">
                 <Heading />

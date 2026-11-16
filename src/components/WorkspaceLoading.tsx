@@ -1,6 +1,8 @@
 import type { CSSProperties } from "react";
 import type { Page } from "../lib/workspace";
 import { PageDate } from "./PageDate";
+// Share geometry between the pending and ready overview.
+import "./overview.css";
 import "./workspace-loading.css";
 const titles: Record<Page, string> = {
   home: "Today",
@@ -163,8 +165,9 @@ export default function WorkspaceLoading({ page }: { page: Page }) {
         {page === "home" ? (
           <div className="dashboard-grid one-loading-dashboard">
             <Card className="clock-card" />
-            <Card className="habits-card" />
+            <Card className="pomodoro-card" />
             <Card className="sleep-card" />
+            <Card className="habits-card" />
             <Card className="tasks-card" />
             <Card className="timeline-card" />
             <Card className="thoughts-card" short />

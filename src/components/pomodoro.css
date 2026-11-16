@@ -1,0 +1,120 @@
+.pomodoro-card .card-heading {
+  margin-bottom: 14px;
+}
+.pomodoro-card > .one-tabs {
+  display: flex;
+  width: 100%;
+}
+.pomodoro-card > .one-tabs > button {
+  flex: 1;
+  white-space: nowrap;
+}
+.pomodoro-body {
+  display: grid;
+  grid-template-columns: minmax(100px, 0.95fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  margin-top: 14px;
+}
+.pomodoro-mark {
+  position: relative;
+  width: 100%;
+  max-width: 150px;
+  margin-inline: auto;
+  color: #eee;
+}
+.pomodoro-mark > svg {
+  display: block;
+  width: 100%;
+  overflow: visible;
+}
+.pomodoro-track {
+  stroke: #eee;
+  opacity: 0.14;
+}
+.pomodoro-short {
+  stroke: var(--one-accent-mark);
+}
+.pomodoro-mark.is-running .pomodoro-track.pomodoro-short {
+  animation: one-pomodoro-breathe 2.4s ease-in-out infinite;
+}
+.pomodoro-mark.is-running .pomodoro-short:not(.pomodoro-track) {
+  animation: one-pomodoro-active 2.4s ease-in-out infinite;
+}
+.pomodoro-mark[data-reduced="true"] .pomodoro-short {
+  animation: none !important;
+}
+.pomodoro-dial {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  pointer-events: none;
+}
+.pomodoro-dial time {
+  font-size: clamp(22px, 2.1vw, 32px);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+  font-weight: 450;
+  color: #eee;
+  line-height: 1;
+}
+.pomodoro-dial > span {
+  font-size: 8px;
+  color: #999;
+}
+.pomodoro-controls {
+  min-width: 0;
+}
+.pomodoro-controls h3 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.4;
+  font-weight: 450;
+  letter-spacing: -0.025em;
+  color: #ddd;
+}
+.pomodoro-controls p {
+  margin: 8px 0 16px;
+  color: #929292;
+  font-size: 11px;
+  line-height: 1.6;
+}
+.pomodoro-controls .primary-button {
+  width: 100%;
+  min-height: 36px;
+  justify-content: center;
+}
+.pomodoro-controls > small {
+  display: block;
+  font-size: 10px;
+  margin-top: 12px;
+  color: #999;
+}
+@keyframes one-pomodoro-breathe {
+  0%,
+  100% {
+    opacity: 0.15;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+@keyframes one-pomodoro-active {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.65;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pomodoro-mark.is-running .pomodoro-short {
+    animation: none;
+  }
+}

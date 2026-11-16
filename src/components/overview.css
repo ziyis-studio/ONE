@@ -1,0 +1,158 @@
+.dashboard-grid .clock-card {
+  grid-column: 1 / span 4;
+  grid-row: 1;
+}
+.dashboard-grid .pomodoro-card {
+  grid-column: 5 / span 5;
+  grid-row: 1;
+  min-height: 276px;
+}
+.dashboard-grid .sleep-card {
+  grid-column: 10 / span 3;
+  grid-row: 1;
+}
+.dashboard-grid .habits-card {
+  grid-column: 1 / span 3;
+  grid-row: 2;
+  min-height: 270px;
+}
+.dashboard-grid .tasks-card {
+  grid-column: 4 / span 4;
+  grid-row: 2;
+  min-height: 270px;
+}
+.dashboard-grid .timeline-card {
+  grid-column: 8 / span 5;
+  grid-row: 2;
+  min-height: 270px;
+}
+.dashboard-grid .thoughts-card {
+  grid-column: 1 / span 7;
+  grid-row: 3;
+}
+.dashboard-grid .notes-card {
+  grid-column: 8 / span 5;
+  grid-row: 3;
+}
+.dashboard-grid .habits-card .ritual-row {
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.dashboard-grid .habits-card .ritual-name {
+  min-width: 0;
+}
+.dashboard-grid .habits-card .habit-week-mini {
+  display: none;
+}
+.clock-time > .clock-main {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.065em;
+  letter-spacing: -0.045em;
+  font-variant-numeric: tabular-nums;
+}
+.clock-main > .clock-separator {
+  display: inline-block;
+  color: #aaa;
+  padding: 0 0.025em;
+  transform: translateY(-0.035em);
+}
+@media (min-width: 1450px) {
+  .dashboard-grid .habits-card .habit-week-mini {
+    display: flex;
+  }
+}
+@media (max-width: 1100px) and (min-width: 701px) {
+  .dashboard-grid .card {
+    padding: 21px 17px;
+  }
+  .dashboard-grid .clock-card .clock-time {
+    font-size: clamp(31px, 3.7vw, 41px);
+  }
+  .dashboard-grid .time-weather-row {
+    flex-wrap: wrap;
+    align-content: center;
+    gap: 18px 12px;
+  }
+  .dashboard-grid .weather-readout {
+    min-width: 45px;
+  }
+  .dashboard-grid .weather-readout strong {
+    font-size: 26px;
+  }
+  .dashboard-grid .weather-readout > span {
+    font-size: 9px;
+  }
+  .dashboard-grid .clock-card .clock-seconds {
+    font-size: 14px;
+    margin-left: 7px;
+    padding-left: 7px;
+  }
+  .dashboard-grid .habits-card .ritual-icon {
+    display: none;
+  }
+  .dashboard-grid .habits-card .empty h3 {
+    font-size: 13px;
+  }
+  .dashboard-grid .timeline-card .schedule-track {
+    margin-left: 0;
+  }
+  .pomodoro-body {
+    grid-template-columns: minmax(94px, 0.85fr) minmax(0, 1fr);
+    gap: 7px;
+  }
+  .pomodoro-controls h3 {
+    font-size: 14px;
+  }
+  .pomodoro-controls p {
+    font-size: 10px;
+  }
+  .pomodoro-card > .one-tabs.compact > button {
+    font-size: 9px;
+    padding: 5px 4px;
+  }
+  .pomodoro-controls .primary-button {
+    padding-inline: 8px;
+    font-size: 11px;
+  }
+  .pomodoro-dial time {
+    font-size: 23px;
+  }
+  .dashboard-grid .sleep-readout strong {
+    font-size: 24px;
+  }
+  .dashboard-grid .sleep-chart {
+    gap: 5px;
+  }
+}
+@media (max-width: 700px) {
+  .dashboard-grid .clock-card,
+  .dashboard-grid .pomodoro-card,
+  .dashboard-grid .sleep-card,
+  .dashboard-grid .habits-card,
+  .dashboard-grid .tasks-card,
+  .dashboard-grid .timeline-card,
+  .dashboard-grid .thoughts-card,
+  .dashboard-grid .notes-card {
+    grid-column: 1/-1;
+    grid-row: auto;
+  }
+  .dashboard-grid .pomodoro-card {
+    min-height: 285px;
+  }
+  .dashboard-grid .sleep-card {
+    min-height: 235px;
+  }
+  .dashboard-grid .habits-card {
+    min-height: 235px;
+  }
+  .dashboard-grid .habits-card .habit-week-mini {
+    display: flex;
+  }
+  .dashboard-grid .clock-card .clock-main {
+    gap: 0.065em;
+  }
+  .pomodoro-dial time {
+    font-size: 30px;
+  }
+}

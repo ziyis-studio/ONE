@@ -60,13 +60,14 @@
   margin-top: 35px;
 }
 .one-loading-dashboard .clock-card,
-.one-loading-dashboard .habits-card,
+.one-loading-dashboard .pomodoro-card,
 .one-loading-dashboard .sleep-card {
-  min-height: 250px;
+  min-height: 276px;
 }
+.one-loading-dashboard .habits-card,
 .one-loading-dashboard .tasks-card,
 .one-loading-dashboard .timeline-card {
-  min-height: 340px;
+  min-height: 270px;
 }
 .one-loading-project-lanes {
   display: contents;
@@ -239,6 +240,20 @@
   }
 }
 @media (max-width: 700px) {
+  .one-page-loading .one-loading-dashboard .clock-card {
+    min-height: 192px;
+  }
+  .one-page-loading .one-loading-dashboard .pomodoro-card {
+    min-height: 285px;
+  }
+  .one-page-loading .one-loading-dashboard .sleep-card,
+  .one-page-loading .one-loading-dashboard .habits-card {
+    min-height: 235px;
+  }
+  .one-page-loading .one-loading-dashboard .tasks-card,
+  .one-page-loading .one-loading-dashboard .timeline-card {
+    min-height: 220px;
+  }
   .one-loading-page-title {
     font-size: 34px;
     margin-bottom: 10px;

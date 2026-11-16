@@ -1,0 +1,36 @@
+.one-popup-exit {
+  pointer-events: none !important;
+  animation: one-popup-fade 180ms ease-in both;
+}
+.one-popup-exit * {
+  pointer-events: none !important;
+}
+@keyframes one-popup-fade {
+  from {
+    opacity: var(--one-exit-opacity, 1);
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes one-surface-exit {
+  from {
+    transform: var(--one-exit-transform, none);
+  }
+  to {
+    transform: translateY(6px) scale(0.99);
+  }
+}
+@keyframes one-popover-exit {
+  from {
+    transform: none;
+  }
+  to {
+    transform: translateY(-3px) scale(0.985);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .one-popup-exit {
+    display: none;
+  }
+}

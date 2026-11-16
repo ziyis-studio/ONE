@@ -18,6 +18,7 @@ import { DEMO_KEY, readDemo } from "./demo";
 import { DEFAULT_ZONE } from "./config";
 import { supabase } from "./auth";
 import { ViewStateProvider } from "./view-state";
+import { PomodoroProvider } from "./pomodoro-context";
 
 export type Page =
   | "home"
@@ -267,7 +268,16 @@ export function WorkspaceProvider({
         session,
       }}
     >
-      <ViewStateProvider>{children}</ViewStateProvider>
+      <ViewStateProvider>
+        <PomodoroProvider
+          scope={demo ? "demo" : session!.user.id}
+          zone={zone}
+          today={today}
+          notify={notify}
+        >
+          {children}
+        </PomodoroProvider>
+      </ViewStateProvider>
     </Context.Provider>
   );
 }

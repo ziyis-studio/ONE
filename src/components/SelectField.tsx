@@ -11,6 +11,7 @@ import {
 } from "react-aria-components";
 import { Check, ChevronDown } from "lucide-react";
 import "./select-field.css";
+import { PopoverExit } from "../lib/popup-exit";
 export type SelectOption = { value: string; label: string; disabled?: boolean };
 type Common = {
   label: string;
@@ -115,6 +116,7 @@ function SelectControl({
         offset={6}
         data-one-dialog-owner={owner}
       >
+        <PopoverExit kind="select" />
         <ListBox
           className="one-select-options"
           items={options.map((option) => ({

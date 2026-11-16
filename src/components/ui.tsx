@@ -32,6 +32,7 @@ import { motion } from "motion/react";
 import { useSettle } from "./interactions";
 import { useConfirm, DISCARD_CHANGES } from "../lib/confirmation";
 import { ONE_ARC_LONG, ONE_ARC_SHORT } from "../lib/brand-mark";
+import { usePopupExit } from "../lib/popup-exit";
 
 export const iconMap: Record<string, LucideIcon> = {
   folder: Folder,
@@ -214,6 +215,8 @@ export function Dialog({
   dirty?: boolean;
 }) {
   const confirm = useConfirm();
+  const shade = useRef<HTMLDivElement>(null);
+  usePopupExit(shade, "dialog");
   const ref = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const closeRef = useRef(onClose);
@@ -281,6 +284,7 @@ export function Dialog({
   return (
     <div
       className="dialog-shade"
+      ref={shade}
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) dismiss();
       }}

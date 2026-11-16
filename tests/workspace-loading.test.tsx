@@ -28,6 +28,15 @@ describe("page-specific pending content", () => {
     expect(
       container.querySelector(".dashboard-grid > .clock-card"),
     ).toBeTruthy();
+    expect(
+      [...container.querySelectorAll(".dashboard-grid > .card")]
+        .slice(0, 4)
+        .map((card) =>
+          ["clock-card", "pomodoro-card", "sleep-card", "habits-card"].find(
+            (name) => card.classList.contains(name),
+          ),
+        ),
+    ).toEqual(["clock-card", "pomodoro-card", "sleep-card", "habits-card"]);
     rerender(<WorkspaceLoading page="tasks" />);
     expect(container.querySelector(".board-scroll > .task-board")).toBeTruthy();
     rerender(<WorkspaceLoading page="projects" />);

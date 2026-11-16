@@ -252,3 +252,46 @@ profile responses; credentialed production-user writes and physical phones were
 not exercised. React component/hook, semantics, cleanup and lazy-boundary checks
 were applied. Supabase's current changelog/getSession documentation was reviewed;
 the authenticated profile transport and server ownership/RLS rules are unchanged.
+
+# Overview Pomodoro, thought emotions and popup exits
+
+Plan: [pomodoro-dialog-plan.md](../../docs/pomodoro-dialog-plan.md).
+
+- The overview's first desktop row contains Clock, Pomodoro and Sleep. The second
+  contains Habits, Tasks and Schedule at progressively wider widths; phone cards
+  stack in the same reading order. The pending overview shares these grid rules.
+  Separate hour/colon/minute groups give the live clock consistent spacing.
+- Thoughts offer optional labelled emotion icons with native radio keyboard
+  behavior, a no-emotion choice and preservation of legacy values. Creation,
+  editing and clearing use the existing thought command and dirty-draft handling.
+- The Pomodoro uses the exact white long arc and themed short arc for remaining
+  time, a quiet active pulse and completion feedback. Focus/short/long modes are
+  25/5/15 minutes; every fourth completed focus offers a long break. Start, pause,
+  resume, reset and mode selection preserve deliberate user control; reselecting
+  the active mode does not reset it. The next phase never starts automatically.
+- Deadline-based timing survives route changes, refresh, background throttling
+  and browser-tab synchronization. Versioned local storage is scoped to the
+  workspace, handles invalid/unavailable storage and records focus counts by
+  workspace day. Completion counts once and never changes business/task data.
+  This timer preference is browser-local, without cross-device synchronization.
+- Editors, confirmations and shared date/select popovers fade and settle on
+  dismissal. The live popup releases focus immediately; only an inert,
+  aria-hidden visual remains for at most 240ms. Copies preserve values/scroll,
+  strip IDs/roles/ownership, skip simulated StrictMode unmounts and are removed
+  when another popup opens. Reduced motion skips the exit visual and logo pulse.
+
+Verification: 112 tests across 32 files and the production build passed. Real
+local Chromium at 1703×1000, 921×764 and 390×844 checked actual card geometry,
+hour/minute gaps, timer tick/pause/resume/reset, navigation/refresh restoration,
+real shared-context tab synchronization, fourth-focus completion and long break,
+task-data isolation, saved emotions, modal/confirmation/select/date exits,
+immediate reopening, stripped copy identity, phone geometry and reduced motion.
+No native browser dialogs or runtime errors were observed. Reviewed hook cleanup,
+provider scoping, native input semantics, focus ownership and rendering work
+against the React Best Practices checklist. No dependency, schema or backend
+change was needed.
+
+Artifacts: ignored `test-results/pomodoro/`. These are actual component/application
+checks with local sample data and mocked weather, not a Stageshow faux-demo gate.
+Credentialed production-user writes, physical phones and other browser engines
+were not exercised in this pass.

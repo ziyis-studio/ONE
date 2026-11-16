@@ -19,6 +19,10 @@ describe("ONE neutral foundation and configurable accent", () => {
       "src/components/appearance-settings.css",
       "src/components/confirmation.css",
       "src/components/sleep-history.css",
+      "src/components/pomodoro.css",
+      "src/components/emotion-picker.css",
+      "src/components/overview.css",
+      "src/components/popup-exit.css",
     ]) {
       const source = readFileSync(file, "utf8");
       const colors = [
