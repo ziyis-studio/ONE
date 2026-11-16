@@ -27,6 +27,7 @@ import { MorphMenu } from "./components/interactions";
 import { ChartTooltipScope } from "./components/ChartTooltip";
 import { timeBlockTitle } from "./lib/schedule";
 import WorkspaceLoading from "./components/WorkspaceLoading";
+import { ThemeProvider } from "./lib/theme";
 import Dashboard from "./components/Dashboard";
 import Navigation, {
   useSidebar,
@@ -60,7 +61,9 @@ const Notes = lazy(() =>
 export default function App() {
   return (
     <ErrorBoundary>
-      <SessionApp />
+      <ThemeProvider>
+        <SessionApp />
+      </ThemeProvider>
     </ErrorBoundary>
   );
 }

@@ -1,0 +1,145 @@
+.one-accent-options {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.one-accent-options legend {
+  margin-bottom: 14px;
+  color: #ccc;
+  font-size: 12px;
+}
+.one-accent-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.one-accent-choice {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid #3b3b3b;
+  border-radius: 11px;
+  background: #222;
+  color: #ccc;
+  font-size: 12px;
+  cursor: pointer;
+}
+.one-accent-choice:hover {
+  border-color: #777;
+}
+.one-accent-choice[data-selected] {
+  background: var(--one-accent);
+  border-color: var(--one-accent);
+  color: #fff;
+}
+.one-accent-choice:has(input:focus-visible) {
+  outline: 2px solid var(--one-accent-mark);
+  outline-offset: 3px;
+}
+.one-accent-choice input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  margin: 0;
+  padding: 0;
+}
+.one-accent-swatch {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  border-radius: 50%;
+  background: var(--swatch);
+  color: #fff;
+  border: 1px solid #ffffff66;
+}
+.one-custom-accent {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px 20px;
+  margin-top: 22px;
+  padding-top: 22px;
+  border-top: 1px solid #ffffff0e;
+}
+.one-custom-accent > label {
+  font-size: 12px;
+  color: #ccc;
+}
+.one-custom-accent > label > span {
+  display: block;
+  color: #999;
+  font-size: 11px;
+  line-height: 1.6;
+  margin-top: 6px;
+}
+.one-custom-accent-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.one-custom-accent-control input {
+  width: 105px;
+  padding: 10px 12px;
+  border: 1px solid #444;
+  background: #191919;
+  border-radius: 9px;
+  font-size: 12px;
+  line-height: 18px;
+  color: #eee;
+}
+.one-custom-accent-control button {
+  white-space: nowrap;
+}
+.one-custom-accent > .form-message {
+  grid-column: 1/-1;
+  margin: 0;
+}
+.one-appearance-footer {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+}
+.one-appearance .one-appearance-footer p {
+  margin: 0;
+  font-size: 11px;
+  color: #999;
+  max-width: 380px;
+}
+.one-appearance-footer button {
+  flex-shrink: 0;
+  font-size: 11px;
+}
+.one-appearance .one-appearance-feedback {
+  min-height: 20px;
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: #bbb;
+}
+@media (max-width: 700px) {
+  .one-accent-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .one-custom-accent {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .one-custom-accent-control {
+    width: 100%;
+  }
+  .one-custom-accent-control input {
+    flex: 1;
+    min-width: 0;
+  }
+  .one-appearance-footer {
+    flex-direction: column;
+  }
+}

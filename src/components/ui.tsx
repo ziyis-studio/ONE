@@ -30,6 +30,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { motion } from "motion/react";
 import { useSettle } from "./interactions";
+import { ONE_ARC_LONG, ONE_ARC_SHORT } from "../lib/brand-mark";
 
 export const iconMap: Record<string, LucideIcon> = {
   folder: Folder,
@@ -65,7 +66,19 @@ export function EntityIcon({
 }
 export function Logo({ size = 30 }: { size?: number }) {
   return (
-    <img src="/logo.svg" width={size} height={size} className="logo" alt="" />
+    <svg
+      viewBox="0 0 100 100"
+      width={size}
+      height={size}
+      className="logo"
+      fill="none"
+      strokeWidth="8"
+      strokeLinecap="round"
+      aria-hidden="true"
+    >
+      <path d={ONE_ARC_LONG} stroke="currentColor" />
+      <path d={ONE_ARC_SHORT} className="one-logo-accent" />
+    </svg>
   );
 }
 export function IconButton({

@@ -175,3 +175,33 @@ layouts, reduced motion and all three project-header add controls. No browser
 runtime errors were observed. Captures/scripts are in ignored
 `test-results/cards-loading/`. These used local demo data, not a credentialed
 production session; physical mobile devices and Safari/Firefox were not tested.
+
+# Configurable primary color and solid selection
+
+Plan: [appearance-plan.md](../../docs/appearance-plan.md). The active sidebar,
+tabs, dropdown selections, date cells and editor choices now use the exact
+primary color and white labels. The sidebar indicator is white. Disabled
+controls and low history intensities use grayscale, with no translucent accent
+backgrounds.
+
+Settings offers eight presets, a custom HEX field with inline validation and
+reset to Violet. All accepted colors support white labels at 4.5:1 or better.
+The versioned browser preference restores before paint, synchronizes tabs and
+degrades to an in-memory choice if storage is unavailable. Inline workspace
+logos retain both exact master paths; auth marks and the favicon use the same
+preference. Custom submission preserves input focus and works with Enter.
+
+Verification: 91 tests across 25 files and the production build passed. Real
+Chromium at 1703×1000, 921×764 and 390×844 checked computed selection colors,
+white text/indicator, keyboard radio navigation, custom errors, picker and both
+dropdown families, refresh persistence, login styling and actual cross-tab
+updates. All nine desktop and phone routes stayed within the viewport and had
+no browser runtime errors. Reviewed hook dependencies, listener cleanup, native
+semantics, editable draft synchronization and lazy component boundaries using
+the React Best Practices checklist; no new dependency or data command was added.
+
+Captures/scripts are in ignored `test-results/appearance/`. Review findings and
+remaining work are recorded in [uiux-review.md](../../docs/uiux-review.md).
+These checks used local sample data and desktop Chromium with phone viewports;
+credentialed production flows, physical touch devices and other browser engines
+were not re-tested in this pass.

@@ -1,12 +1,15 @@
-/* ONE violet: the user's Obsidian / Frame.io direction, on neutral surfaces. */
+/* Default violet; ThemeProvider supplies the user's saved primary color. */
 :root {
   --one-accent: #7852ee;
   --one-accent-hover: #7048e5;
   --one-accent-mark: #a882ff;
-  --one-accent-rgb: 120, 82, 238;
 }
 .logo {
   filter: none;
+  color: #eee;
+}
+.one-logo-accent {
+  stroke: var(--one-accent-mark);
 }
 .one-shell .primary-button,
 .one-auth .one-auth-submit {
@@ -18,6 +21,18 @@
 .one-auth .one-auth-submit:hover:not(:disabled) {
   background: var(--one-accent-hover);
   border-color: var(--one-accent-hover);
+  color: #fff;
+}
+.one-shell .primary-button:disabled,
+.one-auth .one-auth-submit:disabled {
+  background: #333;
+  border-color: #333;
+  color: #999;
+  opacity: 1;
+}
+.one-shell .one-save-button:disabled[aria-busy="true"] {
+  background: var(--one-accent);
+  border-color: var(--one-accent);
   color: #fff;
 }
 .one-shell .one-menu-trigger.is-primary,
@@ -43,17 +58,29 @@
   color: #fff;
 }
 .one-side-link .one-nav-selection::before {
-  background: var(--one-accent-mark);
+  background: #fff;
 }
 .one-side-link[aria-current="page"] .one-nav-selection,
 .one-mobile-bar .one-nav-selection {
-  background: rgba(var(--one-accent-rgb), 0.16);
-  border-color: rgba(var(--one-accent-rgb), 0.22);
+  background: var(--one-accent);
+  border-color: var(--one-accent);
+}
+.one-shell .one-side-link[aria-current="page"],
+.one-shell .one-mobile-bar > button:has(.one-nav-selection),
+.one-shell .one-mobile-tray button[aria-current="page"] {
+  color: #fff;
+}
+.one-shell .one-mobile-tray button[aria-current="page"] {
+  background: var(--one-accent);
 }
 .one-shell .one-tabs .one-tab-indicator {
-  background: rgba(var(--one-accent-rgb), 0.25);
+  background: var(--one-accent);
 }
-.one-shell .check-button.checked {
+.one-shell .one-tabs > button.active {
+  color: #fff;
+}
+.one-shell .check-button.checked,
+.one-shell .check-placeholder.checked {
   background: var(--one-accent);
   border-color: var(--one-accent);
   color: #fff;
@@ -78,8 +105,8 @@
   background: var(--one-accent-mark);
 }
 .one-shell .habit-activity-cell.activity-2 {
-  background: rgba(var(--one-accent-rgb), 0.35);
-  border-color: rgba(var(--one-accent-rgb), 0.5);
+  background: #484848;
+  border-color: #686868;
   color: #eee;
 }
 .one-shell .habit-activity-cell.activity-3 {
@@ -88,16 +115,16 @@
   color: #fff;
 }
 .one-shell .level-1 {
-  background: rgba(var(--one-accent-rgb), 0.22);
+  background: #303030;
 }
 .one-shell .level-2 {
-  background: rgba(var(--one-accent-rgb), 0.42);
+  background: #484848;
 }
 .one-shell .level-3 {
-  background: rgba(var(--one-accent-rgb), 0.7);
+  background: #686868;
 }
 .one-shell .level-4 {
-  background: var(--one-accent-mark);
+  background: var(--one-accent);
 }
 .one-date-popover .one-calendar-day[data-selected] {
   background: var(--one-accent);
@@ -112,12 +139,45 @@
   color: #fff;
 }
 .one-select-popover .one-select-option[data-selected] {
-  background: rgba(var(--one-accent-rgb), 0.25);
+  background: var(--one-accent);
   color: #fff;
 }
 .one-select-popover .one-select-option[data-focused],
 .one-select-popover .one-select-option[data-hovered] {
-  background: rgba(var(--one-accent-rgb), 0.38);
+  background: #414141;
+  color: #fff;
+}
+.one-select-popover .one-select-option[data-selected][data-focused],
+.one-select-popover .one-select-option[data-selected][data-hovered] {
+  background: var(--one-accent);
+}
+.one-menu-panel > button[aria-selected="true"],
+.one-shell .icon-picker > button.selected,
+.one-shell .weekday-picker > button.selected,
+.one-shell .tiny-pill.selected,
+.one-shell .calendar-grid > button.selected,
+.one-shell .schedule-weekstrip button.selected {
+  background: var(--one-accent);
+  border-color: var(--one-accent);
+  color: #fff;
+}
+.one-shell .task-state-actions .tiny-pill.selected {
+  opacity: 1;
+}
+.one-shell .calendar-grid > button.selected *,
+.one-shell .schedule-weekstrip button.selected strong {
+  color: #fff;
+}
+.one-shell .calendar-grid > button.selected > i {
+  background: #fff;
+}
+.one-shell .heatmap-cell.selected {
+  background: var(--one-accent);
+  border-color: #fff;
+}
+.one-date-field .one-date-segment[data-focused],
+.one-date-popover .one-date-segment[data-focused] {
+  background: var(--one-accent);
   color: #fff;
 }
 .one-auth input:focus-visible,
@@ -134,5 +194,9 @@
   color: #fff;
 }
 .one-shell .one-timeline-header > button.is-today {
-  background: rgba(var(--one-accent-rgb), 0.12);
+  background: var(--one-accent);
+  color: #fff;
+}
+.one-shell .one-timeline-header > button.is-today > * {
+  color: #fff;
 }

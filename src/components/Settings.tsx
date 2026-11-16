@@ -14,6 +14,7 @@ import { DEMO_KEY } from "../lib/demo";
 import { PageIntro } from "./Pages";
 import { SelectField } from "./SelectField";
 import { Spinner } from "./ui";
+import AppearanceSettings from "./AppearanceSettings";
 export default function Settings({ onExit }: { onExit: () => void }) {
   const { data, zone, setZone, session, demo, notify, reload } = useOne();
   const [username, setUsername] = useState(""),
@@ -104,6 +105,7 @@ export default function Settings({ onExit }: { onExit: () => void }) {
         subtitle="A few little things to make this space yours."
       />
       <div className="settings-stack">
+        <AppearanceSettings />
         <section className="settings-card">
           <header>
             <Globe2 size={20} />
