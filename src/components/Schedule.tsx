@@ -21,6 +21,7 @@ import {
 } from "../domain/time";
 import {
   blocksOnDay,
+  timeBlockTitle,
   minuteTimestamp,
   rescheduledBlock,
 } from "../lib/schedule";
@@ -360,7 +361,7 @@ export default function SchedulePage() {
                                   edit({ kind: "block", id: block.id })
                                 }
                                 title={
-                                  block.title +
+                                  timeBlockTitle(block, data) +
                                   " · " +
                                   timeKey(block.startsAt, zone) +
                                   " – " +
@@ -372,7 +373,7 @@ export default function SchedulePage() {
                                     ? "↳"
                                     : timeKey(block.startsAt, zone)}
                                 </time>
-                                <span>{block.title || "Untitled block"}</span>
+                                <span>{timeBlockTitle(block, data)}</span>
                               </button>
                             ))}
                             {entries.length > 3 && (

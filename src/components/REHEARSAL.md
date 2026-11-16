@@ -143,3 +143,35 @@ preview or saving an invalid time. No browser runtime errors were observed.
 Captures and scripts are in ignored
 `test-results/workspace-polish/`. These checks used local demo records, not a
 credentialed production session or a physical phone; Safari/Firefox were not tested.
+
+# Violet branding, cards and page loading
+
+Plan: [cards-loading-plan.md](../../docs/cards-loading-plan.md). The user's
+Frame.io / Obsidian direction is applied as #7852EE primary actions and #A882FF
+marks/focus on the neutral foundation. Both exact master logo paths remain;
+the short workspace/auth arc carries the accent, with a separate violet favicon.
+White primary-button text passes 4.5:1 contrast at rest and hover.
+
+- Project and task surfaces open their editors through a native keyboard target
+  and background clicks. Inline rename, project expansion, completion and native
+  task dragging stay independent. Corner action menus and task-lane bottom add
+  controls are removed. Project-column add controls now sit in each header.
+- Project icon/title/tag/date share the header, including the list layout and
+  narrow cards. Status and Tags align before Description in both editors. Only
+  the specifically marked home/calendar/project separators were removed.
+- Each of the nine routes has its own loading structure. Actual lazy-module
+  interception checked all eight non-home fallbacks and successful resolution;
+  loading and ready title positions differed by less than one pixel. Phone
+  layouts stay within the viewport and reduced motion disables decorative pulse.
+- Untitled time blocks derive linked task names in home, month, week, day and
+  search. Real browser renaming updated the derived label while the saved block
+  title stayed empty. Explicit titles remain authoritative; unit coverage includes
+  multiple, duplicate and removed links. Search opens the real block editor.
+
+Verification: 86 tests across 24 files and the production build passed. Chromium
+156 checks at 1703×1000 and 390×844 covered actual card opening, nested controls,
+native drag/drop persistence, keyboard activation, form geometry, all loading
+layouts, reduced motion and all three project-header add controls. No browser
+runtime errors were observed. Captures/scripts are in ignored
+`test-results/cards-loading/`. These used local demo data, not a credentialed
+production session; physical mobile devices and Safari/Firefox were not tested.

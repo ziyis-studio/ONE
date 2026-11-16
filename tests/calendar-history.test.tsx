@@ -66,7 +66,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
-async function demo() {
+async function demo(untitled = false) {
   const state = createDemo(zone);
   state.blockTaskLinks.push({
     timeBlockId: state.timeBlocks[0].id,
@@ -76,6 +76,7 @@ async function demo() {
     timeBlockId: state.timeBlocks[0].id,
     occurrenceId: state.occurrences[0].id,
   });
+  if (untitled) state.timeBlocks[0].title = "";
   localStorage.setItem(DEMO_KEY, JSON.stringify(state));
   const result = render(<App />);
   await userEvent.click(
@@ -149,6 +150,50 @@ describe("calendar and history interactions", () => {
     ).toBe(90 * 60_000);
     expect(next.blockTaskLinks).toEqual(state.blockTaskLinks);
     expect(next.blockOccurrenceLinks).toEqual(state.blockOccurrenceLinks);
+  });
+  it("shows the linked task name for an unnamed arrangement in home, month, week, day and search", async () => {
+    const { state } = await demo(true),
+      name = state.tasks[0].title;
+    const home = screen
+      .getByRole("heading", { name: "Schedule", level: 2 })
+      .closest("section")!;
+    expect(within(home).getByText(name)).toBeTruthy();
+    await userEvent.click(
+      screen.getAllByRole("button", { name: "Schedule" })[0],
+    );
+    await screen.findByRole("heading", { name: "Schedule.", level: 1 });
+    const calendar = screen.getByRole("region", { name: "Schedule calendar" });
+    expect(within(calendar).getByText(name)).toBeTruthy();
+    expect(within(calendar).queryByText("Untitled block")).toBe(null);
+    await userEvent.click(screen.getByRole("button", { name: "Week" }));
+    expect(
+      screen.getByRole("button", { name: "Move or edit " + name }),
+    ).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: "Day" }));
+    expect(
+      screen.getByRole("button", { name: "Move or edit " + name }),
+    ).toBeTruthy();
+    await userEvent.click(
+      screen.getByRole("button", { name: "Search workspace" }),
+    );
+    const search = await screen.findByRole("dialog");
+    await userEvent.type(
+      within(search).getByRole("textbox", { name: "Search your workspace" }),
+      name,
+    );
+    expect(
+      within(search).getByRole("button", { name: "Time block " + name }),
+    ).toBeTruthy();
+    expect(saved().timeBlocks[0].title).toBe("");
+    await userEvent.click(
+      within(search).getByRole("button", { name: "Time block " + name }),
+    );
+    const editor = await screen.findByRole("dialog");
+    expect(
+      within(editor)
+        .getByRole("textbox", { name: "Title" })
+        .getAttribute("value"),
+    ).toBe("");
   });
   it("creates an editable range by dragging empty timeline space", async () => {
     const { track } = await openDay();

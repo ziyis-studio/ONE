@@ -548,56 +548,6 @@
   flex-direction: column;
   gap: 12px;
 }
-.one-project-card.one-project-row {
-  display: grid;
-  grid-template-columns: 38px minmax(0, 1fr) 160px 30px;
-  grid-template-areas: "icon title progress menu" ". description progress menu" "expand expand expand expand" "tasks tasks tasks tasks" "footer footer footer footer";
-  gap: 7px 14px;
-  padding: 18px;
-}
-.one-project-row .project-card-top {
-  display: contents;
-}
-.one-project-row .project-icon {
-  grid-area: icon;
-}
-.one-project-row .one-icon-menu {
-  grid-area: menu;
-  align-self: start;
-}
-.one-project-row > .one-inline-title {
-  grid-area: title;
-  align-self: center;
-}
-.one-project-row .one-project-description {
-  grid-area: description;
-  min-height: 0;
-  margin: 0;
-}
-.one-project-row .one-project-overview {
-  grid-area: progress;
-  padding: 0;
-  margin: 0;
-}
-.one-project-row .one-project-expand {
-  grid-area: expand;
-  margin-top: 5px;
-}
-.one-project-row .one-project-tasks {
-  grid-area: tasks;
-}
-.one-project-row > footer {
-  grid-area: footer;
-  border: 0;
-  margin: 0;
-  padding: 0;
-}
-@media (max-width: 700px) {
-  .one-project-card.one-project-row {
-    grid-template-columns: 38px minmax(0, 1fr) 30px;
-    grid-template-areas: "icon title menu" ". description ." ". progress ." "expand expand expand" "tasks tasks tasks" "footer footer footer";
-  }
-}
 .one-save-size {
   visibility: hidden;
   pointer-events: none;

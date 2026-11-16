@@ -1,0 +1,111 @@
+.project-card.one-project-card,
+.task-card {
+  position: relative;
+  cursor: pointer;
+}
+button.one-card-open {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  padding: 0;
+  border-radius: inherit;
+  background: transparent;
+  z-index: 0;
+  cursor: inherit;
+}
+.project-card.one-project-card > :not(.one-card-open),
+.task-card > :not(.one-card-open) {
+  position: relative;
+  z-index: 1;
+}
+button.one-card-open:focus-visible {
+  outline: 2px solid #c0c0c0;
+  outline-offset: 3px;
+}
+.one-project-card .project-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.one-project-card .project-icon {
+  flex-shrink: 0;
+}
+.one-project-heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 9px;
+  flex: 1;
+  min-width: 0;
+}
+.one-project-heading > .one-inline-title {
+  flex: 1 1 120px;
+  min-width: 0;
+}
+.one-project-heading > .tag {
+  max-width: 130px;
+  font-size: 9px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.one-project-heading > time {
+  color: #828282;
+  font-size: 10px;
+  margin-left: auto;
+  white-space: nowrap;
+}
+.one-project-card .one-project-description {
+  cursor: inherit;
+}
+.task-card p.one-task-description {
+  margin: 0;
+}
+.one-project-card.one-project-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 160px;
+  grid-template-areas: "heading progress" "description progress" "expand expand" "tasks tasks";
+  gap: 8px 20px;
+  padding: 18px;
+}
+.one-project-row .project-card-top {
+  grid-area: heading;
+  margin: 0;
+}
+.one-project-row .one-project-heading {
+  flex-wrap: wrap;
+}
+.one-project-row .one-project-description {
+  grid-area: description;
+  min-height: 0;
+  margin: 0 0 0 50px;
+  width: auto;
+}
+.one-project-row .one-project-overview {
+  grid-area: progress;
+  margin: 0;
+  padding: 0;
+}
+.one-project-row .one-project-expand {
+  grid-area: expand;
+  margin-top: 5px;
+}
+.one-project-row .one-project-tasks {
+  grid-area: tasks;
+}
+@media (max-width: 700px) {
+  .one-project-card.one-project-row {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "heading" "description" "progress" "expand" "tasks";
+  }
+  .one-project-row .one-project-overview {
+    margin-left: 50px;
+  }
+  .one-project-heading > .tag {
+    max-width: 110px;
+  }
+}

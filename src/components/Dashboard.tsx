@@ -4,7 +4,7 @@ import { ContentSwitch, DiscreteTabs, useSettle } from "./interactions";
 import { Plus, ArrowUpRight, Moon, ArrowRight, Clock3 } from "lucide-react";
 import { useOne } from "../lib/workspace";
 import { useActions } from "../lib/actions";
-import { blocksOnDay } from "../lib/schedule";
+import { blocksOnDay, timeBlockTitle } from "../lib/schedule";
 import {
   dateLabel,
   dayKey,
@@ -297,9 +297,7 @@ export default function Dashboard() {
                   </div>
                 ))}
               </div>
-              <div className="progress-track">
-                <i style={{ width: (done / tasks.length) * 100 + "%" }} />
-              </div>
+
               <div className="card-bottom">
                 <button
                   className="text-button"
@@ -358,9 +356,7 @@ export default function Dashboard() {
                       onClick={() => edit({ kind: "block", id: block.id })}
                     >
                       <span>
-                        <strong>
-                          {block.title || "A little time for yourself"}
-                        </strong>
+                        <strong>{timeBlockTitle(block, data)}</strong>
                         <small>
                           <Clock3 size={11} />
                           {timeKey(block.startsAt, zone)} –{" "}

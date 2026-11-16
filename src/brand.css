@@ -1,0 +1,138 @@
+/* ONE violet: the user's Obsidian / Frame.io direction, on neutral surfaces. */
+:root {
+  --one-accent: #7852ee;
+  --one-accent-hover: #7048e5;
+  --one-accent-mark: #a882ff;
+  --one-accent-rgb: 120, 82, 238;
+}
+.logo {
+  filter: none;
+}
+.one-shell .primary-button,
+.one-auth .one-auth-submit {
+  background: var(--one-accent);
+  border-color: var(--one-accent);
+  color: #fff;
+}
+.one-shell .primary-button:hover:not(:disabled),
+.one-auth .one-auth-submit:hover:not(:disabled) {
+  background: var(--one-accent-hover);
+  border-color: var(--one-accent-hover);
+  color: #fff;
+}
+.one-shell .one-menu-trigger.is-primary,
+.one-shell .one-menu-trigger.is-primary[aria-expanded="true"] {
+  color: #fff;
+}
+.one-shell .one-menu-trigger.is-primary .one-trigger-surface {
+  background: var(--one-accent);
+}
+.one-shell .one-menu-trigger.is-primary:hover .one-trigger-surface {
+  background: var(--one-accent-hover);
+}
+.one-save-button .auth-mark,
+.one-save-button .auth-arc-light {
+  color: #fff;
+}
+.auth-mark .auth-arc-short .auth-arc-track,
+.auth-mark .auth-arc-short .auth-arc-light {
+  color: var(--one-accent-mark);
+}
+.one-save-button .auth-mark .auth-arc-short .auth-arc-light,
+.one-save-button .auth-mark .auth-arc-short .auth-arc-track {
+  color: #fff;
+}
+.one-side-link .one-nav-selection::before {
+  background: var(--one-accent-mark);
+}
+.one-side-link[aria-current="page"] .one-nav-selection,
+.one-mobile-bar .one-nav-selection {
+  background: rgba(var(--one-accent-rgb), 0.16);
+  border-color: rgba(var(--one-accent-rgb), 0.22);
+}
+.one-shell .one-tabs .one-tab-indicator {
+  background: rgba(var(--one-accent-rgb), 0.25);
+}
+.one-shell .check-button.checked {
+  background: var(--one-accent);
+  border-color: var(--one-accent);
+  color: #fff;
+}
+.one-shell .check-button.checked:hover {
+  background: var(--one-accent-hover);
+}
+.one-shell .one-progress-fill {
+  color: var(--one-accent-mark);
+}
+.one-shell .progress-track i {
+  background: var(--one-accent-mark);
+}
+.one-shell .sleep-chart i.latest {
+  background: var(--one-accent-mark);
+}
+.one-shell .sleep-chart > button:hover i,
+.one-shell .sleep-chart > button:focus-visible i {
+  background: var(--one-accent-mark);
+}
+.one-shell .habit-week-mini i.filled {
+  background: var(--one-accent-mark);
+}
+.one-shell .habit-activity-cell.activity-2 {
+  background: rgba(var(--one-accent-rgb), 0.35);
+  border-color: rgba(var(--one-accent-rgb), 0.5);
+  color: #eee;
+}
+.one-shell .habit-activity-cell.activity-3 {
+  background: var(--one-accent);
+  border-color: var(--one-accent);
+  color: #fff;
+}
+.one-shell .level-1 {
+  background: rgba(var(--one-accent-rgb), 0.22);
+}
+.one-shell .level-2 {
+  background: rgba(var(--one-accent-rgb), 0.42);
+}
+.one-shell .level-3 {
+  background: rgba(var(--one-accent-rgb), 0.7);
+}
+.one-shell .level-4 {
+  background: var(--one-accent-mark);
+}
+.one-date-popover .one-calendar-day[data-selected] {
+  background: var(--one-accent);
+  color: #fff;
+}
+.one-date-popover .one-picker-footer .one-picker-done {
+  background: var(--one-accent);
+  color: #fff;
+}
+.one-date-popover .one-picker-footer .one-picker-done[data-hovered] {
+  background: var(--one-accent-hover);
+  color: #fff;
+}
+.one-select-popover .one-select-option[data-selected] {
+  background: rgba(var(--one-accent-rgb), 0.25);
+  color: #fff;
+}
+.one-select-popover .one-select-option[data-focused],
+.one-select-popover .one-select-option[data-hovered] {
+  background: rgba(var(--one-accent-rgb), 0.38);
+  color: #fff;
+}
+.one-auth input:focus-visible,
+.one-shell button:focus-visible,
+.one-shell input:focus-visible,
+.one-shell textarea:focus-visible,
+.one-select-popover [data-focus-visible],
+.one-date-popover [data-focus-visible] {
+  outline-color: var(--one-accent-mark);
+}
+
+.one-shell .month-cell.is-today .month-date {
+  background: var(--one-accent);
+  color: #fff;
+}
+.one-shell .one-timeline-header > button.is-today {
+  background: rgba(var(--one-accent-rgb), 0.12);
+}

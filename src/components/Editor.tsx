@@ -573,23 +573,8 @@ export default function Editor() {
               <p>Log your rest, without overthinking it.</p>
             </div>
           )}
-          {(kind === "task" ||
-            kind === "project" ||
-            kind === "habit" ||
-            kind === "block" ||
-            kind === "database") && (
-            <textarea
-              className="description-input"
-              aria-label="Description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="A little context, if you need it…"
-              maxLength={10000}
-              rows={2}
-            />
-          )}
           {(kind === "task" || kind === "project") && (
-            <div className="form-grid">
+            <div className="form-grid editor-status-fields">
               <SelectField
                 label="Status"
                 value={status}
@@ -610,34 +595,49 @@ export default function Editor() {
                   maxLength={2000}
                 />
               </Field>
-              {kind === "task" && (
-                <>
-                  <SelectField
-                    label="Project"
-                    value={projectId}
-                    onChange={setProjectId}
-                    options={[
-                      { value: "", label: "No project" },
-                      ...data.projects.map((p) => ({
-                        value: p.id,
-                        label: p.title,
-                      })),
-                    ]}
-                    disabled={
-                      busy || saveState === "saving" || saveState === "saved"
-                    }
-                  />
-                  <DateTimeField
-                    label="Due date"
-                    value={deadline}
-                    onChange={setDeadline}
-                    today={today}
-                    disabled={
-                      busy || saveState === "saving" || saveState === "saved"
-                    }
-                  />
-                </>
-              )}
+            </div>
+          )}
+          {(kind === "task" ||
+            kind === "project" ||
+            kind === "habit" ||
+            kind === "block" ||
+            kind === "database") && (
+            <textarea
+              className="description-input"
+              aria-label="Description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="A little context, if you need it…"
+              maxLength={10000}
+              rows={2}
+            />
+          )}
+          {kind === "task" && (
+            <div className="form-grid">
+              <SelectField
+                label="Project"
+                value={projectId}
+                onChange={setProjectId}
+                options={[
+                  { value: "", label: "No project" },
+                  ...data.projects.map((p) => ({
+                    value: p.id,
+                    label: p.title,
+                  })),
+                ]}
+                disabled={
+                  busy || saveState === "saving" || saveState === "saved"
+                }
+              />
+              <DateTimeField
+                label="Due date"
+                value={deadline}
+                onChange={setDeadline}
+                today={today}
+                disabled={
+                  busy || saveState === "saving" || saveState === "saved"
+                }
+              />
             </div>
           )}
           {(kind === "project" || kind === "habit") && (

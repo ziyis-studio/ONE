@@ -1,0 +1,290 @@
+.one-page-loading {
+  min-width: 0;
+  padding-top: 0;
+}
+.one-loading-bar {
+  display: block;
+  height: 11px;
+  max-width: 100%;
+  border-radius: 6px;
+  background: #2b2b2b;
+  animation: one-loading-breathe 1.8s ease-in-out infinite alternate;
+}
+.one-loading-page-title {
+  color: #eee;
+  font-size: 39px;
+  font-weight: 550;
+  line-height: 1.1;
+  letter-spacing: -0.06em;
+  margin: 0 0 12px;
+}
+.home-intro .one-loading-page-title {
+  font-size: 36px;
+  letter-spacing: -0.055em;
+}
+.one-loading-description {
+  height: 19.8px;
+  display: flex;
+  align-items: center;
+}
+.loading-tasks .one-loading-board-card {
+  min-height: 175px;
+  justify-content: space-between;
+}
+.loading-projects .one-loading-board-card {
+  min-height: 265px;
+  justify-content: space-between;
+}
+.one-loading-action {
+  height: 38px;
+  border-radius: 9px;
+}
+.one-loading-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 0 0 25px;
+}
+.one-loading-toolbar .one-loading-bar {
+  height: 36px;
+  border-radius: 9px;
+}
+.one-loading-card {
+  min-height: 220px;
+}
+.one-loading-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 17px;
+  margin-top: 35px;
+}
+.one-loading-dashboard .clock-card,
+.one-loading-dashboard .habits-card,
+.one-loading-dashboard .sleep-card {
+  min-height: 250px;
+}
+.one-loading-dashboard .tasks-card,
+.one-loading-dashboard .timeline-card {
+  min-height: 340px;
+}
+.one-loading-project-lanes {
+  display: contents;
+}
+.one-page-loading .board-lane > .one-loading-bar {
+  margin: 3px 0 20px;
+}
+.one-loading-board-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  padding: 20px 15px;
+  border: 1px solid #ffffff08;
+  border-radius: 11px;
+  background: #242424;
+  margin-top: 10px;
+}
+.one-loading-board-card .one-loading-bar {
+  background: #343434;
+}
+.one-loading-schedule {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 255px;
+  gap: 16px;
+  align-items: start;
+}
+.one-loading-schedule > .calendar-workspace {
+  margin: 0;
+}
+.one-loading-schedule .one-loading-toolbar {
+  padding: 20px;
+  margin: 0;
+  justify-content: space-between;
+}
+.one-loading-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  align-items: center;
+  height: 40px;
+  padding: 0 8px;
+}
+.one-loading-weekdays .one-loading-bar {
+  margin-left: auto;
+  height: 8px;
+}
+.one-loading-month-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.one-loading-month-cell > .one-loading-bar:first-child {
+  margin-left: auto;
+}
+.one-loading-task-panel {
+  background: #1c1c1c;
+  border: 1px solid #ffffff0e;
+  border-radius: 16px;
+  padding: 18px 14px;
+}
+.one-loading-task-panel > .one-loading-bar {
+  margin-bottom: 24px;
+}
+.one-loading-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  padding: 26px;
+  background: #1c1c1c;
+  border: 1px solid #ffffff0e;
+  border-radius: 15px;
+  margin-bottom: 26px;
+}
+.one-loading-value {
+  height: 32px;
+  margin-top: 20px;
+}
+.one-loading-heatmap {
+  padding: 24px;
+  background: #1b1b1b;
+  border: 1px solid #ffffff0e;
+  border-radius: 16px;
+}
+.one-loading-heat-cells {
+  display: grid;
+  grid-template-columns: repeat(var(--loading-columns), minmax(0, 1fr));
+  gap: 5px;
+  margin: 24px 0 10px;
+}
+.one-loading-heat-cells > i {
+  aspect-ratio: 1;
+  min-height: 5px;
+  max-height: 17px;
+  background: #292929;
+  border-radius: 3px;
+}
+.one-loading-habit-map .one-loading-heat-cells {
+  grid-template-columns: repeat(14, minmax(0, 1fr));
+  gap: 12px;
+}
+.one-loading-habit-map .one-loading-heat-cells > i {
+  max-height: 34px;
+}
+.one-loading-sleep-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-top: 24px;
+  padding: 25px;
+  min-height: 200px;
+  border: 1px solid #ffffff0e;
+  border-radius: 15px;
+  background: #1c1c1c;
+}
+.one-loading-thoughts {
+  min-height: 470px;
+}
+.one-loading-thoughts > div + div {
+  margin-top: 28px;
+}
+.one-loading-thought-row {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 25px;
+  align-items: start;
+  margin-top: 15px;
+}
+.one-loading-thought-row > .one-loading-bar {
+  margin-top: 22px;
+}
+.one-loading-thought-row .one-loading-board-card {
+  margin-top: 0;
+  min-height: 100px;
+}
+.one-loading-settings {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.one-loading-settings-card {
+  border: 1px solid #ffffff0e;
+  border-radius: 15px;
+  padding: 24px;
+  background: #1c1c1c;
+}
+.one-loading-settings-card > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding-top: 25px;
+}
+.one-loading-settings-card > div > .one-loading-bar:last-child {
+  height: 36px;
+}
+@keyframes one-loading-breathe {
+  from {
+    opacity: 0.45;
+  }
+  to {
+    opacity: 0.85;
+  }
+}
+@media (max-width: 1150px) {
+  .one-loading-schedule {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .one-loading-task-panel {
+    display: none;
+  }
+}
+@media (max-width: 700px) {
+  .one-loading-page-title {
+    font-size: 34px;
+    margin-bottom: 10px;
+  }
+  .home-intro .one-loading-page-title {
+    font-size: 31px;
+    line-height: 1.2;
+  }
+  .one-loading-card {
+    min-height: 190px;
+  }
+  .one-loading-dashboard .clock-card,
+  .one-loading-dashboard .habits-card,
+  .one-loading-dashboard .sleep-card {
+    min-height: 210px;
+  }
+  .one-loading-dashboard .tasks-card,
+  .one-loading-dashboard .timeline-card {
+    min-height: 300px;
+  }
+  .one-loading-settings {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .one-loading-summary {
+    gap: 12px;
+    padding: 20px 14px;
+  }
+  .one-loading-summary .one-loading-bar {
+    max-width: 85%;
+  }
+  .one-loading-heatmap {
+    padding: 20px 12px;
+  }
+  .one-loading-heat-cells {
+    gap: 3px;
+  }
+  .one-loading-habit-map .one-loading-heat-cells {
+    gap: 6px;
+  }
+  .one-loading-toolbar .one-loading-bar {
+    max-width: 45%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .one-page-loading .one-loading-bar {
+    animation: none;
+    opacity: 0.65;
+  }
+}

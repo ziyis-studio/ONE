@@ -1,4 +1,4 @@
-import type { TimeBlock } from "../domain/model";
+import type { TimeBlock, Workspace } from "../domain/model";
 import { addDays, dayBounds, timeKey, wallTime } from "../domain/time";
 import type { BlockInput } from "../domain/commands";
 export const SCHEDULE_SNAP = 15;
@@ -101,4 +101,22 @@ export function layoutDayBlocks(
   }
   flush();
   return output;
+}
+
+/** Derive a display name without copying a task name into the saved block title. */
+export function timeBlockTitle(
+  block: Pick<TimeBlock, "id"> & { title?: string | null },
+  workspace: Pick<Workspace, "tasks" | "blockTaskLinks">,
+) {
+  if (block.title?.trim()) return block.title.trim();
+  const ids = new Set(
+    workspace.blockTaskLinks
+      .filter((link) => link.timeBlockId === block.id)
+      .map((link) => link.taskId),
+  );
+  const names = workspace.tasks
+    .filter((task) => ids.has(task.id))
+    .map((task) => (task.title || "").trim())
+    .filter(Boolean);
+  return names.join(" · ") || "Untitled block";
 }

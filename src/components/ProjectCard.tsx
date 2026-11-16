@@ -1,13 +1,14 @@
 import { useId, useState } from "react";
 import { AnimatePresence, LayoutGroup, motion } from "motion/react";
-import { ArrowUpRight, ChevronDown, MoreHorizontal, Plus } from "lucide-react";
+import { ChevronDown, Plus } from "lucide-react";
 import type { Project } from "../domain/model";
 import { useOne } from "../lib/workspace";
 import { useActions } from "../lib/actions";
 import { dateLabel, dayKey } from "../domain/time";
 import { useMotionPreference } from "../lib/motion-preference";
+import { CardOpen, openCardBackground } from "./CardOpen";
 import { EntityIcon, CheckButton } from "./ui";
-import { InlineTitle, MorphMenu, useSettle } from "./interactions";
+import { InlineTitle, useSettle } from "./interactions";
 
 export default function ProjectCard({
   project,
@@ -38,39 +39,30 @@ export default function ProjectCard({
       transition={transition}
       style={{ borderRadius: 14 }}
       className={`project-card one-project-card${row ? " one-project-row" : ""}`}
+      onClick={(event) => openCardBackground(event, open)}
     >
+      <CardOpen label={"Open project " + project.title} onOpen={open} />
       <div className="project-card-top">
         <span className="project-icon">
           <EntityIcon name={project.icon} size={21} />
         </span>
-        <MorphMenu
-          label={`Actions for ${project.title}`}
-          className="one-icon-menu"
-          trigger={<MoreHorizontal size={16} />}
-          items={[
-            {
-              label: "Open project",
-              icon: <ArrowUpRight size={14} />,
-              onSelect: open,
-            },
-            {
-              label: "Add a task",
-              icon: <Plus size={14} />,
-              onSelect: () => edit({ kind: "task", projectId: project.id }),
-            },
-          ]}
-        />
+        <div className="one-project-heading">
+          <InlineTitle
+            kind="project"
+            value={project.title}
+            onOpen={open}
+            onSave={(title) => rename("project", project, title)}
+            disabled={busy}
+          />
+          <span className="tag">{project.tags?.[0] || "Personal project"}</span>
+          <time dateTime={dayKey(project.createdAt, "UTC")}>
+            {dateLabel(dayKey(project.createdAt, "UTC"))}
+          </time>
+        </div>
       </div>
-      <InlineTitle
-        kind="project"
-        value={project.title}
-        onOpen={open}
-        onSave={(title) => rename("project", project, title)}
-        disabled={busy}
-      />
-      <button className="one-project-description" onClick={open}>
+      <p className="one-project-description">
         {project.description || "Something worth making room for."}
-      </button>
+      </p>
       <motion.div layout="position" className="one-project-overview">
         <svg
           className="one-progress-ring"
@@ -191,10 +183,6 @@ export default function ProjectCard({
           )}
         </AnimatePresence>
       </LayoutGroup>
-      <footer>
-        <span className="tag">{project.tags?.[0] || "Personal project"}</span>
-        <span>{dateLabel(dayKey(project.createdAt, "UTC"))}</span>
-      </footer>
     </motion.article>
   );
 }

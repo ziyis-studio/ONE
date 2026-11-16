@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   cleanup,
+  fireEvent,
   render,
   screen,
   waitFor,
@@ -76,6 +77,7 @@ describe("workspace motion with real commands", () => {
     await userEvent.click(
       within(card).getByRole("button", { name: "View tasks" }),
     );
+    expect(screen.queryByRole("dialog")).toBe(null);
     await userEvent.click(
       within(card).getByRole("button", {
         name: "Complete Make a little room to think",
@@ -100,6 +102,127 @@ describe("workspace motion with real commands", () => {
         name: "Reopen Make a little room to think",
       }),
     ).toBe(null);
+  });
+  it("opens a project from its card surface and keeps metadata and edit controls intact", async () => {
+    const state = await demo();
+    await userEvent.click(
+      screen.getAllByRole("button", { name: "Projects" })[0],
+    );
+    const project = state.projects[0];
+    const card = (
+      await screen.findByRole("heading", { name: project.title })
+    ).closest("article")!;
+    expect(
+      within(card).queryByRole("button", {
+        name: "Actions for " + project.title,
+      }),
+    ).toBe(null);
+    expect(card.querySelector("footer")).toBe(null);
+    expect(
+      card.querySelector(".project-card-top .one-project-heading h3")
+        ?.textContent,
+    ).toBe(project.title);
+    await userEvent.click(card);
+    const dialog = await screen.findByRole("dialog", { name: "EDIT PROJECT" });
+    expect(
+      (
+        within(dialog).getByRole("textbox", {
+          name: "Title",
+        }) as HTMLInputElement
+      ).value,
+    ).toBe(project.title);
+    const fields = dialog.querySelector(".editor-status-fields")!,
+      description = within(dialog).getByRole("textbox", {
+        name: "Description",
+      });
+    expect(
+      fields.compareDocumentPosition(description) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Cancel" }),
+    );
+    expect(document.querySelector(".project-board .lane-add")).toBe(null);
+    expect(
+      screen.getAllByRole("button", { name: /^Add project in / }).length,
+    ).toBe(3);
+    await userEvent.click(
+      screen.getByRole("button", { name: "Add project in On hold" }),
+    );
+    const creation = await screen.findByRole("dialog", { name: "NEW PROJECT" });
+    expect(
+      (
+        within(creation).getByRole("textbox", {
+          name: "Title",
+        }) as HTMLInputElement
+      ).value,
+    ).toBe("");
+    await userEvent.click(
+      within(creation).getByRole("button", { name: "Cancel" }),
+    );
+    await userEvent.click(
+      within(card).getByRole("button", { name: "View tasks" }),
+    );
+    expect(screen.queryByRole("dialog")).toBe(null);
+    await userEvent.click(
+      within(card).getByRole("button", {
+        name: "Rename project: " + project.title,
+      }),
+    );
+    expect(
+      within(card).getByRole("textbox", { name: "Rename project" }),
+    ).toBeTruthy();
+    expect(screen.queryByRole("dialog")).toBe(null);
+  });
+  it("opens a task by keyboard or background click without stealing checkbox actions or drag completion", async () => {
+    const state = await demo();
+    await userEvent.click(screen.getAllByRole("button", { name: "Tasks" })[0]);
+    const task = state.tasks.find(
+      (item) => item.title === "Make a little room to think",
+    )!;
+    let card = (
+      await screen.findByRole("heading", { name: task.title })
+    ).closest("article")!;
+    expect(
+      within(card).queryByRole("button", { name: "Actions for " + task.title }),
+    ).toBe(null);
+    expect(document.querySelector(".task-board .lane-add")).toBe(null);
+    await userEvent.click(
+      within(card).getByRole("button", { name: "Toggle " + task.title }),
+    );
+    await waitFor(() =>
+      expect(
+        saved().tasks.find((item: { id: string }) => item.id === task.id)
+          .completedAt,
+      ).toBeTruthy(),
+    );
+    expect(screen.queryByRole("dialog")).toBe(null);
+    // The exiting source card can remain mounted during the board transition.
+    card = screen
+      .getByRole("button", { name: "Toggle " + task.title, pressed: true })
+      .closest("article")!;
+    const transfer = { setData: vi.fn(), effectAllowed: "" };
+    fireEvent.dragStart(card, { dataTransfer: transfer });
+    fireEvent.click(card);
+    expect(screen.queryByRole("dialog")).toBe(null);
+    fireEvent.dragEnd(card);
+    await waitFor(() =>
+      expect(transfer.setData).toHaveBeenCalledWith("text/one-task", task.id),
+    );
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    const open = within(card).getByRole("button", {
+      name: "Open task " + task.title,
+    });
+    open.focus();
+    await userEvent.keyboard("{Enter}");
+    const dialog = await screen.findByRole("dialog", { name: "EDIT TASK" });
+    expect(
+      (
+        within(dialog).getByRole("textbox", {
+          name: "Title",
+        }) as HTMLInputElement
+      ).value,
+    ).toBe(task.title);
   });
   it("filters real task cards and renames one without losing its details or project", async () => {
     const state = await demo();

@@ -5,7 +5,9 @@ import {
   rescheduledBlock,
   minuteTimestamp,
   snapMinute,
+  timeBlockTitle,
 } from "../src/lib/schedule";
+import { createDemo } from "../src/lib/demo";
 import type { TimeBlock } from "../src/domain/model";
 function block(id: string, startsAt: string, endsAt: string): TimeBlock {
   return {
@@ -75,5 +77,44 @@ describe("schedule day projection", () => {
     );
     expect(items.map((i) => i.columns)).toEqual([2, 2, 2]);
     expect(items.map((i) => i.column)).toEqual([0, 1, 0]);
+  });
+  it("uses linked task names for blank titles and follows task renames without changing saved data", () => {
+    const workspace = createDemo("Asia/Kuala_Lumpur"),
+      entry = workspace.timeBlocks[0];
+    entry.title = "";
+    workspace.blockTaskLinks = [
+      { timeBlockId: entry.id, taskId: workspace.tasks[0].id },
+    ];
+    const original = JSON.stringify(workspace);
+    expect(timeBlockTitle(entry, workspace)).toBe(workspace.tasks[0].title);
+    expect(JSON.stringify(workspace)).toBe(original);
+    workspace.tasks[0].title = "新的任务名称";
+    expect(timeBlockTitle(entry, workspace)).toBe("新的任务名称");
+    expect(
+      rescheduledBlock(entry, "2026-11-20", "Asia/Kuala_Lumpur").title,
+    ).toBe("");
+    workspace.blockTaskLinks.push(
+      { timeBlockId: entry.id, taskId: workspace.tasks[1].id },
+      { timeBlockId: entry.id, taskId: workspace.tasks[0].id },
+      { timeBlockId: entry.id, taskId: "removed-task" },
+    );
+    expect(timeBlockTitle(entry, workspace)).toBe(
+      "新的任务名称 · " + workspace.tasks[1].title,
+    );
+  });
+  it("keeps explicit titles and handles missing or removed task links", () => {
+    const workspace = createDemo("Asia/Kuala_Lumpur"),
+      entry = workspace.timeBlocks[0];
+    workspace.blockTaskLinks = [
+      { timeBlockId: entry.id, taskId: workspace.tasks[0].id },
+    ];
+    entry.title = "My own plan";
+    expect(timeBlockTitle(entry, workspace)).toBe("My own plan");
+    entry.title = "  ";
+    workspace.blockTaskLinks = [];
+    expect(timeBlockTitle(entry, workspace)).toBe("Untitled block");
+    expect(timeBlockTitle({ id: entry.id, title: null }, workspace)).toBe(
+      "Untitled block",
+    );
   });
 });

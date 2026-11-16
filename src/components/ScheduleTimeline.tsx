@@ -5,6 +5,7 @@ import type { TimeBlock } from "../domain/model";
 import { useOne } from "../lib/workspace";
 import {
   blocksOnDay,
+  timeBlockTitle,
   layoutDayBlocks,
   snapMinute,
   minuteTimestamp,
@@ -354,7 +355,7 @@ function TimelineTrack({
               <button
                 className="schedule-block-main"
                 disabled={busy}
-                aria-label={"Move or edit " + (block.title || "time block")}
+                aria-label={"Move or edit " + timeBlockTitle(block, data)}
                 onPointerDown={
                   week ? undefined : (event) => begin(event, "move", block)
                 }
@@ -382,7 +383,7 @@ function TimelineTrack({
                   }
                 }}
               >
-                <strong>{block.title || "Untitled block"}</strong>
+                <strong>{timeBlockTitle(block, data)}</strong>
                 {data.blockTaskLinks.some(
                   (link) => link.timeBlockId === block.id,
                 ) && (
@@ -404,7 +405,7 @@ function TimelineTrack({
               </button>
               <button
                 className="block-resize"
-                aria-label={"Resize " + (block.title || "time block")}
+                aria-label={"Resize " + timeBlockTitle(block, data)}
                 disabled={busy}
                 onPointerDown={(event) => begin(event, "resize", block)}
                 onKeyDown={(event) => {

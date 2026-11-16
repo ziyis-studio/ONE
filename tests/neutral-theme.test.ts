@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-describe("neutral ONE palette", () => {
-  it("uses only achromatic colors throughout the interface", () => {
+describe("ONE neutral foundation and violet accent", () => {
+  it("keeps typography and base surfaces neutral outside the central accent file", () => {
     for (const file of [
       "src/styles.css",
       "src/workspace.css",
@@ -13,6 +13,8 @@ describe("neutral ONE palette", () => {
       "src/components/interactions.css",
       "src/components/logo-motion.css",
       "src/components/navigation.css",
+      "src/components/cards.css",
+      "src/components/workspace-loading.css",
       "src/components/date-time-field.css",
     ]) {
       const source = readFileSync(file, "utf8");
@@ -33,5 +35,24 @@ describe("neutral ONE palette", () => {
         /(?:background|background-image):\s*(?:linear|radial|conic)-gradient/,
       );
     }
+  });
+  it("uses a single documented violet family with readable primary button text", () => {
+    const css = readFileSync("src/brand.css", "utf8");
+    const approved = new Set(["7852ee", "7048e5", "a882ff", "fff", "eee"]);
+    for (const [, hex] of css.matchAll(/#([a-f0-9]{6}|[a-f0-9]{3})\b/gi))
+      expect(approved.has(hex.toLowerCase())).toBe(true);
+    const luminance = (hex: string) =>
+      [0, 2, 4]
+        .map((start) => parseInt(hex.slice(start, start + 2), 16) / 255)
+        .map((value) =>
+          value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4,
+        )
+        .reduce(
+          (sum, value, index) => sum + value * [0.2126, 0.7152, 0.0722][index],
+          0,
+        );
+    for (const hex of ["7852ee", "7048e5"])
+      expect(1.05 / (luminance(hex) + 0.05)).toBeGreaterThanOrEqual(4.5);
+    expect(css).not.toMatch(/gradient\(/);
   });
 });

@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import {
   Plus,
   Search,
@@ -33,9 +33,9 @@ import {
   ContentSwitch,
   FilterPicker,
   InlineTitle,
-  MorphMenu,
   useSettle,
 } from "./interactions";
+import { CardOpen, openCardBackground } from "./CardOpen";
 import ProjectCard from "./ProjectCard";
 import { SelectField } from "./SelectField";
 import { PageDate } from "./PageDate";
@@ -216,13 +216,6 @@ export function TasksPage() {
                           ))}
                       </AnimatePresence>
                     </div>
-                    <button
-                      className="lane-add"
-                      onClick={() => edit({ kind: "task" })}
-                    >
-                      <Plus size={14} />
-                      Add a task
-                    </button>
                   </section>
                 ))}
               </div>
@@ -331,6 +324,10 @@ function TaskCard({ task }: { task: Task }) {
   const { toggleTask, rename, safely } = useActions();
   const transition = useSettle();
   const [renaming, setRenaming] = useState(false);
+  const dragged = useRef(false);
+  const open = () => {
+    if (!dragged.current) edit({ kind: "task", id: task.id });
+  };
   const project = data.projects.find((p) => p.id === task.projectId);
   const conditions = data.conditions.filter((c) => c.taskId === task.id);
   const done = conditions.filter((c) => c.isMet).length;
@@ -341,50 +338,39 @@ function TaskCard({ task }: { task: Task }) {
       transition={transition}
       className={"task-card " + (task.completedAt ? "is-complete" : "")}
       draggable={!busy && !renaming}
+      onClick={(event) => openCardBackground(event, open)}
+      onPointerDown={() => {
+        dragged.current = false;
+      }}
+      onDragEnd={() => {
+        requestAnimationFrame(() => {
+          dragged.current = false;
+        });
+      }}
       onDragStartCapture={(e) => {
+        dragged.current = true;
         e.dataTransfer.setData("text/one-task", task.id);
         e.dataTransfer.effectAllowed = "move";
       }}
     >
+      <CardOpen label={"Open task " + task.title} onOpen={open} />
       <div className="task-card-top">
         <span className="tag">
           {task.tags?.[0] || project?.title || "Personal"}
         </span>
-        <MorphMenu
-          label={"Actions for " + task.title}
-          className="one-icon-menu"
-          trigger={<MoreHorizontal size={16} />}
-          items={[
-            {
-              label: "Open task",
-              icon: <ArrowUpRight size={14} />,
-              onSelect: () => edit({ kind: "task", id: task.id }),
-            },
-            {
-              label: task.completedAt ? "Reopen task" : "Mark complete",
-              icon: <Check size={14} />,
-              onSelect: () => safely(() => toggleTask(task)),
-              disabled: busy,
-            },
-          ]}
-        />
       </div>
       <div className="task-card-main">
         <InlineTitle
           kind="task"
           onEditingChange={setRenaming}
           value={task.title}
-          onOpen={() => edit({ kind: "task", id: task.id })}
+          onOpen={open}
           onSave={(title) => rename("task", task, title)}
           disabled={busy}
         />
-        <button
-          type="button"
-          className="one-task-description"
-          onClick={() => edit({ kind: "task", id: task.id })}
-        >
+        <p className="one-task-description">
           {task.description || "One little thing, worth doing well."}
-        </button>
+        </p>
       </div>
       {conditions.length > 0 && (
         <div className="condition-progress">
@@ -489,6 +475,15 @@ export function ProjectsPage() {
                           }
                         </small>
                       </span>
+                      <IconButton
+                        label={
+                          "Add project in " +
+                          (stage.id === "progress" ? "In motion" : stage.title)
+                        }
+                        onClick={() => edit({ kind: "project" })}
+                      >
+                        <Plus size={15} />
+                      </IconButton>
                     </header>
                     <div className="lane-stack">
                       <AnimatePresence initial={false}>
@@ -508,13 +503,6 @@ export function ProjectsPage() {
                           ))}
                       </AnimatePresence>
                     </div>
-                    <button
-                      className="lane-add"
-                      onClick={() => edit({ kind: "project" })}
-                    >
-                      <Plus size={14} />
-                      New project
-                    </button>
                   </section>
                 ))}
             </div>

@@ -25,6 +25,8 @@ import type { EditorKind } from "./lib/workspace";
 import { Logo, Dialog, Spinner } from "./components/ui";
 import { MorphMenu } from "./components/interactions";
 import { ChartTooltipScope } from "./components/ChartTooltip";
+import { timeBlockTitle } from "./lib/schedule";
+import WorkspaceLoading from "./components/WorkspaceLoading";
 import Dashboard from "./components/Dashboard";
 import Navigation, {
   useSidebar,
@@ -357,9 +359,9 @@ function Shell({
                   </button>
                 </div>
               ) : loading ? (
-                <LoadingWorkspace />
+                <WorkspaceLoading page={page} />
               ) : (
-                <Suspense fallback={<LoadingWorkspace />}>
+                <Suspense fallback={<WorkspaceLoading page={page} />}>
                   <motion.div
                     key={page}
                     initial={{ opacity: 0, y: 7 }}
@@ -414,6 +416,12 @@ function SearchDialog({ onClose }: { onClose: () => void }) {
       title: t.title,
       content: t.description,
     })),
+    ...data.timeBlocks.map((block) => ({
+      kind: "block" as const,
+      id: block.id,
+      title: timeBlockTitle(block, data),
+      content: block.description,
+    })),
     ...data.projects.map((p) => ({
       kind: "project" as const,
       id: p.id,
@@ -460,12 +468,15 @@ function SearchDialog({ onClose }: { onClose: () => void }) {
         {results.map((result) => (
           <button
             key={result.kind + result.id}
+            aria-label={`${result.kind === "block" ? "Time block" : result.kind} ${result.title}`}
             onClick={() => {
               onClose();
               edit({ kind: result.kind, id: result.id });
             }}
           >
-            <span className="search-result-kind">{result.kind}</span>
+            <span className="search-result-kind">
+              {result.kind === "block" ? "Time block" : result.kind}
+            </span>
             <strong>{result.title}</strong>
             <ArrowUpRight size={14} />
           </button>
@@ -487,23 +498,6 @@ function SearchDialog({ onClose }: { onClose: () => void }) {
         ))}
       </div>
     </Dialog>
-  );
-}
-function LoadingWorkspace() {
-  return (
-    <div
-      className="loading-workspace"
-      role="status"
-      aria-label="Loading your workspace"
-    >
-      <div className="skeleton skeleton-title" />
-      <div className="skeleton skeleton-subtitle" />
-      <div className="loading-grid">
-        {Array.from({ length: 6 }, (_, i) => (
-          <div className="skeleton" key={i} />
-        ))}
-      </div>
-    </div>
   );
 }
 class ErrorBoundary extends Component<

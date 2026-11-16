@@ -117,3 +117,33 @@
     transition: none;
   }
 }
+/* Remove the individually annotated decorative rules. */
+.calendar-workspace .calendar-toolbar {
+  border-bottom: 0;
+}
+.clock-card .clock-footer,
+.habits-card .card-bottom-link {
+  border-top: 0;
+}
+.editor-status-fields {
+  align-items: start;
+}
+.editor-status-fields .form-field,
+.editor-status-fields .one-select {
+  gap: 9px;
+}
+.editor-status-fields .form-field > span,
+.editor-status-fields .one-select-label {
+  font-size: 12px;
+  line-height: 16px;
+  margin: 0;
+  color: #a6a6a6;
+}
+.editor-status-fields .form-field > input {
+  height: 42px;
+  min-height: 42px;
+  padding: 10px 12px;
+  border-radius: 11px;
+  border: 1px solid #333;
+  background: #191919;
+}
