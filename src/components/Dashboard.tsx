@@ -1,3 +1,6 @@
+import { useState } from "react";
+import { motion } from "motion/react";
+import { ContentSwitch, DiscreteTabs, useSettle } from "./interactions";
 import {
   Plus,
   ArrowUpRight,
@@ -21,6 +24,12 @@ import WeatherCard from "./WeatherCard";
 export default function Dashboard() {
   const { data, today, zone, now, edit, navigate, busy } = useOne();
   const { toggleTask, toggleHabit, safely } = useActions();
+  const [thoughtView, setThoughtView] = useState<"recent" | "linked">("recent");
+  const transition = useSettle();
+  const linkedThoughts = new Set([
+    ...data.thoughtTaskLinks.map((link) => link.thoughtId),
+    ...data.thoughtProjectLinks.map((link) => link.thoughtId),
+  ]);
   const todayBlocks = blocksOnDay(data.timeBlocks, today, zone);
   const scheduledTasks = new Set(
     data.blockTaskLinks
@@ -43,6 +52,9 @@ export default function Dashboard() {
       lastSleep.awakeMinutes
     : 0;
   const thoughts = data.thoughts
+    .filter(
+      (thought) => thoughtView === "recent" || linkedThoughts.has(thought.id),
+    )
     .toSorted((a, b) => b.createdAt.localeCompare(a.createdAt))
     .slice(0, 2);
   const notes = data.notes
@@ -202,9 +214,11 @@ export default function Dashboard() {
                       " hours"
                     }
                   >
-                    <i
+                    <motion.i
+                      initial={false}
+                      transition={transition}
                       className={i === sleep.length - 1 ? "latest" : ""}
-                      style={{
+                      animate={{
                         height:
                           Math.max(
                             10,
@@ -375,49 +389,78 @@ export default function Dashboard() {
           title="Thoughts"
           action={() => navigate("thoughts")}
           className="thoughts-card"
-          meta={<span className="fine">Recent</span>}
-        >
-          {thoughts.length ? (
-            <div className="dashboard-thoughts">
-              {thoughts.map((thought) => (
-                <button
-                  className="thought-preview"
-                  onClick={() => edit({ kind: "thought", id: thought.id })}
-                  key={thought.id}
-                  aria-label={
-                    "Edit thought: " + (thought.title || thought.content)
-                  }
-                >
-                  <span className="thought-preview-body">
-                    {thought.title && <strong>{thought.title}</strong>}
-                    <span className="thought-preview-text">
-                      {thought.content}
-                    </span>
-                    <span className="thought-preview-foot">
-                      {thought.emotion && (
-                        <span className="thought-emotion">
-                          {thought.emotion}
-                        </span>
-                      )}
-                      <time dateTime={thought.createdAt}>
-                        {dayKey(thought.createdAt, zone) !== today &&
-                          dateLabel(dayKey(thought.createdAt, zone)) + " · "}
-                        {timeKey(thought.createdAt, zone)}
-                      </time>
-                    </span>
-                  </span>
-                  <ArrowUpRight size={14} />
-                </button>
-              ))}
-            </div>
-          ) : (
-            <Empty
-              title="No thoughts yet"
-              detail="Capture an idea or something on your mind."
-              action={() => edit({ kind: "thought" })}
-              label="Capture a thought"
+          meta={
+            <DiscreteTabs
+              value={thoughtView}
+              onChange={setThoughtView}
+              compact
+              label="Thought previews"
+              items={[
+                { value: "recent", label: "Recent" },
+                { value: "linked", label: "Linked" },
+              ]}
             />
-          )}
+          }
+        >
+          <ContentSwitch value={thoughtView}>
+            {thoughts.length ? (
+              <div className="dashboard-thoughts">
+                {thoughts.map((thought) => (
+                  <button
+                    className="thought-preview"
+                    onClick={() => edit({ kind: "thought", id: thought.id })}
+                    key={thought.id}
+                    aria-label={
+                      "Edit thought: " + (thought.title || thought.content)
+                    }
+                  >
+                    <span className="thought-preview-body">
+                      {thought.title && <strong>{thought.title}</strong>}
+                      <span className="thought-preview-text">
+                        {thought.content}
+                      </span>
+                      <span className="thought-preview-foot">
+                        {thought.emotion && (
+                          <span className="thought-emotion">
+                            {thought.emotion}
+                          </span>
+                        )}
+                        <time dateTime={thought.createdAt}>
+                          {dayKey(thought.createdAt, zone) !== today &&
+                            dateLabel(dayKey(thought.createdAt, zone)) + " · "}
+                          {timeKey(thought.createdAt, zone)}
+                        </time>
+                      </span>
+                    </span>
+                    <ArrowUpRight size={14} />
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <Empty
+                title={
+                  thoughtView === "linked"
+                    ? "No linked thoughts"
+                    : "No thoughts yet"
+                }
+                detail={
+                  thoughtView === "linked"
+                    ? "Link a thought to a task or project to find it here."
+                    : "Capture an idea or something on your mind."
+                }
+                action={() =>
+                  thoughtView === "linked"
+                    ? navigate("thoughts")
+                    : edit({ kind: "thought" })
+                }
+                label={
+                  thoughtView === "linked"
+                    ? "View thoughts"
+                    : "Capture a thought"
+                }
+              />
+            )}
+          </ContentSwitch>
           {thoughts.length > 0 && (
             <button
               className="text-button"

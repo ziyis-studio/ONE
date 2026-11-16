@@ -6,6 +6,8 @@ describe("neutral ONE palette", () => {
       "src/styles.css",
       "src/workspace.css",
       "src/components/auth.css",
+      "src/components/interactions.css",
+      "src/components/logo-motion.css",
     ]) {
       const source = readFileSync(file, "utf8");
       const colors = [

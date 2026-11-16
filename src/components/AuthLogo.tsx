@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef } from "react";
 import { useMotionPreference } from "../lib/motion-preference";
+import "./logo-motion.css";
 
 export type AuthLogoState = "idle" | "loading" | "error" | "success";
 // Exact paths from ONE-logo-26deg-master.svg. Keep the two 26° gaps open.

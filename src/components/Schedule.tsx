@@ -21,6 +21,7 @@ import {
   snapMinute,
 } from "../lib/schedule";
 import { IconButton } from "./ui";
+import { DiscreteTabs } from "./interactions";
 type View = "month" | "week" | "day";
 type Preview = {
   kind: "create" | "move" | "resize";
@@ -296,18 +297,15 @@ export default function SchedulePage() {
               </button>
             </div>
           </div>
-          <div className="segmented" aria-label="Calendar view">
-            {(["month", "week", "day"] as const).map((item) => (
-              <button
-                key={item}
-                aria-pressed={view === item}
-                className={view === item ? "active" : ""}
-                onClick={() => setView(item)}
-              >
-                {item.charAt(0).toUpperCase() + item.slice(1)}
-              </button>
-            ))}
-          </div>
+          <DiscreteTabs
+            value={view}
+            onChange={setView}
+            label="Calendar view"
+            items={(["month", "week", "day"] as const).map((item) => ({
+              value: item,
+              label: item.charAt(0).toUpperCase() + item.slice(1),
+            }))}
+          />
         </header>
         {view === "month" ? (
           <>

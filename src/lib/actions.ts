@@ -1,4 +1,4 @@
-import type { Task } from "../domain/model";
+import type { Task, Project, Note, NoteTarget } from "../domain/model";
 import { useOne } from "./workspace";
 export const stages = [
   { id: "todo", title: "To do", color: "neutral" },
@@ -88,8 +88,60 @@ export function useActions() {
         : { type: "execution.record", occurrenceId, performedOn: today },
     );
   }
+  async function rename(
+    kind: "task" | "project" | "note",
+    entity: Task | Project | Note,
+    title: string,
+  ) {
+    if (kind === "task")
+      return execute({
+        type: "task.update",
+        id: entity.id,
+        expectedUpdatedAt: entity.updatedAt,
+        patch: { title },
+      });
+    if (kind === "project") {
+      const project = entity as Project;
+      return execute({
+        type: "project.update",
+        id: project.id,
+        expectedUpdatedAt: project.updatedAt,
+        input: {
+          title,
+          description: project.description,
+          icon: project.icon,
+          tags: project.tags,
+          workStatus: project.workStatus,
+        },
+      });
+    }
+    const note = entity as Note;
+    const targets: NoteTarget[] = data.noteLinks
+      .filter(
+        (link) => link.noteId === note.id || link.targetNoteId === note.id,
+      )
+      .map((link) =>
+        link.taskId
+          ? { kind: "task", id: link.taskId }
+          : link.projectId
+            ? { kind: "project", id: link.projectId }
+            : link.thoughtId
+              ? { kind: "thought", id: link.thoughtId }
+              : {
+                  kind: "note",
+                  id:
+                    link.noteId === note.id ? link.targetNoteId! : link.noteId,
+                },
+      );
+    return execute({
+      type: "note.save",
+      id: note.id,
+      expectedUpdatedAt: note.updatedAt,
+      input: { title, content: note.content, tags: note.tags || [], targets },
+    });
+  }
   const safely = (action: () => Promise<unknown>) => {
     void action().catch(() => {});
   };
-  return { toggleTask, moveTask, toggleHabit, safely };
+  return { toggleTask, moveTask, toggleHabit, rename, safely };
 }

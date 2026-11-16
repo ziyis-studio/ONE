@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import {
   Plus,
   Search,
@@ -13,10 +13,9 @@ import {
   MoreHorizontal,
   Table2,
   FileText,
-  Filter,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import type { Task, Project } from "../domain/model";
+import type { Task, Project, Note } from "../domain/model";
 import { useOne } from "../lib/workspace";
 import { useActions, stages, taskStage } from "../lib/actions";
 import type { Stage } from "../lib/actions";
@@ -27,7 +26,17 @@ import {
   timeKey,
   monthDays,
 } from "../domain/time";
-import { CheckButton, Empty, EntityIcon, IconButton } from "./ui";
+import { CheckButton, Empty, IconButton } from "./ui";
+import { AnimatePresence, LayoutGroup, motion } from "motion/react";
+import {
+  DiscreteTabs,
+  ContentSwitch,
+  FilterPicker,
+  InlineTitle,
+  MorphMenu,
+  useSettle,
+} from "./interactions";
+import ProjectCard from "./ProjectCard";
 
 export function PageIntro({
   title,
@@ -88,31 +97,19 @@ function Tabs({
   setValue: (value: string) => void;
   items: { value: string; label: string; icon?: ReactNode }[];
 }) {
-  return (
-    <div className="segmented">
-      {items.map((item) => (
-        <button
-          key={item.value}
-          onClick={() => setValue(item.value)}
-          className={value === item.value ? "active" : ""}
-          aria-pressed={value === item.value}
-        >
-          {item.icon}
-          {item.label}
-        </button>
-      ))}
-    </div>
-  );
+  return <DiscreteTabs value={value} onChange={setValue} items={items} />;
 }
 const matches = (query: string, ...values: (string | undefined)[]) =>
   values.join(" ").toLowerCase().includes(query.toLowerCase());
 export function TasksPage() {
   const { data, edit, busy, today } = useOne();
-  const { toggleTask, moveTask, safely } = useActions();
+  const { toggleTask, moveTask, rename, safely } = useActions();
   const [view, setView] = useState("board"),
     [query, setQuery] = useState(""),
     [project, setProject] = useState("all");
   const [dragOver, setDragOver] = useState("");
+  const collectionId = useId(),
+    collectionTransition = useSettle();
   const tasks = data.tasks.filter(
     (t) =>
       matches(query, t.title, t.description, t.tags?.join(" ")) &&
@@ -141,181 +138,210 @@ export function TasksPage() {
           onChange={setQuery}
           placeholder="Find a task…"
         />
-        <label className="filter-select">
-          <Filter size={14} />
-          <select
-            aria-label="Filter by project"
-            value={project}
-            onChange={(e) => setProject(e.target.value)}
-          >
-            <option value="all">All projects</option>
-            {data.projects.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.title}
-              </option>
-            ))}
-          </select>
-        </label>
+        <FilterPicker
+          label="Filter by project"
+          value={project}
+          onChange={setProject}
+          options={[
+            { value: "all", label: "All projects" },
+            ...data.projects.map((item) => ({
+              value: item.id,
+              label: item.title,
+            })),
+          ]}
+        />
         <span className="fine toolbar-count">{tasks.length} tasks</span>
       </div>
-      {view === "board" ? (
-        <div className="board-scroll">
-          <div className="task-board">
-            {stages.map((stage) => (
-              <section
-                key={stage.id}
-                className={
-                  "board-lane " + (dragOver === stage.id ? "drag-over" : "")
-                }
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setDragOver(stage.id);
-                }}
-                onDragLeave={() => setDragOver("")}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  setDragOver("");
-                  const task = data.tasks.find(
-                    (t) => t.id === e.dataTransfer.getData("text/one-task"),
-                  );
-                  if (task) safely(() => moveTask(task, stage.id));
-                }}
-              >
-                <header>
-                  <span>
-                    <i className={"status-dot " + stage.color} />
-                    {stage.title}
-                    <small>
-                      {tasks.filter((t) => taskStage(t) === stage.id).length}
-                    </small>
-                  </span>
-                  <IconButton
-                    label={"Add task in " + stage.title}
-                    onClick={() => edit({ kind: "task" })}
-                  >
-                    <Plus size={15} />
-                  </IconButton>
-                </header>
-                <div className="lane-stack">
-                  {tasks
-                    .filter((t) => taskStage(t) === stage.id)
-                    .map((task) => (
-                      <TaskCard key={task.id} task={task} />
-                    ))}
-                </div>
-                <button
-                  className="lane-add"
-                  onClick={() => edit({ kind: "task" })}
-                >
-                  <Plus size={14} />
-                  Add a task
-                </button>
-              </section>
-            ))}
-          </div>
-        </div>
-      ) : (
-        <div className="table-shell">
-          <table className="data-table task-table">
-            <thead>
-              <tr>
-                <th>Task</th>
-                <th>Status</th>
-                <th>Project</th>
-                <th>Due date</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {tasks.map((task) => (
-                <tr key={task.id}>
-                  <td>
-                    <div className="table-task-title">
-                      <CheckButton
-                        checked={!!task.completedAt}
-                        disabled={busy}
-                        label={"Toggle " + task.title}
-                        onClick={() => safely(() => toggleTask(task))}
-                      />
-                      <button
-                        onClick={() => edit({ kind: "task", id: task.id })}
-                      >
-                        {task.title}
-                      </button>
-                    </div>
-                  </td>
-                  <td>
-                    <select
-                      aria-label={"Status of " + task.title}
-                      disabled={busy}
-                      className="status-select"
-                      value={taskStage(task)}
-                      onChange={(e) =>
-                        safely(() => moveTask(task, e.target.value as Stage))
-                      }
-                    >
-                      {stages.map((s) => (
-                        <option value={s.id} key={s.id}>
-                          {s.title}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td>
-                    {data.projects.find((p) => p.id === task.projectId)
-                      ?.title || "—"}
-                  </td>
-                  <td
+      <LayoutGroup id={collectionId}>
+        <ContentSwitch value={view} className="one-collection">
+          {view === "board" ? (
+            <div className="board-scroll">
+              <div className="task-board">
+                {stages.map((stage) => (
+                  <section
+                    key={stage.id}
                     className={
-                      task.deadline &&
-                      task.deadline < today &&
-                      !task.completedAt
-                        ? "overdue"
-                        : ""
+                      "board-lane " + (dragOver === stage.id ? "drag-over" : "")
                     }
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setDragOver(stage.id);
+                    }}
+                    onDragLeave={() => setDragOver("")}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setDragOver("");
+                      const task = data.tasks.find(
+                        (t) => t.id === e.dataTransfer.getData("text/one-task"),
+                      );
+                      if (task) safely(() => moveTask(task, stage.id));
+                    }}
                   >
-                    {task.deadline ? dateLabel(task.deadline) : "No date"}
-                  </td>
-                  <td>
-                    <IconButton
-                      label={"Edit " + task.title}
-                      onClick={() => edit({ kind: "task", id: task.id })}
+                    <header>
+                      <span>
+                        <i className={"status-dot " + stage.color} />
+                        {stage.title}
+                        <small>
+                          {
+                            tasks.filter((t) => taskStage(t) === stage.id)
+                              .length
+                          }
+                        </small>
+                      </span>
+                      <IconButton
+                        label={"Add task in " + stage.title}
+                        onClick={() => edit({ kind: "task" })}
+                      >
+                        <Plus size={15} />
+                      </IconButton>
+                    </header>
+                    <div className="lane-stack">
+                      <AnimatePresence initial={false}>
+                        {tasks
+                          .filter((t) => taskStage(t) === stage.id)
+                          .map((task) => (
+                            <motion.div
+                              layout="position"
+                              transition={collectionTransition}
+                              key={task.id}
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              exit={{ opacity: 0 }}
+                            >
+                              <TaskCard task={task} />
+                            </motion.div>
+                          ))}
+                      </AnimatePresence>
+                    </div>
+                    <button
+                      className="lane-add"
+                      onClick={() => edit({ kind: "task" })}
                     >
-                      <ArrowUpRight size={14} />
-                    </IconButton>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {!tasks.length && (
-            <Empty
-              title="A little breathing room."
-              detail={
-                query
-                  ? "No tasks match your search."
-                  : "Your next small step starts here."
-              }
-              action={() => edit({ kind: "task" })}
-              label="New task"
-            />
+                      <Plus size={14} />
+                      Add a task
+                    </button>
+                  </section>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="table-shell">
+              <table className="data-table task-table">
+                <thead>
+                  <tr>
+                    <th>Task</th>
+                    <th>Status</th>
+                    <th>Project</th>
+                    <th>Due date</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {tasks.map((task) => (
+                    <motion.tr
+                      layout="position"
+                      layoutId={`task-${task.id}`}
+                      transition={collectionTransition}
+                      key={task.id}
+                    >
+                      <td>
+                        <div className="table-task-title">
+                          <CheckButton
+                            checked={!!task.completedAt}
+                            disabled={busy}
+                            label={"Toggle " + task.title}
+                            onClick={() => safely(() => toggleTask(task))}
+                          />
+                          <InlineTitle
+                            kind="task"
+                            value={task.title}
+                            onOpen={() => edit({ kind: "task", id: task.id })}
+                            onSave={(title) => rename("task", task, title)}
+                            disabled={busy}
+                          />
+                        </div>
+                      </td>
+                      <td>
+                        <select
+                          aria-label={"Status of " + task.title}
+                          disabled={busy}
+                          className="status-select"
+                          value={taskStage(task)}
+                          onChange={(e) =>
+                            safely(() =>
+                              moveTask(task, e.target.value as Stage),
+                            )
+                          }
+                        >
+                          {stages.map((s) => (
+                            <option value={s.id} key={s.id}>
+                              {s.title}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td>
+                        {data.projects.find((p) => p.id === task.projectId)
+                          ?.title || "—"}
+                      </td>
+                      <td
+                        className={
+                          task.deadline &&
+                          task.deadline < today &&
+                          !task.completedAt
+                            ? "overdue"
+                            : ""
+                        }
+                      >
+                        {task.deadline ? dateLabel(task.deadline) : "No date"}
+                      </td>
+                      <td>
+                        <IconButton
+                          label={"Edit " + task.title}
+                          onClick={() => edit({ kind: "task", id: task.id })}
+                        >
+                          <ArrowUpRight size={14} />
+                        </IconButton>
+                      </td>
+                    </motion.tr>
+                  ))}
+                </tbody>
+              </table>
+              {!tasks.length && (
+                <Empty
+                  title="A little breathing room."
+                  detail={
+                    query
+                      ? "No tasks match your search."
+                      : "Your next small step starts here."
+                  }
+                  action={() => edit({ kind: "task" })}
+                  label="New task"
+                />
+              )}
+            </div>
           )}
-        </div>
-      )}
+        </ContentSwitch>
+      </LayoutGroup>
     </>
   );
 }
 function TaskCard({ task }: { task: Task }) {
   const { data, edit, busy, today } = useOne();
-  const { toggleTask, safely } = useActions();
+  const { toggleTask, rename, safely } = useActions();
+  const transition = useSettle();
+  const [renaming, setRenaming] = useState(false);
   const project = data.projects.find((p) => p.id === task.projectId);
   const conditions = data.conditions.filter((c) => c.taskId === task.id);
   const done = conditions.filter((c) => c.isMet).length;
   return (
-    <article
+    <motion.article
+      layout="position"
+      layoutId={`task-${task.id}`}
+      transition={transition}
       className={"task-card " + (task.completedAt ? "is-complete" : "")}
-      draggable={!busy}
-      onDragStart={(e) => {
+      draggable={!busy && !renaming}
+      onDragStartCapture={(e) => {
         e.dataTransfer.setData("text/one-task", task.id);
         e.dataTransfer.effectAllowed = "move";
       }}
@@ -324,20 +350,42 @@ function TaskCard({ task }: { task: Task }) {
         <span className="tag">
           {task.tags?.[0] || project?.title || "Personal"}
         </span>
-        <IconButton
-          label={"Edit " + task.title}
+        <MorphMenu
+          label={"Actions for " + task.title}
+          className="one-icon-menu"
+          trigger={<MoreHorizontal size={16} />}
+          items={[
+            {
+              label: "Open task",
+              icon: <ArrowUpRight size={14} />,
+              onSelect: () => edit({ kind: "task", id: task.id }),
+            },
+            {
+              label: task.completedAt ? "Reopen task" : "Mark complete",
+              icon: <Check size={14} />,
+              onSelect: () => safely(() => toggleTask(task)),
+              disabled: busy,
+            },
+          ]}
+        />
+      </div>
+      <div className="task-card-main">
+        <InlineTitle
+          kind="task"
+          onEditingChange={setRenaming}
+          value={task.title}
+          onOpen={() => edit({ kind: "task", id: task.id })}
+          onSave={(title) => rename("task", task, title)}
+          disabled={busy}
+        />
+        <button
+          type="button"
+          className="one-task-description"
           onClick={() => edit({ kind: "task", id: task.id })}
         >
-          <MoreHorizontal size={16} />
-        </IconButton>
+          {task.description || "One little thing, worth doing well."}
+        </button>
       </div>
-      <button
-        className="task-card-main"
-        onClick={() => edit({ kind: "task", id: task.id })}
-      >
-        <h3>{task.title}</h3>
-        <p>{task.description || "One little thing, worth doing well."}</p>
-      </button>
       {conditions.length > 0 && (
         <div className="condition-progress">
           <span className="progress-track">
@@ -370,18 +418,23 @@ function TaskCard({ task }: { task: Task }) {
           onClick={() => safely(() => toggleTask(task))}
         />
       </div>
-    </article>
+    </motion.article>
   );
 }
 export function ProjectsPage() {
   const { data, edit } = useOne();
   const [query, setQuery] = useState(""),
-    [view, setView] = useState("board");
-  const projects = data.projects.filter((p) =>
-    matches(query, p.title, p.description, p.tags?.join(" ")),
-  );
+    [view, setView] = useState("board"),
+    [stageFilter, setStageFilter] = useState("all");
   const status = (p: Project) =>
     p.completedAt ? "done" : p.workStatus === "on_hold" ? "hold" : "progress";
+  const projects = data.projects.filter(
+    (p) =>
+      matches(query, p.title, p.description, p.tags?.join(" ")) &&
+      (stageFilter === "all" || status(p) === stageFilter),
+  );
+  const collectionId = useId(),
+    collectionTransition = useSettle();
   return (
     <>
       <PageIntro
@@ -404,86 +457,88 @@ export function ProjectsPage() {
           onChange={setQuery}
           placeholder="Find a project…"
         />
+        <FilterPicker
+          label="Filter projects by status"
+          value={stageFilter}
+          onChange={setStageFilter}
+          options={[
+            { value: "all", label: "All statuses" },
+            { value: "progress", label: "In progress" },
+            { value: "hold", label: "On hold" },
+            { value: "done", label: "Done" },
+          ]}
+        />
         <span className="fine toolbar-count">{projects.length} projects</span>
       </div>
-      {view === "board" ? (
-        <div className="project-board">
-          {stages
-            .filter((s) => s.id !== "todo")
-            .map((stage) => (
-              <section className="board-lane" key={stage.id}>
-                <header>
-                  <span>
-                    <i className={"status-dot " + stage.color} />
-                    {stage.id === "progress" ? "In motion" : stage.title}
-                    <small>
-                      {projects.filter((p) => status(p) === stage.id).length}
-                    </small>
-                  </span>
-                </header>
-                <div className="lane-stack">
-                  {projects
-                    .filter((p) => status(p) === stage.id)
-                    .map((p) => (
-                      <ProjectCard key={p.id} project={p} />
-                    ))}
-                </div>
-                <button
-                  className="lane-add"
-                  onClick={() => edit({ kind: "project" })}
-                >
-                  <Plus size={14} />
-                  New project
-                </button>
-              </section>
-            ))}
-        </div>
-      ) : (
-        <div className="project-list">
-          {projects.map((p) => (
-            <ProjectCard project={p} key={p.id} />
-          ))}
-        </div>
-      )}
+      <LayoutGroup id={collectionId}>
+        <ContentSwitch value={view} className="one-collection">
+          {view === "board" ? (
+            <div className="project-board">
+              {stages
+                .filter((s) => s.id !== "todo")
+                .map((stage) => (
+                  <section className="board-lane" key={stage.id}>
+                    <header>
+                      <span>
+                        <i className={"status-dot " + stage.color} />
+                        {stage.id === "progress" ? "In motion" : stage.title}
+                        <small>
+                          {
+                            projects.filter((p) => status(p) === stage.id)
+                              .length
+                          }
+                        </small>
+                      </span>
+                    </header>
+                    <div className="lane-stack">
+                      <AnimatePresence initial={false}>
+                        {projects
+                          .filter((p) => status(p) === stage.id)
+                          .map((p) => (
+                            <motion.div
+                              layout="position"
+                              transition={collectionTransition}
+                              key={p.id}
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              exit={{ opacity: 0 }}
+                            >
+                              <ProjectCard project={p} />
+                            </motion.div>
+                          ))}
+                      </AnimatePresence>
+                    </div>
+                    <button
+                      className="lane-add"
+                      onClick={() => edit({ kind: "project" })}
+                    >
+                      <Plus size={14} />
+                      New project
+                    </button>
+                  </section>
+                ))}
+            </div>
+          ) : (
+            <div className="project-list">
+              <AnimatePresence initial={false}>
+                {projects.map((p) => (
+                  <motion.div
+                    layout="position"
+                    transition={collectionTransition}
+                    key={p.id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                  >
+                    <ProjectCard project={p} row />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          )}
+        </ContentSwitch>
+      </LayoutGroup>
     </>
-  );
-}
-function ProjectCard({ project }: { project: Project }) {
-  const { data, edit } = useOne();
-  const tasks = data.tasks.filter((t) => t.projectId === project.id);
-  const done = tasks.filter((t) => t.completedAt).length;
-  const percent = tasks.length
-    ? Math.round((done / tasks.length) * 100)
-    : project.completedAt
-      ? 100
-      : 0;
-  return (
-    <button
-      className="project-card"
-      onClick={() => edit({ kind: "project", id: project.id })}
-    >
-      <div className="project-card-top">
-        <span className="project-icon">
-          <EntityIcon name={project.icon} size={21} />
-        </span>
-        <ArrowUpRight size={15} />
-      </div>
-      <h3>{project.title}</h3>
-      <p>{project.description || "Something worth making room for."}</p>
-      <div className="project-progress">
-        <span>
-          {done} of {tasks.length} tasks
-        </span>
-        <strong>{percent}%</strong>
-      </div>
-      <div className="progress-track">
-        <i style={{ width: percent + "%" }} />
-      </div>
-      <footer>
-        <span className="tag">{project.tags?.[0] || "Personal project"}</span>
-        <span>{dateLabel(dayKey(project.createdAt, "UTC"))}</span>
-      </footer>
-    </button>
   );
 }
 export { default as SchedulePage } from "./Schedule";
@@ -674,7 +729,8 @@ export function ThoughtsPage() {
   );
 }
 export function NotesPage() {
-  const { data, edit, zone } = useOne();
+  const { data, edit } = useOne();
+  const collectionId = useId();
   const [view, setView] = useState("notes"),
     [query, setQuery] = useState(""),
     [databaseId, setDatabaseId] = useState("");
@@ -727,40 +783,22 @@ export function NotesPage() {
         </span>
       </div>
       {view === "notes" ? (
-        <div className="notes-grid">
-          {notes.map((note, i) => (
+        <LayoutGroup id={collectionId}>
+          <motion.div layout className="notes-grid">
+            <AnimatePresence initial={false}>
+              {notes.map((note, i) => (
+                <NoteCard note={note} index={i} key={note.id} />
+              ))}
+            </AnimatePresence>
             <button
-              className="note-card"
-              key={note.id}
-              onClick={() => edit({ kind: "note", id: note.id })}
+              className="new-note-card"
+              onClick={() => edit({ kind: "note" })}
             >
-              <span className={"note-glyph note-color-" + (i % 3)}>
-                <FileText size={20} strokeWidth={1.4} />
-              </span>
-              <ArrowUpRight className="note-open" size={16} />
-              <h3>{note.title}</h3>
-              <p>
-                {note.content.replace(/[#*>]/g, "") ||
-                  "A page full of possibility."}
-              </p>
-              <footer>
-                <span>
-                  {note.tags?.[0] && (
-                    <span className="tag">{note.tags[0]}</span>
-                  )}
-                </span>
-                <time>{dateLabel(dayKey(note.updatedAt, zone))}</time>
-              </footer>
+              <Plus size={22} strokeWidth={1.2} />
+              <span>A fresh page</span>
             </button>
-          ))}
-          <button
-            className="new-note-card"
-            onClick={() => edit({ kind: "note" })}
-          >
-            <Plus size={22} strokeWidth={1.2} />
-            <span>A fresh page</span>
-          </button>
-        </div>
+          </motion.div>
+        </LayoutGroup>
       ) : database ? (
         <>
           <div className="section-toolbar">
@@ -899,5 +937,51 @@ export function NotesPage() {
         </div>
       )}
     </>
+  );
+}
+
+function NoteCard({ note, index }: { note: Note; index: number }) {
+  const { edit, busy, zone } = useOne(),
+    { rename } = useActions();
+  const transition = useSettle();
+  const open = () => edit({ kind: "note", id: note.id });
+  return (
+    <motion.article
+      layout="position"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={transition}
+      className="note-card one-note-card"
+    >
+      <span className={"note-glyph note-color-" + (index % 3)}>
+        <FileText size={20} strokeWidth={1.4} />
+      </span>
+      <button
+        className="note-open"
+        aria-label={"Open " + note.title}
+        onClick={open}
+      >
+        <ArrowUpRight size={16} />
+      </button>
+      <InlineTitle
+        kind="note"
+        value={note.title}
+        onOpen={open}
+        onSave={(title) => rename("note", note, title)}
+        disabled={busy}
+      />
+      <button className="one-note-open" onClick={open}>
+        <p>
+          {note.content.replace(/[#*>]/g, "") || "A page full of possibility."}
+        </p>
+      </button>
+      <footer>
+        <span>
+          {note.tags?.[0] && <span className="tag">{note.tags[0]}</span>}
+        </span>
+        <time>{dateLabel(dayKey(note.updatedAt, zone))}</time>
+      </footer>
+    </motion.article>
   );
 }

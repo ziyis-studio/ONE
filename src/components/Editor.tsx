@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import type { FormEvent, ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import {
@@ -13,7 +13,10 @@ import {
 } from "lucide-react";
 import { useOne } from "../lib/workspace";
 import { useActions, stages, taskStage } from "../lib/actions";
-import { Dialog, IconButton, CheckButton, Spinner, EntityIcon } from "./ui";
+import { Dialog, IconButton, CheckButton, EntityIcon } from "./ui";
+import { DayPicker, SaveButton } from "./interactions";
+import type { SaveState } from "./interactions";
+import { useMotionPreference } from "../lib/motion-preference";
 import {
   dayKey,
   timeKey,
@@ -134,6 +137,18 @@ export default function Editor() {
   const [newConditions, setNewConditions] = useState<string[]>([]);
   const [error, setError] = useState("");
   const [preview, setPreview] = useState(false);
+  const [saveState, setSaveState] = useState<SaveState>("idle");
+  const mounted = useRef(true);
+  const saving = useRef(false),
+    saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const reduced = useMotionPreference();
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      clearTimeout(saveTimer.current);
+    };
+  }, []);
   const signature = JSON.stringify({
     title,
     description,
@@ -185,7 +200,7 @@ export default function Editor() {
       .map((v) => v.trim())
       .filter(Boolean);
   const close = () => {
-    if (!busy) edit(null);
+    if (!busy && !saving.current) edit(null);
   };
   function timestamps() {
     const [a, b] = start.split("T"),
@@ -198,8 +213,40 @@ export default function Editor() {
   }
   async function save(event: FormEvent) {
     event.preventDefault();
+    if (busy || saving.current || saveState === "saved") return;
     setError("");
+    const missing = Array.from(
+      (event.currentTarget as HTMLFormElement).querySelectorAll<
+        HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+      >("[required]"),
+    ).find((field) => !field.value.trim());
+    if (missing) {
+      const name =
+        missing.getAttribute("aria-label") ||
+        missing.closest("label")?.querySelector("span")?.textContent?.trim() ||
+        "this field";
+      const messages: Record<string, string> = {
+        Title: "Enter a title.",
+        Content: "Add some content before saving.",
+        "Your thought": "Write a thought before saving.",
+        "Starts on": "Choose a start date.",
+        "End date": "Choose an end date or select Never end.",
+        "Fell asleep": "Choose when you fell asleep.",
+        "Woke up": "Choose when you woke up.",
+        "Starts at": "Choose a start time.",
+        "Ends at": "Choose an end time.",
+        "Property name": "Give each property a name.",
+      };
+      setError(messages[name] || `Complete “${name}” to continue.`);
+      setSaveState("error");
+      missing.focus();
+      return;
+    }
+    saving.current = true;
+    setSaveState("saving");
     try {
+      if (kind === "habit" && !weekdays.length)
+        throw new Error("Choose at least one repeat day.");
       let command: Command;
       switch (kind) {
         case "task":
@@ -355,10 +402,17 @@ export default function Editor() {
           break;
       }
       await execute(command);
-      edit(null);
+      if (!mounted.current) return;
+      baseline.current = signature;
+      setSaveState("saved");
       notify(id ? "Changes saved." : "A little space, made.");
+      saveTimer.current = setTimeout(() => edit(null), reduced ? 120 : 480);
     } catch (cause) {
+      if (!mounted.current) return;
       setError(cause instanceof Error ? cause.message : "Could not save.");
+      setSaveState("error");
+    } finally {
+      saving.current = false;
     }
   }
   async function remove() {
@@ -467,741 +521,716 @@ export default function Editor() {
       }
       onClose={close}
       wide={kind === "note" || kind === "database"}
-      dirty={dirty}
+      dirty={dirty && saveState !== "saved" && saveState !== "saving"}
     >
-      <form className="editor-form" onSubmit={save}>
-        {kind !== "sleep" && (
-          <input
-            className="editor-title"
-            aria-label="Title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder={
-              kind === "thought"
-                ? "Give it a title, if you like"
-                : kind === "block"
-                  ? "Make time for…"
-                  : "A little " + kind + "…"
-            }
-            maxLength={300}
-            required={kind !== "thought" && kind !== "block"}
-          />
-        )}
-        {kind === "sleep" && (
-          <div className="editor-sleep-heading">
-            <MoonIcon />
-            <h2>A little time to recharge.</h2>
-            <p>Log your rest, without overthinking it.</p>
-          </div>
-        )}
-        {(kind === "task" ||
-          kind === "project" ||
-          kind === "habit" ||
-          kind === "block" ||
-          kind === "database") && (
-          <textarea
-            className="description-input"
-            aria-label="Description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="A little context, if you need it…"
-            maxLength={10000}
-            rows={2}
-          />
-        )}
-        {(kind === "task" || kind === "project") && (
-          <div className="form-grid">
-            <Field label="Status">
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value as typeof status)}
-              >
-                <option value="active">Active</option>
-                <option value="on_hold">On hold</option>
-              </select>
-            </Field>
-            <Field label="Tags">
-              <input
-                value={tags}
-                onChange={(e) => setTags(e.target.value)}
-                placeholder="Design, personal…"
-                maxLength={2000}
-              />
-            </Field>
-            {kind === "task" && (
-              <>
-                <Field label="Project">
-                  <select
-                    value={projectId}
-                    onChange={(e) => setProjectId(e.target.value)}
-                  >
-                    <option value="">No project</option>
-                    {data.projects.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.title}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-                <Field label="Due date">
-                  <input
-                    type="date"
-                    value={deadline}
-                    onChange={(e) => setDeadline(e.target.value)}
-                  />
-                </Field>
-              </>
-            )}
-          </div>
-        )}
-        {(kind === "project" || kind === "habit") && (
-          <div className="field-block">
-            <span className="field-label">A LITTLE PERSONALITY</span>
-            <div className="icon-picker">
-              {(kind === "habit" ? habitIconNames : projectIconNames).map(
-                (name) => (
-                  <button
-                    type="button"
-                    aria-label={name}
-                    aria-pressed={icon === name}
-                    className={icon === name ? "selected" : ""}
-                    onClick={() => setIcon(name)}
-                    key={name}
-                  >
-                    <EntityIcon name={name} />
-                  </button>
-                ),
-              )}
-            </div>
-          </div>
-        )}
-        {kind === "task" && (
-          <>
-            <div className="editor-section-title">
-              <h3>Completion conditions</h3>
-              <span>
-                {conditions.filter((c) => c.isMet).length} /{" "}
-                {conditions.length + newConditions.length}
-              </span>
-            </div>
-            <p className="field-help">
-              A task is done when these little things are, too.
-            </p>
-            <div className="conditions-list">
-              {conditions.map((c) => (
-                <div key={c.id}>
-                  <CheckButton
-                    checked={c.isMet}
-                    label={"Toggle " + c.description}
-                    disabled={busy}
-                    onClick={() => void updateCondition(c.id, !c.isMet)}
-                  />
-                  <span>{c.description}</span>
-                  <IconButton
-                    label={"Remove " + c.description}
-                    disabled={busy}
-                    onClick={() =>
-                      safely(async () => {
-                        const result = await execute({
-                          type: "condition.delete",
-                          id: c.id,
-                        });
-                        setRevision(
-                          result.snapshot.tasks.find((t) => t.id === id)
-                            ?.updatedAt,
-                        );
-                      })
-                    }
-                  >
-                    <Trash2 size={13} />
-                  </IconButton>
-                </div>
-              ))}
-              {newConditions.map((c, i) => (
-                <div key={i}>
-                  <span className="check-placeholder" />
-                  <span>{c}</span>
-                  <IconButton
-                    label="Remove condition"
-                    onClick={() =>
-                      setNewConditions(
-                        newConditions.filter((_, index) => index !== i),
-                      )
-                    }
-                  >
-                    <Trash2 size={13} />
-                  </IconButton>
-                </div>
-              ))}
-            </div>
-            <div className="add-condition">
-              <input
-                aria-label="New completion condition"
-                placeholder="Add a completion condition…"
-                value={condition}
-                onChange={(e) => setCondition(e.target.value)}
-                maxLength={10000}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    void addCondition();
-                  }
-                }}
-              />
-              <IconButton
-                label="Add condition"
-                onClick={() => void addCondition()}
-                disabled={busy || !condition.trim()}
-              >
-                <Plus size={16} />
-              </IconButton>
-            </div>
-            {task && (
-              <div className="task-state-actions">
-                <span className="field-label">MOVE TASK</span>
-                <div>
-                  {stages.map((stage) => (
-                    <button
-                      type="button"
-                      disabled={busy || dirty || taskStage(task) === stage.id}
-                      className={
-                        "tiny-pill " +
-                        (taskStage(task) === stage.id ? "selected" : "")
-                      }
-                      key={stage.id}
-                      onClick={() =>
-                        safely(async () => {
-                          const result = await moveTask(task, stage.id);
-                          setRevision(
-                            data.tasks.find((t) => t.id === id)?.updatedAt,
-                          );
-                          edit(null);
-                          return result;
-                        })
-                      }
-                    >
-                      {stage.title}
-                    </button>
-                  ))}
-                </div>
-                {dirty && (
-                  <small>Save your changes before moving the task.</small>
-                )}
-              </div>
-            )}
-          </>
-        )}
-        {kind === "project" && project && (
-          <>
-            <div className="editor-section-title">
-              <h3>Small steps in this project</h3>
-              <span>
-                {projectTasks.filter((t) => t.completedAt).length}/
-                {projectTasks.length}
-              </span>
-            </div>
-            <div className="project-task-list">
-              {projectTasks.map((t) => (
-                <button
-                  type="button"
-                  key={t.id}
-                  onClick={() => {
-                    if (
-                      !dirty ||
-                      window.confirm("Discard your unsaved changes?")
-                    )
-                      edit({ kind: "task", id: t.id });
-                  }}
-                >
-                  <span
-                    className={
-                      "check-placeholder " + (t.completedAt ? "checked" : "")
-                    }
-                  >
-                    {t.completedAt && <Check size={11} />}
-                  </span>
-                  {t.title}
-                  <ArrowUpRight size={13} />
-                </button>
-              ))}
-            </div>
-            <button
-              type="button"
-              className="text-button"
-              disabled={dirty}
-              onClick={() => edit({ kind: "task", projectId: id })}
-            >
-              <Plus size={13} />
-              Add a task
-            </button>
-            <button
-              type="button"
-              className="secondary-button project-complete"
-              disabled={busy || dirty}
-              onClick={() =>
-                safely(async () => {
-                  await execute({
-                    type: project.completedAt
-                      ? "project.reopen"
-                      : "project.complete",
-                    id: project.id,
-                  });
-                  edit(null);
-                  notify(
-                    project.completedAt
-                      ? "Project reopened."
-                      : "A little chapter, completed.",
-                  );
-                })
+      <form className="editor-form" onSubmit={save} noValidate>
+        <fieldset
+          className="editor-fields"
+          disabled={saveState === "saving" || saveState === "saved"}
+        >
+          {kind !== "sleep" && (
+            <input
+              className="editor-title"
+              aria-label="Title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder={
+                kind === "thought"
+                  ? "Give it a title, if you like"
+                  : kind === "block"
+                    ? "Make time for…"
+                    : "A little " + kind + "…"
               }
-            >
-              {project.completedAt ? "Reopen project" : "Complete project"}
-              <Check size={14} />
-            </button>
-          </>
-        )}
-        {kind === "habit" && (
-          <>
-            <div className="field-block">
-              <span className="field-label">MAKE IT A RITUAL</span>
-              <div className="weekday-picker">
-                {["M", "T", "W", "T", "F", "S", "S"].map((day, i) => (
-                  <button
-                    type="button"
-                    key={i}
-                    aria-label={
-                      [
-                        "Monday",
-                        "Tuesday",
-                        "Wednesday",
-                        "Thursday",
-                        "Friday",
-                        "Saturday",
-                        "Sunday",
-                      ][i]
-                    }
-                    aria-pressed={weekdays.includes(i + 1)}
-                    className={weekdays.includes(i + 1) ? "selected" : ""}
-                    onClick={() =>
-                      setWeekdays(
-                        weekdays.includes(i + 1)
-                          ? weekdays.filter((d) => d !== i + 1)
-                          : [...weekdays, i + 1].sort(),
-                      )
-                    }
-                  >
-                    {day}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="form-grid habit-date-fields">
-              <Field label="Starts on">
-                <input
-                  type="date"
-                  value={startsOn}
-                  onChange={(e) => setStartsOn(e.target.value)}
-                  required
-                />
-              </Field>
-              <Field label="Ends">
-                <select
-                  value={neverEnd ? "never" : "date"}
-                  onChange={(event) =>
-                    setNeverEnd(event.target.value === "never")
-                  }
-                >
-                  <option value="never">Never end</option>
-                  <option value="date">On a date</option>
-                </select>
-              </Field>
-              {!neverEnd && (
-                <div className="habit-end-date">
-                  <Field label="End date">
-                    <input
-                      type="date"
-                      min={startsOn}
-                      value={endsOn}
-                      onChange={(event) => setEndsOn(event.target.value)}
-                      required
-                    />
-                  </Field>
-                </div>
-              )}
-            </div>
-          </>
-        )}
-        {(kind === "block" || kind === "sleep") && (
-          <>
-            <div className="form-grid time-fields">
-              <Field label={kind === "sleep" ? "Fell asleep" : "Starts at"}>
-                <input
-                  type="datetime-local"
-                  value={start}
-                  onChange={(e) => setStart(e.target.value)}
-                  required
-                />
-              </Field>
-              <Field label={kind === "sleep" ? "Woke up" : "Ends at"}>
-                <input
-                  type="datetime-local"
-                  value={end}
-                  onChange={(e) => setEnd(e.target.value)}
-                  required
-                />
-              </Field>
-            </div>
-            <p className="field-help">Times are shown in {zone}.</p>
-            {kind === "sleep" ? (
-              <>
-                <Field label="Time awake · minutes">
-                  <input
-                    type="number"
-                    min="0"
-                    max="10080"
-                    step="1"
-                    value={awake}
-                    onChange={(e) => setAwake(Number(e.target.value))}
-                    required
-                  />
-                </Field>
-                <Field label="A note about your rest">
-                  <textarea
-                    rows={3}
-                    value={sleepNote}
-                    onChange={(e) => setSleepNote(e.target.value)}
-                    placeholder="How did it feel?"
-                    maxLength={10000}
-                  />
-                </Field>
-              </>
-            ) : (
-              <Field label="Linked tasks · optional">
-                <select
-                  multiple
-                  value={taskIds}
-                  onChange={(e) =>
-                    setTaskIds(
-                      Array.from(e.target.selectedOptions, (o) => o.value),
-                    )
-                  }
-                  size={Math.min(4, Math.max(2, data.tasks.length))}
-                >
-                  {data.tasks
-                    .filter((t) => !t.completedAt || taskIds.includes(t.id))
-                    .map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.title}
-                      </option>
-                    ))}
-                </select>
-                <span className="field-help">
-                  Hold Ctrl / ⌘ to select more than one. Planning time does not
-                  complete a task.
-                </span>
-              </Field>
-            )}
-          </>
-        )}
-        {kind === "thought" && (
-          <>
-            <textarea
-              className="thought-writing"
-              aria-label="Your thought"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Whatever’s on your mind…"
-              rows={7}
-              required
-              maxLength={500000}
+              maxLength={300}
+              required={kind !== "thought" && kind !== "block"}
             />
-            <Field label="How does it feel?">
-              <select
-                value={emotion}
-                onChange={(e) => setEmotion(e.target.value)}
-              >
-                <option value="">Just a thought</option>
-                {[
-                  ...new Set([
-                    "Curious",
-                    "Inspired",
-                    "Grateful",
-                    "Calm",
-                    "Excited",
-                    "Unsure",
-                    "Overwhelmed",
-                    "Reflective",
-                    ...(emotion ? [emotion] : []),
-                  ]),
-                ].map((e) => (
-                  <option key={e}>{e}</option>
-                ))}
-              </select>
-            </Field>
-          </>
-        )}
-        {(kind === "note" || kind === "record") && (
-          <>
-            <div className="markdown-toolbar">
-              <span>
-                <FileText size={13} />A little room to write
-              </span>
-              <button type="button" onClick={() => setPreview(!preview)}>
-                {preview ? <PencilLine size={13} /> : <Eye size={13} />}{" "}
-                {preview ? "Write" : "Preview"}
-              </button>
+          )}
+          {kind === "sleep" && (
+            <div className="editor-sleep-heading">
+              <MoonIcon />
+              <h2>A little time to recharge.</h2>
+              <p>Log your rest, without overthinking it.</p>
             </div>
-            {preview ? (
-              <div className="markdown-preview">
-                <ReactMarkdown>
-                  {content || "*A fresh page. What would you like to keep?*"}
-                </ReactMarkdown>
-              </div>
-            ) : (
-              <textarea
-                className="note-writing"
-                aria-label="Note content"
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="# A little clarity&#10;&#10;Start with a thought. See where it takes you."
-                rows={12}
-                maxLength={500000}
-              />
-            )}
-            <p className="field-help">
-              Markdown welcome. Use # for headings, - for lists, and **bold**
-              for a little emphasis.
-            </p>
-            {kind === "note" && (
+          )}
+          {(kind === "task" ||
+            kind === "project" ||
+            kind === "habit" ||
+            kind === "block" ||
+            kind === "database") && (
+            <textarea
+              className="description-input"
+              aria-label="Description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="A little context, if you need it…"
+              maxLength={10000}
+              rows={2}
+            />
+          )}
+          {(kind === "task" || kind === "project") && (
+            <div className="form-grid">
+              <Field label="Status">
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value as typeof status)}
+                >
+                  <option value="active">Active</option>
+                  <option value="on_hold">On hold</option>
+                </select>
+              </Field>
               <Field label="Tags">
                 <input
                   value={tags}
                   onChange={(e) => setTags(e.target.value)}
-                  placeholder="Ideas, personal, inspiration…"
+                  placeholder="Design, personal…"
                   maxLength={2000}
                 />
               </Field>
-            )}
-          </>
-        )}
-        {kind === "database" && (
-          <>
-            <Field label="Keep with a note · optional">
-              <select
-                value={noteId}
-                onChange={(e) => setNoteId(e.target.value)}
-              >
-                <option value="">Standalone database</option>
-                {data.notes.map((n) => (
-                  <option value={n.id} key={n.id}>
-                    {n.title}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <div className="editor-section-title">
-              <h3>Properties</h3>
-              <span>{fields.length}/30</span>
+              {kind === "task" && (
+                <>
+                  <Field label="Project">
+                    <select
+                      value={projectId}
+                      onChange={(e) => setProjectId(e.target.value)}
+                    >
+                      <option value="">No project</option>
+                      {data.projects.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.title}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="Due date">
+                    <input
+                      type="date"
+                      value={deadline}
+                      onChange={(e) => setDeadline(e.target.value)}
+                    />
+                  </Field>
+                </>
+              )}
             </div>
-            <div className="database-fields">
-              {fields.map((field) => (
-                <div className="database-field" key={field.id}>
-                  <input
-                    aria-label="Property name"
-                    required
-                    maxLength={80}
-                    placeholder="Property name"
-                    value={field.name}
-                    onChange={(e) =>
-                      updateField(field.id, { name: e.target.value })
+          )}
+          {(kind === "project" || kind === "habit") && (
+            <div className="field-block">
+              <span className="field-label">A LITTLE PERSONALITY</span>
+              <div className="icon-picker">
+                {(kind === "habit" ? habitIconNames : projectIconNames).map(
+                  (name) => (
+                    <button
+                      type="button"
+                      aria-label={name}
+                      aria-pressed={icon === name}
+                      className={icon === name ? "selected" : ""}
+                      onClick={() => setIcon(name)}
+                      key={name}
+                    >
+                      <EntityIcon name={name} />
+                    </button>
+                  ),
+                )}
+              </div>
+            </div>
+          )}
+          {kind === "task" && (
+            <>
+              <div className="editor-section-title">
+                <h3>Completion conditions</h3>
+                <span>
+                  {conditions.filter((c) => c.isMet).length} /{" "}
+                  {conditions.length + newConditions.length}
+                </span>
+              </div>
+              <p className="field-help">
+                A task is done when these little things are, too.
+              </p>
+              <div className="conditions-list">
+                {conditions.map((c) => (
+                  <div key={c.id}>
+                    <CheckButton
+                      checked={c.isMet}
+                      label={"Toggle " + c.description}
+                      disabled={busy}
+                      onClick={() => void updateCondition(c.id, !c.isMet)}
+                    />
+                    <span>{c.description}</span>
+                    <IconButton
+                      label={"Remove " + c.description}
+                      disabled={busy}
+                      onClick={() =>
+                        safely(async () => {
+                          const result = await execute({
+                            type: "condition.delete",
+                            id: c.id,
+                          });
+                          setRevision(
+                            result.snapshot.tasks.find((t) => t.id === id)
+                              ?.updatedAt,
+                          );
+                        })
+                      }
+                    >
+                      <Trash2 size={13} />
+                    </IconButton>
+                  </div>
+                ))}
+                {newConditions.map((c, i) => (
+                  <div key={i}>
+                    <span className="check-placeholder" />
+                    <span>{c}</span>
+                    <IconButton
+                      label="Remove condition"
+                      onClick={() =>
+                        setNewConditions(
+                          newConditions.filter((_, index) => index !== i),
+                        )
+                      }
+                    >
+                      <Trash2 size={13} />
+                    </IconButton>
+                  </div>
+                ))}
+              </div>
+              <div className="add-condition">
+                <input
+                  aria-label="New completion condition"
+                  placeholder="Add a completion condition…"
+                  value={condition}
+                  onChange={(e) => setCondition(e.target.value)}
+                  maxLength={10000}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      void addCondition();
                     }
-                  />
-                  <select
-                    aria-label={"Type of " + field.name}
-                    value={field.type}
-                    disabled={!!database?.fields.some((f) => f.id === field.id)}
-                    onChange={(e) =>
-                      updateField(field.id, {
-                        type: e.target.value as DatabaseField["type"],
-                      })
-                    }
-                  >
-                    {databaseFieldTypes.map((t) => (
-                      <option key={t}>{t}</option>
+                  }}
+                />
+                <IconButton
+                  label="Add condition"
+                  onClick={() => void addCondition()}
+                  disabled={busy || !condition.trim()}
+                >
+                  <Plus size={16} />
+                </IconButton>
+              </div>
+              {task && (
+                <div className="task-state-actions">
+                  <span className="field-label">MOVE TASK</span>
+                  <div>
+                    {stages.map((stage) => (
+                      <button
+                        type="button"
+                        disabled={busy || dirty || taskStage(task) === stage.id}
+                        className={
+                          "tiny-pill " +
+                          (taskStage(task) === stage.id ? "selected" : "")
+                        }
+                        key={stage.id}
+                        onClick={() =>
+                          safely(async () => {
+                            const result = await moveTask(task, stage.id);
+                            setRevision(
+                              data.tasks.find((t) => t.id === id)?.updatedAt,
+                            );
+                            edit(null);
+                            return result;
+                          })
+                        }
+                      >
+                        {stage.title}
+                      </button>
                     ))}
-                  </select>
-                  <IconButton
-                    label="Remove property"
+                  </div>
+                  {dirty && (
+                    <small>Save your changes before moving the task.</small>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+          {kind === "project" && project && (
+            <>
+              <div className="editor-section-title">
+                <h3>Small steps in this project</h3>
+                <span>
+                  {projectTasks.filter((t) => t.completedAt).length}/
+                  {projectTasks.length}
+                </span>
+              </div>
+              <div className="project-task-list">
+                {projectTasks.map((t) => (
+                  <button
+                    type="button"
+                    key={t.id}
                     onClick={() => {
                       if (
-                        !database?.fields.some((f) => f.id === field.id) ||
-                        window.confirm(
-                          "Remove this property and its values from every record?",
-                        )
-                      ) {
-                        setFields(fields.filter((f) => f.id !== field.id));
-                      }
+                        !dirty ||
+                        window.confirm("Discard your unsaved changes?")
+                      )
+                        edit({ kind: "task", id: t.id });
                     }}
                   >
-                    <Trash2 size={14} />
-                  </IconButton>
-                  {field.type === "status" && (
+                    <span
+                      className={
+                        "check-placeholder " + (t.completedAt ? "checked" : "")
+                      }
+                    >
+                      {t.completedAt && <Check size={11} />}
+                    </span>
+                    {t.title}
+                    <ArrowUpRight size={13} />
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                className="text-button"
+                disabled={dirty}
+                onClick={() => edit({ kind: "task", projectId: id })}
+              >
+                <Plus size={13} />
+                Add a task
+              </button>
+              <button
+                type="button"
+                className="secondary-button project-complete"
+                disabled={busy || dirty}
+                onClick={() =>
+                  safely(async () => {
+                    await execute({
+                      type: project.completedAt
+                        ? "project.reopen"
+                        : "project.complete",
+                      id: project.id,
+                    });
+                    edit(null);
+                    notify(
+                      project.completedAt
+                        ? "Project reopened."
+                        : "A little chapter, completed.",
+                    );
+                  })
+                }
+              >
+                {project.completedAt ? "Reopen project" : "Complete project"}
+                <Check size={14} />
+              </button>
+            </>
+          )}
+          {kind === "habit" && (
+            <>
+              <DayPicker value={weekdays} onChange={setWeekdays} />
+              <div className="form-grid habit-date-fields">
+                <Field label="Starts on">
+                  <input
+                    type="date"
+                    value={startsOn}
+                    onChange={(e) => setStartsOn(e.target.value)}
+                    required
+                  />
+                </Field>
+                <Field label="Ends">
+                  <select
+                    value={neverEnd ? "never" : "date"}
+                    onChange={(event) =>
+                      setNeverEnd(event.target.value === "never")
+                    }
+                  >
+                    <option value="never">Never end</option>
+                    <option value="date">On a date</option>
+                  </select>
+                </Field>
+                {!neverEnd && (
+                  <div className="habit-end-date">
+                    <Field label="End date">
+                      <input
+                        type="date"
+                        min={startsOn}
+                        value={endsOn}
+                        onChange={(event) => setEndsOn(event.target.value)}
+                        required
+                      />
+                    </Field>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+          {(kind === "block" || kind === "sleep") && (
+            <>
+              <div className="form-grid time-fields">
+                <Field label={kind === "sleep" ? "Fell asleep" : "Starts at"}>
+                  <input
+                    type="datetime-local"
+                    value={start}
+                    onChange={(e) => setStart(e.target.value)}
+                    required
+                  />
+                </Field>
+                <Field label={kind === "sleep" ? "Woke up" : "Ends at"}>
+                  <input
+                    type="datetime-local"
+                    value={end}
+                    onChange={(e) => setEnd(e.target.value)}
+                    required
+                  />
+                </Field>
+              </div>
+              <p className="field-help">Times are shown in {zone}.</p>
+              {kind === "sleep" ? (
+                <>
+                  <Field label="Time awake · minutes">
                     <input
-                      aria-label={"Options for " + field.name}
-                      className="field-options"
-                      placeholder="Options separated by commas"
-                      value={field.options.join(", ")}
+                      type="number"
+                      min="0"
+                      max="10080"
+                      step="1"
+                      value={awake}
+                      onChange={(e) => setAwake(Number(e.target.value))}
+                      required
+                    />
+                  </Field>
+                  <Field label="A note about your rest">
+                    <textarea
+                      rows={3}
+                      value={sleepNote}
+                      onChange={(e) => setSleepNote(e.target.value)}
+                      placeholder="How did it feel?"
+                      maxLength={10000}
+                    />
+                  </Field>
+                </>
+              ) : (
+                <Field label="Linked tasks · optional">
+                  <select
+                    multiple
+                    value={taskIds}
+                    onChange={(e) =>
+                      setTaskIds(
+                        Array.from(e.target.selectedOptions, (o) => o.value),
+                      )
+                    }
+                    size={Math.min(4, Math.max(2, data.tasks.length))}
+                  >
+                    {data.tasks
+                      .filter((t) => !t.completedAt || taskIds.includes(t.id))
+                      .map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.title}
+                        </option>
+                      ))}
+                  </select>
+                  <span className="field-help">
+                    Hold Ctrl / ⌘ to select more than one. Planning time does
+                    not complete a task.
+                  </span>
+                </Field>
+              )}
+            </>
+          )}
+          {kind === "thought" && (
+            <>
+              <textarea
+                className="thought-writing"
+                aria-label="Your thought"
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="Whatever’s on your mind…"
+                rows={7}
+                required
+                maxLength={500000}
+              />
+              <Field label="How does it feel?">
+                <select
+                  value={emotion}
+                  onChange={(e) => setEmotion(e.target.value)}
+                >
+                  <option value="">Just a thought</option>
+                  {[
+                    ...new Set([
+                      "Curious",
+                      "Inspired",
+                      "Grateful",
+                      "Calm",
+                      "Excited",
+                      "Unsure",
+                      "Overwhelmed",
+                      "Reflective",
+                      ...(emotion ? [emotion] : []),
+                    ]),
+                  ].map((e) => (
+                    <option key={e}>{e}</option>
+                  ))}
+                </select>
+              </Field>
+            </>
+          )}
+          {(kind === "note" || kind === "record") && (
+            <>
+              <div className="markdown-toolbar">
+                <span>
+                  <FileText size={13} />A little room to write
+                </span>
+                <button type="button" onClick={() => setPreview(!preview)}>
+                  {preview ? <PencilLine size={13} /> : <Eye size={13} />}{" "}
+                  {preview ? "Write" : "Preview"}
+                </button>
+              </div>
+              {preview ? (
+                <div className="markdown-preview">
+                  <ReactMarkdown>
+                    {content || "*A fresh page. What would you like to keep?*"}
+                  </ReactMarkdown>
+                </div>
+              ) : (
+                <textarea
+                  className="note-writing"
+                  aria-label="Note content"
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder="# A little clarity&#10;&#10;Start with a thought. See where it takes you."
+                  rows={12}
+                  maxLength={500000}
+                />
+              )}
+              <p className="field-help">
+                Markdown welcome. Use # for headings, - for lists, and **bold**
+                for a little emphasis.
+              </p>
+              {kind === "note" && (
+                <Field label="Tags">
+                  <input
+                    value={tags}
+                    onChange={(e) => setTags(e.target.value)}
+                    placeholder="Ideas, personal, inspiration…"
+                    maxLength={2000}
+                  />
+                </Field>
+              )}
+            </>
+          )}
+          {kind === "database" && (
+            <>
+              <Field label="Keep with a note · optional">
+                <select
+                  value={noteId}
+                  onChange={(e) => setNoteId(e.target.value)}
+                >
+                  <option value="">Standalone database</option>
+                  {data.notes.map((n) => (
+                    <option value={n.id} key={n.id}>
+                      {n.title}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <div className="editor-section-title">
+                <h3>Properties</h3>
+                <span>{fields.length}/30</span>
+              </div>
+              <div className="database-fields">
+                {fields.map((field) => (
+                  <div className="database-field" key={field.id}>
+                    <input
+                      aria-label="Property name"
+                      required
+                      maxLength={80}
+                      placeholder="Property name"
+                      value={field.name}
+                      onChange={(e) =>
+                        updateField(field.id, { name: e.target.value })
+                      }
+                    />
+                    <select
+                      aria-label={"Type of " + field.name}
+                      value={field.type}
+                      disabled={
+                        !!database?.fields.some((f) => f.id === field.id)
+                      }
                       onChange={(e) =>
                         updateField(field.id, {
-                          options: e.target.value
-                            .split(",")
-                            .map((v) => v.trim()),
+                          type: e.target.value as DatabaseField["type"],
                         })
+                      }
+                    >
+                      {databaseFieldTypes.map((t) => (
+                        <option key={t}>{t}</option>
+                      ))}
+                    </select>
+                    <IconButton
+                      label="Remove property"
+                      onClick={() => {
+                        if (
+                          !database?.fields.some((f) => f.id === field.id) ||
+                          window.confirm(
+                            "Remove this property and its values from every record?",
+                          )
+                        ) {
+                          setFields(fields.filter((f) => f.id !== field.id));
+                        }
+                      }}
+                    >
+                      <Trash2 size={14} />
+                    </IconButton>
+                    {field.type === "status" && (
+                      <input
+                        aria-label={"Options for " + field.name}
+                        className="field-options"
+                        placeholder="Options separated by commas"
+                        value={field.options.join(", ")}
+                        onChange={(e) =>
+                          updateField(field.id, {
+                            options: e.target.value
+                              .split(",")
+                              .map((v) => v.trim()),
+                          })
+                        }
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                className="text-button"
+                disabled={fields.length >= 30}
+                onClick={() =>
+                  setFields([
+                    ...fields,
+                    {
+                      id: crypto.randomUUID(),
+                      name: "",
+                      type: "text",
+                      options: [],
+                    },
+                  ])
+                }
+              >
+                <Plus size={14} />
+                Add a property
+              </button>
+              <p className="field-help">
+                Saved property types stay fixed to protect your data. Add a new
+                property to use another type.
+              </p>
+            </>
+          )}
+          {kind === "record" && database && (
+            <div className="record-properties">
+              {database.fields.map((field) => (
+                <Field label={field.name} key={field.id}>
+                  {field.type === "checkbox" ? (
+                    <input
+                      type="checkbox"
+                      checked={!!values[field.id]}
+                      onChange={(e) =>
+                        setValues({ ...values, [field.id]: e.target.checked })
+                      }
+                    />
+                  ) : field.type === "status" ? (
+                    <select
+                      value={String(values[field.id] || "")}
+                      onChange={(e) =>
+                        setValues({ ...values, [field.id]: e.target.value })
+                      }
+                    >
+                      <option value="">Select a status</option>
+                      {field.options.map((option) => (
+                        <option key={option}>{option}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type={
+                        field.type === "number"
+                          ? "number"
+                          : field.type === "date"
+                            ? "date"
+                            : "text"
+                      }
+                      step={field.type === "number" ? "any" : undefined}
+                      value={
+                        Array.isArray(values[field.id])
+                          ? (values[field.id] as string[]).join(", ")
+                          : String(values[field.id] ?? "")
+                      }
+                      onChange={(e) =>
+                        setValues({
+                          ...values,
+                          [field.id]:
+                            field.type === "number" && e.target.value !== ""
+                              ? Number(e.target.value)
+                              : field.type === "tags"
+                                ? e.target.value.split(",").map((v) => v.trim())
+                                : e.target.value,
+                        })
+                      }
+                      placeholder={
+                        field.type === "tags" ? "Separate tags with commas" : ""
                       }
                     />
                   )}
-                </div>
+                </Field>
               ))}
             </div>
+          )}
+          {error && (
+            <div className="editor-error" role="alert">
+              <CircleAlert size={15} />
+              <span>{error}</span>
+              <button
+                type="button"
+                className="text-button"
+                onClick={() => {
+                  if (
+                    !dirty ||
+                    window.confirm("Discard changes and reload this item?")
+                  ) {
+                    edit(null);
+                    void reload();
+                  }
+                }}
+              >
+                Refresh workspace
+              </button>
+            </div>
+          )}
+          <footer className="editor-footer">
+            {id && (
+              <button
+                type="button"
+                className="delete-button"
+                onClick={() => void remove()}
+                disabled={busy}
+              >
+                <Trash2 size={14} />
+                Delete
+              </button>
+            )}
+            <span />
             <button
               type="button"
-              className="text-button"
-              disabled={fields.length >= 30}
-              onClick={() =>
-                setFields([
-                  ...fields,
-                  {
-                    id: crypto.randomUUID(),
-                    name: "",
-                    type: "text",
-                    options: [],
-                  },
-                ])
-              }
-            >
-              <Plus size={14} />
-              Add a property
-            </button>
-            <p className="field-help">
-              Saved property types stay fixed to protect your data. Add a new
-              property to use another type.
-            </p>
-          </>
-        )}
-        {kind === "record" && database && (
-          <div className="record-properties">
-            {database.fields.map((field) => (
-              <Field label={field.name} key={field.id}>
-                {field.type === "checkbox" ? (
-                  <input
-                    type="checkbox"
-                    checked={!!values[field.id]}
-                    onChange={(e) =>
-                      setValues({ ...values, [field.id]: e.target.checked })
-                    }
-                  />
-                ) : field.type === "status" ? (
-                  <select
-                    value={String(values[field.id] || "")}
-                    onChange={(e) =>
-                      setValues({ ...values, [field.id]: e.target.value })
-                    }
-                  >
-                    <option value="">Select a status</option>
-                    {field.options.map((option) => (
-                      <option key={option}>{option}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <input
-                    type={
-                      field.type === "number"
-                        ? "number"
-                        : field.type === "date"
-                          ? "date"
-                          : "text"
-                    }
-                    step={field.type === "number" ? "any" : undefined}
-                    value={
-                      Array.isArray(values[field.id])
-                        ? (values[field.id] as string[]).join(", ")
-                        : String(values[field.id] ?? "")
-                    }
-                    onChange={(e) =>
-                      setValues({
-                        ...values,
-                        [field.id]:
-                          field.type === "number" && e.target.value !== ""
-                            ? Number(e.target.value)
-                            : field.type === "tags"
-                              ? e.target.value.split(",").map((v) => v.trim())
-                              : e.target.value,
-                      })
-                    }
-                    placeholder={
-                      field.type === "tags" ? "Separate tags with commas" : ""
-                    }
-                  />
-                )}
-              </Field>
-            ))}
-          </div>
-        )}
-        {error && (
-          <div className="editor-error" role="alert">
-            <CircleAlert size={15} />
-            <span>{error}</span>
-            <button
-              type="button"
-              className="text-button"
+              className="secondary-button"
               onClick={() => {
-                if (
-                  !dirty ||
-                  window.confirm("Discard changes and reload this item?")
-                ) {
-                  edit(null);
-                  void reload();
-                }
+                if (!dirty || window.confirm("Discard your unsaved changes?"))
+                  close();
               }}
-            >
-              Refresh workspace
-            </button>
-          </div>
-        )}
-        <footer className="editor-footer">
-          {id && (
-            <button
-              type="button"
-              className="delete-button"
-              onClick={() => void remove()}
               disabled={busy}
             >
-              <Trash2 size={14} />
-              Delete
+              Cancel
             </button>
-          )}
-          <span />
-          <button
-            type="button"
-            className="secondary-button"
-            onClick={() => {
-              if (!dirty || window.confirm("Discard your unsaved changes?"))
-                close();
-            }}
-            disabled={busy}
-          >
-            Cancel
-          </button>
-          <button
-            className="primary-button"
-            disabled={busy || (kind === "habit" && !weekdays.length)}
-          >
-            {busy ? <Spinner /> : <Check size={14} />}{" "}
-            {id
-              ? "Save changes"
-              : "Create " + (kind === "block" ? "time block" : kind)}
-          </button>
-        </footer>
+            <SaveButton
+              state={saveState}
+              disabled={busy || (kind === "habit" && !weekdays.length)}
+              label={
+                id
+                  ? "Save changes"
+                  : "Create " + (kind === "block" ? "time block" : kind)
+              }
+            />
+          </footer>
+        </fieldset>
       </form>
     </Dialog>
   );

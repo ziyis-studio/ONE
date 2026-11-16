@@ -40,3 +40,30 @@ This pass did not include real credential login, outgoing confirmation email, a
 physical mobile keyboard, Safari/Firefox, or independent review. Browser
 checks used Chromium desktop with a phone viewport. Geometry scans and contact
 sheets do not prove smoothness on every device.
+
+# Workspace interactions
+
+The first ten approved useLayouts patterns are now adapted to real workspace
+records. Source mapping and retained MIT license are in
+[uselayouts-motion.md](../../docs/uselayouts-motion.md).
+
+Checked in Chromium 156 on Linux at 1440×960 and 390×844:
+
+- Home Recent/Linked preview, global Create, menu opening after a long page
+  scroll, Escape and outside dismissal, keyboard arrows/Tab, and editor focus.
+- Project summary/task expansion, board-to-row morph, inline rename, real status
+  filtering, and repeat-day editing/save with persisted demo commands.
+- Inspected full-page and dialog captures. Fixed menu measurement after scroll,
+  stale exiting menu content, legacy CSS competing with layout transforms, and
+  base/component stylesheet order. Save labels keep one footprint and one
+  accessible name while changing.
+- OS reduced motion at entry and while a menu is open. No second animation
+  runtime or additional dependency was introduced.
+- Automated checks cover preservation of data and links, original edit revision,
+  request failure/retry, duplicate submission, optional titles, and cleanup of a
+  save that resolves after its editor unmounts.
+
+Captures: `test-results/workspace-motion/` (ignored local artifacts). No real
+credentialed writes, physical phone keyboard, Safari/Firefox, or independent
+visual reviewer were used. These are real app flows, rather than faux UI scenes;
+Stageshow's isolated demo gate is not used to claim full app verification.

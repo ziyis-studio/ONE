@@ -1,4 +1,4 @@
-import { Component, Suspense, lazy, useState, useEffect, useRef } from "react";
+import { Component, Suspense, lazy, useState, useEffect } from "react";
 import type { ReactNode, ErrorInfo } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { AnimatePresence, motion } from "motion/react";
@@ -26,6 +26,7 @@ import { supabase } from "./lib/auth";
 import { WorkspaceProvider, useOne } from "./lib/workspace";
 import type { Page, EditorKind } from "./lib/workspace";
 import { Logo, Dialog, Spinner } from "./components/ui";
+import { MorphMenu } from "./components/interactions";
 import Dashboard from "./components/Dashboard";
 const Auth = lazy(() => import("./components/Auth"));
 const Editor = lazy(() => import("./components/Editor"));
@@ -111,13 +112,15 @@ function SessionApp() {
       location.hash = "/";
       return;
     }
-    const { error } = await supabase.auth.signOut({ scope: "local" });
-    if (error) {
-      setAuthError(error.message);
-      return;
+    setAuthError("");
+    try {
+      const { error } = await supabase.auth.signOut({ scope: "local" });
+      if (error) throw error;
+      setSession(null);
+      location.hash = "/";
+    } catch {
+      setAuthError("Couldn’t sign out. Please try again.");
     }
-    setSession(null);
-    location.hash = "/";
   }
   if (booting)
     return (
@@ -159,11 +162,17 @@ function SessionApp() {
       session={session}
       demo={demo}
     >
-      <Shell onExit={() => void exit()} />
+      <Shell onExit={() => void exit()} accountError={authError} />
     </WorkspaceProvider>
   );
 }
-function Shell({ onExit }: { onExit: () => void }) {
+function Shell({
+  onExit,
+  accountError,
+}: {
+  onExit: () => void;
+  accountError?: string;
+}) {
   const {
     page,
     navigate,
@@ -175,17 +184,21 @@ function Shell({ onExit }: { onExit: () => void }) {
     editor,
     edit,
     notice,
+    notify,
     busy,
   } = useOne();
+  useEffect(() => {
+    if (accountError) notify(accountError, true);
+  }, [accountError, notify]);
   const [search, setSearch] = useState(false),
-    [quick, setQuick] = useState(false),
     [more, setMore] = useState(false);
-  const quickRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const input =
         e.target instanceof Element
-          ? e.target.closest("input,textarea,select,[contenteditable]")
+          ? e.target.closest(
+              'input,textarea,select,[contenteditable],[role="menu"],[role="listbox"]',
+            )
           : null;
       if ((e.metaKey || e.ctrlKey) && e.key === "k" && !editor) {
         e.preventDefault();
@@ -201,18 +214,10 @@ function Shell({ onExit }: { onExit: () => void }) {
         e.preventDefault();
         edit({ kind: "task" });
       }
-      if (e.key === "Escape") setQuick(false);
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [editor, edit, search]);
-  useEffect(() => {
-    const close = (e: PointerEvent) => {
-      if (!quickRef.current?.contains(e.target as Node)) setQuick(false);
-    };
-    document.addEventListener("pointerdown", close);
-    return () => document.removeEventListener("pointerdown", close);
-  }, []);
   const newItems: { kind: EditorKind; label: string; icon: LucideIcon }[] = [
     { kind: "task", label: "A task", icon: CheckSquare2 },
     { kind: "project", label: "A project", icon: FolderClosed },
@@ -280,13 +285,26 @@ function Shell({ onExit }: { onExit: () => void }) {
             <Settings2 size={19} strokeWidth={1.5} />
             <span className="rail-tooltip">Settings</span>
           </button>
-          <button
-            className="avatar"
-            aria-label="Your account settings"
-            onClick={() => navigate("settings")}
-          >
-            {demo ? "Y" : session?.user.email?.slice(0, 1).toUpperCase() || "Y"}
-          </button>
+          <MorphMenu
+            label="Your account settings"
+            className="one-account-menu"
+            align="start"
+            trigger={
+              demo ? "Y" : session?.user.email?.slice(0, 1).toUpperCase() || "Y"
+            }
+            items={[
+              {
+                label: "Account settings",
+                icon: <Settings2 size={15} />,
+                onSelect: () => navigate("settings"),
+              },
+              {
+                label: demo ? "Leave demo" : "Sign out",
+                icon: <ArrowUpRight size={15} />,
+                onSelect: onExit,
+              },
+            ]}
+          />
         </div>
       </aside>
       <main className="workspace">
@@ -325,33 +343,22 @@ function Shell({ onExit }: { onExit: () => void }) {
                 <span>Search anything</span>
                 <kbd>⌘ K</kbd>
               </button>
-              <div className="quick-create" ref={quickRef}>
-                <button
-                  className="primary-button quick-button"
-                  onClick={() => setQuick(!quick)}
-                  aria-expanded={quick}
-                >
-                  <Plus size={15} />
-                  <span>Create</span>
-                </button>
-                {quick && (
-                  <div className="quick-menu">
-                    {newItems.map(({ kind, label, icon: Icon }) => (
-                      <button
-                        key={kind}
-                        onClick={() => {
-                          edit({ kind });
-                          setQuick(false);
-                        }}
-                      >
-                        <Icon size={15} />
-                        {label}
-                        <Plus size={12} />
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <MorphMenu
+                label="Create"
+                primary
+                className="quick-button"
+                trigger={
+                  <>
+                    <Plus size={15} />
+                    <span>Create</span>
+                  </>
+                }
+                items={newItems.map(({ kind, label, icon: Icon }) => ({
+                  label,
+                  icon: <Icon size={15} />,
+                  onSelect: () => edit({ kind }),
+                }))}
+              />
             </div>
           </header>
           {demo && (

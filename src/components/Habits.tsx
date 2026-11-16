@@ -6,6 +6,7 @@ import { dateLabel } from "../domain/time";
 import { habitDay, habitRange, indexHabitHistory } from "../lib/habit-history";
 import type { HabitRangePreset } from "../lib/habit-history";
 import { CheckButton, Dialog, Empty, EntityIcon, IconButton } from "./ui";
+import { DiscreteTabs } from "./interactions";
 
 const presets: { value: HabitRangePreset; label: string }[] = [
   { value: "week", label: "This week" },
@@ -105,18 +106,12 @@ export default function HabitsPage() {
         </button>
       </div>
       <div className="habit-range-toolbar">
-        <div className="segmented" role="group" aria-label="Habit date range">
-          {presets.map((item) => (
-            <button
-              key={item.value}
-              aria-pressed={preset === item.value}
-              className={preset === item.value ? "active" : ""}
-              onClick={() => setPreset(item.value)}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
+        <DiscreteTabs
+          value={preset}
+          onChange={setPreset}
+          items={presets}
+          label="Habit date range"
+        />
         <span>
           {dateLabel(range.from, { month: "short", day: "numeric" })} –{" "}
           {dateLabel(range.to, { month: "short", day: "numeric" })}

@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { motion } from "motion/react";
+import { useSettle } from "./interactions";
 
 export const iconMap: Record<string, LucideIcon> = {
   folder: Folder,
@@ -134,8 +135,13 @@ export function Card({
   meta?: ReactNode;
   className?: string;
 }) {
+  const transition = useSettle();
   return (
-    <section className={"card " + className}>
+    <motion.section
+      layout="position"
+      transition={transition}
+      className={"card " + className}
+    >
       <div className="card-heading">
         <h2>{title}</h2>
         <div className="card-actions">
@@ -148,7 +154,7 @@ export function Card({
         </div>
       </div>
       {children}
-    </section>
+    </motion.section>
   );
 }
 export function Empty({
@@ -228,6 +234,11 @@ export function Dialog({
       );
       const first = focusables[0],
         last = focusables.at(-1);
+      if (!ref.current?.contains(document.activeElement)) {
+        event.preventDefault();
+        first?.focus();
+        return;
+      }
       if (event.shiftKey && document.activeElement === first) {
         event.preventDefault();
         last?.focus();
