@@ -11,7 +11,6 @@ import {
   ArrowRight,
   Check,
   MoreHorizontal,
-  Moon,
   Table2,
   FileText,
   Sparkles,
@@ -21,7 +20,6 @@ import type { ReactNode } from "react";
 import type { Task, Project } from "../domain/model";
 import { useOne } from "../lib/workspace";
 import { useActions, stages, taskStage } from "../lib/actions";
-import { blocksOnDay, layoutDayBlocks } from "../lib/schedule";
 import type { Stage } from "../lib/actions";
 import {
   addDays,
@@ -31,7 +29,6 @@ import {
   timeKey,
   weekDays,
   monthDays,
-  minutesBetween,
 } from "../domain/time";
 import { CheckButton, Empty, EntityIcon, IconButton } from "./ui";
 
@@ -495,208 +492,7 @@ function ProjectCard({ project }: { project: Project }) {
     </button>
   );
 }
-export function SchedulePage() {
-  const { data, today, zone, edit } = useOne();
-  const [selected, setSelected] = useState(today),
-    [month, setMonth] = useState(today),
-    [view, setView] = useState("day");
-  const scroller = useRef<HTMLDivElement>(null);
-  const days = weekDays(selected);
-  const blocks = blocksOnDay(data.timeBlocks, selected, zone);
-  useEffect(() => {
-    scroller.current?.scrollTo({ top: 7 * 60 });
-  }, [selected, view]);
-  return (
-    <>
-      <PageIntro
-        title="Schedule"
-        subtitle="Give your day a little shape. Leave a little room."
-        action={() => edit({ kind: "block", date: selected })}
-        label="Plan time"
-      />
-      <div className="schedule-layout">
-        <aside className="calendar-panel">
-          <div className="calendar-month">
-            <h3>{dateLabel(month, { month: "long", year: "numeric" })}</h3>
-            <div>
-              <IconButton
-                label="Previous month"
-                onClick={() => setMonth(addMonths(month, -1))}
-              >
-                <ChevronLeft size={14} />
-              </IconButton>
-              <IconButton
-                label="Next month"
-                onClick={() => setMonth(addMonths(month, 1))}
-              >
-                <ChevronRight size={14} />
-              </IconButton>
-            </div>
-          </div>
-          <div className="calendar-grid weekday-labels">
-            {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
-              <span key={i}>{d}</span>
-            ))}
-          </div>
-          <div className="calendar-grid">
-            {monthDays(month).map((day) => (
-              <button
-                key={day}
-                aria-label={dateLabel(day, { dateStyle: "full" })}
-                aria-pressed={day === selected}
-                onClick={() => setSelected(day)}
-                className={
-                  (day === selected ? "selected " : "") +
-                  (day === today ? "is-today " : "") +
-                  (day.slice(0, 7) !== month.slice(0, 7) ? "outside" : "")
-                }
-              >
-                {Number(day.slice(-2))}
-                {data.timeBlocks.some(
-                  (b) => dayKey(b.startsAt, zone) === day,
-                ) && <i />}
-              </button>
-            ))}
-          </div>
-          <div className="calendar-note">
-            <Sparkles size={16} />
-            <p>
-              Time is a place to put your attention.
-              <br />
-              Make it a kind one.
-            </p>
-          </div>
-        </aside>
-        <section className="schedule-main">
-          <div className="schedule-toolbar">
-            <div className="date-navigation">
-              <IconButton
-                label="Previous day"
-                onClick={() =>
-                  setSelected(addDays(selected, view === "week" ? -7 : -1))
-                }
-              >
-                <ChevronLeft size={16} />
-              </IconButton>
-              <h3>{dateLabel(selected, { month: "long", day: "numeric" })}</h3>
-              <IconButton
-                label="Next day"
-                onClick={() =>
-                  setSelected(addDays(selected, view === "week" ? 7 : 1))
-                }
-              >
-                <ChevronRight size={16} />
-              </IconButton>
-              <button
-                className="tiny-pill"
-                onClick={() => {
-                  setSelected(today);
-                  setMonth(today);
-                }}
-              >
-                Today
-              </button>
-            </div>
-            <Tabs
-              value={view}
-              setValue={setView}
-              items={[
-                { value: "day", label: "Day" },
-                { value: "week", label: "Week" },
-              ]}
-            />
-          </div>
-          <div className="schedule-weekstrip">
-            {days.map((d) => (
-              <button
-                key={d}
-                onClick={() => setSelected(d)}
-                className={d === selected ? "selected" : ""}
-              >
-                <span>{dateLabel(d, { weekday: "short" })}</span>
-                <strong>{Number(d.slice(-2))}</strong>
-                <i className={d === today ? "live-dot" : ""} />
-              </button>
-            ))}
-          </div>
-          {view === "week" ? (
-            <div className="week-agenda">
-              {days.map((day) => (
-                <section key={day}>
-                  <h4>
-                    {dateLabel(day, { weekday: "short", day: "numeric" })}
-                  </h4>
-                  {blocksOnDay(data.timeBlocks, day, zone).map((block, i) => (
-                    <button
-                      className={"week-block event-" + (i % 4)}
-                      key={block.id}
-                      onClick={() => edit({ kind: "block", id: block.id })}
-                    >
-                      <time>{timeKey(block.startsAt, zone)}</time>
-                      <strong>{block.title}</strong>
-                      <small>
-                        {minutesBetween(block.startsAt, block.endsAt)} min
-                      </small>
-                    </button>
-                  ))}
-                  <button
-                    className="week-add"
-                    aria-label={"Plan time on " + day}
-                    onClick={() => edit({ kind: "block", date: day })}
-                  >
-                    <Plus size={14} />
-                  </button>
-                </section>
-              ))}
-            </div>
-          ) : (
-            <div className="day-schedule-scroll" ref={scroller}>
-              <div className="day-schedule">
-                <div className="hour-labels">
-                  {Array.from({ length: 24 }, (_, i) => (
-                    <span key={i}>{String(i).padStart(2, "0")}:00</span>
-                  ))}
-                </div>
-                <div className="day-track">
-                  {layoutDayBlocks(blocks, selected, zone).map(
-                    ({ block, start, duration, column, columns }, i) => (
-                      <button
-                        className={"scheduled-block event-" + (i % 4)}
-                        key={block.id}
-                        style={{
-                          top: start,
-                          height: Math.max(duration, 24),
-                          left: "calc(" + (column / columns) * 100 + "% + 8px)",
-                          width: "calc(" + 100 / columns + "% - 16px)",
-                        }}
-                        onClick={() => edit({ kind: "block", id: block.id })}
-                      >
-                        <strong>{block.title}</strong>
-                        <small>
-                          {timeKey(block.startsAt, zone)} –{" "}
-                          {timeKey(block.endsAt, zone)}
-                        </small>
-                      </button>
-                    ),
-                  )}
-                  {!blocks.length && (
-                    <div className="schedule-empty">
-                      <Empty
-                        title="A clear day ahead."
-                        action={() => edit({ kind: "block", date: selected })}
-                        label="Plan some time"
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-        </section>
-      </div>
-    </>
-  );
-}
+export { default as SchedulePage } from "./Schedule";
 export function HabitsPage() {
   const { data, today, edit, execute, busy } = useOne();
   const { toggleHabit, safely } = useActions();
@@ -852,106 +648,7 @@ export function HabitsPage() {
     </>
   );
 }
-export function SleepPage() {
-  const { data, edit, zone } = useOne();
-  const sleep = data.sleepRecords.toSorted((a, b) =>
-    b.endsAt.localeCompare(a.endsAt),
-  );
-  const recent = sleep.slice(0, 7);
-  const net = (s: (typeof sleep)[number]) =>
-    minutesBetween(s.startsAt, s.endsAt) - s.awakeMinutes;
-  const average = recent.length
-    ? Math.round(recent.reduce((sum, s) => sum + net(s), 0) / recent.length)
-    : 0;
-  return (
-    <>
-      <PageIntro
-        title="Sleep"
-        subtitle="A softer landing. A better beginning."
-        action={() => edit({ kind: "sleep" })}
-        label="Log sleep"
-      />
-      <div className="sleep-overview">
-        <div>
-          <span className="eyebrow">RECENT AVERAGE</span>
-          <strong>
-            {Math.floor(average / 60)}
-            <small>h</small> {average % 60}
-            <small>m</small>
-          </strong>
-          <p>Across your last {recent.length} entries</p>
-        </div>
-        <div className="sleep-large-chart">
-          {recent.toReversed().map((record, i) => (
-            <button
-              key={record.id}
-              onClick={() => edit({ kind: "sleep", id: record.id })}
-              aria-label={"Sleep on " + dayKey(record.endsAt, zone)}
-            >
-              <span>{Math.round(net(record) / 6) / 10}h</span>
-              <i
-                style={{ height: Math.max(10, net(record) / 5) }}
-                className={i === recent.length - 1 ? "latest" : ""}
-              />
-              <small>
-                {dateLabel(dayKey(record.endsAt, zone), { weekday: "short" })}
-              </small>
-            </button>
-          ))}
-        </div>
-        <Moon className="sleep-overview-moon" size={68} strokeWidth={0.7} />
-      </div>
-      <div className="table-shell">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Waking up on</th>
-              <th>Fell asleep</th>
-              <th>Woke up</th>
-              <th>Time awake</th>
-              <th>Net sleep</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {sleep.map((record) => (
-              <tr key={record.id}>
-                <td>
-                  {dateLabel(dayKey(record.endsAt, zone), {
-                    weekday: "short",
-                    month: "short",
-                    day: "numeric",
-                  })}
-                </td>
-                <td>{timeKey(record.startsAt, zone)}</td>
-                <td>{timeKey(record.endsAt, zone)}</td>
-                <td>{record.awakeMinutes} min</td>
-                <td className="accent">
-                  {Math.floor(net(record) / 60)}h {net(record) % 60}m
-                </td>
-                <td>
-                  <IconButton
-                    label="Edit sleep entry"
-                    onClick={() => edit({ kind: "sleep", id: record.id })}
-                  >
-                    <ArrowUpRight size={15} />
-                  </IconButton>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {!sleep.length && (
-          <Empty
-            title="Make room for rest."
-            action={() => edit({ kind: "sleep" })}
-            label="Log your first night"
-          />
-        )}
-      </div>
-    </>
-  );
-}
+export { default as SleepPage } from "./SleepHistory";
 export function ThoughtsPage() {
   const { data, edit, zone, today, execute, busy, notify } = useOne();
   const [query, setQuery] = useState(""),

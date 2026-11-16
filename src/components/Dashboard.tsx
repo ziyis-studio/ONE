@@ -2,7 +2,6 @@ import {
   Plus,
   ArrowUpRight,
   Moon,
-  Sun,
   ArrowRight,
   Sparkles,
   Clock3,
@@ -18,6 +17,7 @@ import {
   minutesBetween,
 } from "../domain/time";
 import { Card, CheckButton, Empty, EntityIcon } from "./ui";
+import WeatherCard from "./WeatherCard";
 export default function Dashboard() {
   const { data, today, zone, now, edit, navigate, busy } = useOne();
   const { toggleTask, toggleHabit, safely } = useActions();
@@ -63,11 +63,9 @@ export default function Dashboard() {
             })}
           </p>
           <h1>
-            A little space for today<span className="accent">.</span>
+            Today<span className="accent">.</span>
           </h1>
-          <p className="page-description">
-            Take a breath. Make room for what matters.
-          </p>
+          <p className="page-description">Your day, at a glance.</p>
         </div>
         <span className="intro-pill">
           <span className="live-dot" />
@@ -75,8 +73,9 @@ export default function Dashboard() {
         </span>
       </div>
       <div className="dashboard-grid">
+        <WeatherCard />
         <Card
-          title="Daily rituals"
+          title="Habits"
           action={() => navigate("habits")}
           className="habits-card"
           meta={
@@ -151,7 +150,7 @@ export default function Dashboard() {
           )}
         </Card>
         <Card
-          title="Rest & recharge"
+          title="Sleep"
           action={() => navigate("sleep")}
           className="sleep-card"
         >
@@ -221,31 +220,7 @@ export default function Dashboard() {
           )}
         </Card>
         <Card
-          title="Here & now"
-          className="clock-card"
-          meta={<Sun size={16} strokeWidth={1.3} />}
-        >
-          <div className="clock-art">
-            <i />
-            <i />
-            <i />
-          </div>
-          <div className="clock-zone">
-            {zone.split("/").at(-1)?.replaceAll("_", " ")}
-          </div>
-          <div className="clock-time">
-            {timeKey(now, zone)}
-            <span>
-              {Number(timeKey(now, zone).slice(0, 2)) >= 12 ? "PM" : "AM"}
-            </span>
-          </div>
-          <div className="clock-footer">
-            <span className="live-dot" />
-            There’s no rush. You’re right here.
-          </div>
-        </Card>
-        <Card
-          title="Today’s focus"
+          title="Tasks"
           action={() => navigate("tasks")}
           className="tasks-card"
           meta={
@@ -321,7 +296,7 @@ export default function Dashboard() {
           )}
         </Card>
         <Card
-          title="A shape to your day"
+          title="Schedule"
           action={() => navigate("schedule")}
           className="timeline-card"
           meta={
@@ -383,7 +358,7 @@ export default function Dashboard() {
           )}
         </Card>
         <Card
-          title="On your mind"
+          title="Thoughts"
           action={() => navigate("thoughts")}
           className="thoughts-card"
         >
@@ -423,7 +398,7 @@ export default function Dashboard() {
           )}
         </Card>
         <Card
-          title="Kept for later"
+          title="Notes"
           action={() => navigate("notes")}
           className="notes-card"
           meta={<span className="fine">{data.notes.length} notes</span>}

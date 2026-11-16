@@ -178,9 +178,10 @@ function Shell({ onExit }: { onExit: () => void }) {
   const quickRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      const input = (e.target as HTMLElement).closest(
-        "input,textarea,select,[contenteditable]",
-      );
+      const input =
+        e.target instanceof Element
+          ? e.target.closest("input,textarea,select,[contenteditable]")
+          : null;
       if ((e.metaKey || e.ctrlKey) && e.key === "k" && !editor) {
         e.preventDefault();
         setSearch((s) => !s);

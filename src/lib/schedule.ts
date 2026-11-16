@@ -1,5 +1,48 @@
 import type { TimeBlock } from "../domain/model";
-import { dayBounds, timeKey } from "../domain/time";
+import { addDays, dayBounds, timeKey, wallTime } from "../domain/time";
+import type { BlockInput } from "../domain/commands";
+export const SCHEDULE_SNAP = 15;
+export function snapMinute(value: number) {
+  return Math.max(
+    0,
+    Math.min(1440, Math.round(value / SCHEDULE_SNAP) * SCHEDULE_SNAP),
+  );
+}
+export function minuteTimestamp(day: string, minute: number, zone: string) {
+  const actualDay = addDays(day, Math.floor(minute / 1440));
+  const value = ((minute % 1440) + 1440) % 1440;
+  return wallTime(
+    actualDay,
+    String(Math.floor(value / 60)).padStart(2, "0") +
+      ":" +
+      String(value % 60).padStart(2, "0"),
+    zone,
+  );
+}
+export function rescheduledBlock(
+  block: TimeBlock,
+  day: string,
+  zone: string,
+  minute?: number,
+  duration?: number,
+): BlockInput {
+  const startsAt =
+    minute === undefined
+      ? wallTime(day, timeKey(block.startsAt, zone), zone)
+      : minuteTimestamp(day, minute, zone);
+  return {
+    title: block.title,
+    description: block.description,
+    timeZone: zone,
+    startsAt,
+    endsAt: new Date(
+      Date.parse(startsAt) +
+        (duration === undefined
+          ? Date.parse(block.endsAt) - Date.parse(block.startsAt)
+          : duration * 60_000),
+    ).toISOString(),
+  };
+}
 export function blocksOnDay(blocks: TimeBlock[], day: string, zone: string) {
   const [start, end] = dayBounds(day, zone);
   return blocks

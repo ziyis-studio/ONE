@@ -99,8 +99,12 @@ export default function Editor() {
           "T" +
           timeKey((block || sleep)!.startsAt, zone)
       : kind === "sleep"
-        ? addDays(today, -1) + "T23:00"
-        : (editor!.date || today) + "T09:00",
+        ? addDays(editor!.date || today, -1) + "T23:00"
+        : editor!.startsAt
+          ? dayKey(editor!.startsAt, zone) +
+            "T" +
+            timeKey(editor!.startsAt, zone)
+          : (editor!.date || today) + "T09:00",
   );
   const [end, setEnd] = useState(
     block || sleep
@@ -108,8 +112,10 @@ export default function Editor() {
           "T" +
           timeKey((block || sleep)!.endsAt, zone)
       : kind === "sleep"
-        ? today + "T07:00"
-        : (editor!.date || today) + "T10:00",
+        ? (editor!.date || today) + "T07:00"
+        : editor!.endsAt
+          ? dayKey(editor!.endsAt, zone) + "T" + timeKey(editor!.endsAt, zone)
+          : (editor!.date || today) + "T10:00",
   );
   const [awake, setAwake] = useState(sleep?.awakeMinutes || 0),
     [sleepNote, setSleepNote] = useState(sleep?.note || "");

@@ -21,12 +21,12 @@ npm run build
 
 ## Included
 
-- A responsive daily overview, sidebar and mobile navigation, keyboard search (⌘/Ctrl K), and quick creation (N).
+- A neutral dark interface with white/gray type, a time-and-weather card first, varied dashboard card widths, sidebar and mobile navigation, keyboard search (⌘/Ctrl K), and quick creation (N).
 - Email/username password login, signup, password reset and recovery, session refresh, and local sign-out.
 - Task board and list, drag between statuses, project filters, due dates, tags, completion conditions, and server revision checks.
 - Projects with task progress and completion gates.
-- Day/week scheduling, calendar navigation, linked tasks, overlapping blocks, and time zone preferences.
-- Weekly habits with separate planned dates and actual executions; manual sleep entries and net sleep charts.
+- Month/week/day scheduling with month view as the default. Drag blocks between dates, move/resize them directly on the day timeline, or drag empty desktop timeline space to create a time block. Changes snap to 15 minutes; linked tasks/occurrences and revision checks are preserved.
+- Weekly habits with separate planned dates and actual executions. Sleep history uses an interactive year heatmap with wake-date grouping, net duration, year navigation, and editable day details.
 - Thought timeline, date filtering, emotion labels, and conversion into tasks.
 - Markdown notes, typed databases (text, number, date, status, checkbox, tags), and record editing.
 - Profile username editing and JSON export.
@@ -50,8 +50,12 @@ For signup and password reset on a new production domain, add that exact origin 
 
 ## Verification and limits
 
-Automated checks exercise login steps, all workspace modules, task creation and conditions, Markdown preview, typed records, sample isolation, schedule overlaps, and authenticated proxy behavior. They use synthetic data and mocked cloud responses, never production-user writes.
+Automated checks exercise login steps, all workspace modules, task creation and conditions, Markdown preview, typed records, sample isolation, schedule overlaps and drag interactions, sleep history aggregation, the neutral palette, and authenticated proxy behavior. They use synthetic data and mocked cloud responses, never production-user writes.
 
 The managed browser/preview service was unavailable during the initial implementation, so actual desktop/mobile visual QA and an authenticated real-account production round trip still need verification. The application does not claim either check has passed.
 
 Notes use Markdown rather than a collaborative block editor. Database formulas, relations, rollups, and collaborative editing are outside the existing API contract.
+
+## Weather
+
+The first dashboard card reads current conditions from Open-Meteo for the city shown. The city follows supported workspace time zones (Kuala Lumpur by default); this does not infer the device’s precise location. No account credentials or workspace records are sent to Open-Meteo. Requests time out after 10 seconds, failures show an unavailable state, and the card includes manual refresh.

@@ -27,6 +27,18 @@ beforeEach(() => {
   localStorage.clear();
   location.hash = "/";
   signIn.mockReset();
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () =>
+      Response.json({
+        current: {
+          temperature_2m: 28.4,
+          weather_code: 2,
+          time: "2026-11-16T12:00",
+        },
+      }),
+    ),
+  );
   vi.stubGlobal("matchMedia", () => ({
     matches: true,
     addEventListener: () => {},
@@ -48,7 +60,7 @@ async function openDemo() {
   await userEvent.click(
     await screen.findByRole("button", { name: "Explore ONE" }),
   );
-  await screen.findByRole("heading", { name: /A little space for today/ });
+  await screen.findByRole("heading", { name: "Today." });
 }
 describe("ONE interface flows", () => {
   it("guides email and username login through the password step and exposes provider errors", async () => {
@@ -69,7 +81,15 @@ describe("ONE interface flows", () => {
     await screen.findByText("Check your username and password.");
   });
   it("opens every workspace module from a populated sample without a cloud request", async () => {
-    const fetch = vi.fn();
+    const fetch = vi.fn(async () =>
+      Response.json({
+        current: {
+          temperature_2m: 28,
+          weather_code: 2,
+          time: "2026-11-16T12:00",
+        },
+      }),
+    );
     vi.stubGlobal("fetch", fetch);
     await openDemo();
     for (const name of [
@@ -89,7 +109,13 @@ describe("ONE interface flows", () => {
         ).toBeTruthy(),
       );
     }
-    expect(fetch).not.toHaveBeenCalled();
+    expect(
+      fetch.mock.calls.every((call) =>
+        String((call as unknown[])[0]).startsWith(
+          "https://api.open-meteo.com/",
+        ),
+      ),
+    ).toBe(true);
   });
   it("creates a task and persists it through a workspace reload", async () => {
     await openDemo();

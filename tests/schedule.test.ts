@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { blocksOnDay, layoutDayBlocks } from "../src/lib/schedule";
+import {
+  blocksOnDay,
+  layoutDayBlocks,
+  rescheduledBlock,
+  minuteTimestamp,
+  snapMinute,
+} from "../src/lib/schedule";
 import type { TimeBlock } from "../src/domain/model";
 function block(id: string, startsAt: string, endsAt: string): TimeBlock {
   return {
@@ -14,6 +20,28 @@ function block(id: string, startsAt: string, endsAt: string): TimeBlock {
   };
 }
 describe("schedule day projection", () => {
+  it("moves between dates with the same local start and duration, including an overnight end", () => {
+    const original = block(
+      "overnight",
+      "2026-11-16T23:30:00+08:00",
+      "2026-11-17T01:00:00+08:00",
+    );
+    const input = rescheduledBlock(original, "2026-11-20", "Asia/Kuala_Lumpur");
+    expect(new Date(input.startsAt).toISOString()).toBe(
+      "2026-11-20T15:30:00.000Z",
+    );
+    expect(input.endsAt).toBe("2026-11-20T17:00:00.000Z");
+    expect(Date.parse(input.endsAt) - Date.parse(input.startsAt)).toBe(
+      90 * 60_000,
+    );
+    expect(snapMinute(547)).toBe(540);
+    expect(snapMinute(548)).toBe(555);
+    expect(
+      new Date(
+        minuteTimestamp("2026-11-16", 1440, "Asia/Kuala_Lumpur"),
+      ).toISOString(),
+    ).toBe("2026-11-16T16:00:00.000Z");
+  });
   it("includes and clips blocks that cross midnight", () => {
     const overnight = block(
       "overnight",

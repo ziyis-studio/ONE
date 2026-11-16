@@ -44,6 +44,8 @@ export type Editor = {
   projectId?: string;
   databaseId?: string;
   date?: string;
+  startsAt?: string;
+  endsAt?: string;
 };
 type Notice = { message: string; error?: boolean } | null;
 interface OneContext {
