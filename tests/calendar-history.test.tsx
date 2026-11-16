@@ -163,7 +163,13 @@ describe("calendar and history interactions", () => {
     );
     await screen.findByRole("heading", { name: "Schedule.", level: 1 });
     const calendar = screen.getByRole("region", { name: "Schedule calendar" });
-    expect(within(calendar).getByText(name)).toBeTruthy();
+    expect(
+      within(
+        calendar.querySelector(
+          `[data-block-id="${state.timeBlocks[0].id}"]`,
+        ) as HTMLElement,
+      ).getByText(name),
+    ).toBeTruthy();
     expect(within(calendar).queryByText("Untitled block")).toBe(null);
     await userEvent.click(screen.getByRole("button", { name: "Week" }));
     expect(

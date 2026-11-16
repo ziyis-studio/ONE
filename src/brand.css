@@ -12,12 +12,14 @@
   stroke: var(--one-accent-mark);
 }
 .one-shell .primary-button,
+.one-confirm .primary-button,
 .one-auth .one-auth-submit {
   background: var(--one-accent);
   border-color: var(--one-accent);
   color: #fff;
 }
 .one-shell .primary-button:hover:not(:disabled),
+.one-confirm .primary-button:hover:not(:disabled),
 .one-auth .one-auth-submit:hover:not(:disabled) {
   background: var(--one-accent-hover);
   border-color: var(--one-accent-hover);
@@ -194,9 +196,19 @@
   color: #fff;
 }
 .one-shell .one-timeline-header > button.is-today {
-  background: var(--one-accent);
-  color: #fff;
+  background: #1c1c1c;
+  color: #aaa;
 }
-.one-shell .one-timeline-header > button.is-today > * {
+.one-shell .one-timeline-header > button.is-today > span {
+  color: #aaa;
+}
+.one-shell .one-timeline-header > button.is-today > strong {
+  display: grid;
+  place-items: center;
+  min-width: 29px;
+  min-height: 29px;
+  padding: 4px 7px;
+  border-radius: 8px;
+  background: var(--one-accent);
   color: #fff;
 }

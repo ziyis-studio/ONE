@@ -46,6 +46,81 @@
   background: #1c1c1c;
   border-bottom: 1px solid #ffffff10;
 }
+.one-timeline-heading {
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  background: #1c1c1c;
+}
+.one-timeline-heading > .one-timeline-header {
+  position: static;
+}
+.one-timeline-week .one-timeline-heading {
+  min-width: 754px;
+}
+.one-deadline-row {
+  display: grid;
+  border-bottom: 1px solid #ffffff10;
+  background: #1c1c1c;
+}
+.one-deadline-row > span {
+  padding: 14px 8px;
+  font-size: 10px;
+  color: #999;
+}
+.one-deadline-cell {
+  min-width: 0;
+  padding: 8px 6px;
+  border-left: 1px solid #ffffff08;
+  max-height: 150px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+button.one-deadline {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  min-height: 27px;
+  padding: 5px 7px;
+  border: 1px solid #454545;
+  border-radius: 6px;
+  background: #2b2b2b;
+  color: #eee;
+  text-align: left;
+  font-size: 10px;
+}
+button.one-deadline:hover {
+  border-color: var(--one-accent-mark);
+  background: #353535;
+}
+.one-deadline > svg {
+  flex-shrink: 0;
+  color: var(--one-accent-mark);
+}
+.one-deadline > small {
+  color: #aaa;
+  font-size: 8px;
+  flex-shrink: 0;
+}
+.one-deadline > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.one-deadline.is-complete > span {
+  color: #999;
+  text-decoration: line-through;
+}
+.one-deadline.is-complete > svg {
+  color: #aaa;
+}
+.one-timeline-week .one-deadline > small {
+  display: none;
+}
 .one-timeline-header > button {
   min-height: 54px;
   display: flex;

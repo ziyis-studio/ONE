@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useViewState } from "../lib/view-state";
 import { GripVertical, Plus, Search } from "lucide-react";
 import { useOne } from "../lib/workspace";
 import { Empty } from "./ui";
@@ -10,7 +10,7 @@ export default function ScheduleTasks({
   onPlan: (taskId: string, day: string, minute?: number) => void;
 }) {
   const { data, edit, busy } = useOne();
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useViewState<string>("schedule.query", "");
   const tasks = data.tasks.filter(
     (task) =>
       !task.completedAt &&
@@ -51,7 +51,7 @@ export default function ScheduleTasks({
               aria-label={task.title}
               onDragStart={(event) => {
                 event.dataTransfer.setData("text/one-task", task.id);
-                event.dataTransfer.effectAllowed = "copy";
+                event.dataTransfer.effectAllowed = "move";
               }}
             >
               <GripVertical size={14} className="one-task-grip" />

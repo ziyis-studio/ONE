@@ -1,7 +1,7 @@
-import { useState } from "react";
 import { motion } from "motion/react";
 import { ContentSwitch, DiscreteTabs, useSettle } from "./interactions";
 import { Plus, ArrowUpRight, Moon, ArrowRight, Clock3 } from "lucide-react";
+import { useViewState } from "../lib/view-state";
 import { useOne } from "../lib/workspace";
 import { useActions } from "../lib/actions";
 import { blocksOnDay, timeBlockTitle } from "../lib/schedule";
@@ -18,7 +18,10 @@ import { PageDate } from "./PageDate";
 export default function Dashboard() {
   const { data, today, zone, now, edit, navigate, busy } = useOne();
   const { toggleTask, toggleHabit, safely } = useActions();
-  const [thoughtView, setThoughtView] = useState<"recent" | "linked">("recent");
+  const [thoughtView, setThoughtView] = useViewState<"recent" | "linked">(
+    "home.thoughts",
+    "recent",
+  );
   const transition = useSettle();
   const linkedThoughts = new Set([
     ...data.thoughtTaskLinks.map((link) => link.thoughtId),

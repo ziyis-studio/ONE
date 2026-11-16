@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { useState } from "react";
+import { ConfirmationProvider } from "../src/lib/confirmation";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   cleanup,
@@ -32,24 +33,28 @@ function Example({ multiple = false }: { multiple?: boolean }) {
   const [value, setValue] = useState("");
   const [values, setValues] = useState<string[]>([]);
   return (
-    <Dialog title="Editor" onClose={vi.fn()}>
-      {multiple ? (
-        <MultiSelectField
-          label="Tasks"
-          value={values}
-          onChange={setValues}
-          options={options.slice(1)}
-        />
-      ) : (
-        <SelectField
-          label="Project"
-          value={value}
-          onChange={setValue}
-          options={options}
-        />
-      )}
-      <output aria-label="Value">{multiple ? values.join(",") : value}</output>
-    </Dialog>
+    <ConfirmationProvider>
+      <Dialog title="Editor" onClose={vi.fn()}>
+        {multiple ? (
+          <MultiSelectField
+            label="Tasks"
+            value={values}
+            onChange={setValues}
+            options={options.slice(1)}
+          />
+        ) : (
+          <SelectField
+            label="Project"
+            value={value}
+            onChange={setValue}
+            options={options}
+          />
+        )}
+        <output aria-label="Value">
+          {multiple ? values.join(",") : value}
+        </output>
+      </Dialog>
+    </ConfirmationProvider>
   );
 }
 describe("standard ONE selects", () => {

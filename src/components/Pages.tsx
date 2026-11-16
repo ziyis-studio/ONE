@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import type { Task, Project, Note } from "../domain/model";
+import { useViewState } from "../lib/view-state";
 import { useOne } from "../lib/workspace";
 import { useActions, stages, taskStage } from "../lib/actions";
 import type { Stage } from "../lib/actions";
@@ -107,16 +108,20 @@ const matches = (query: string, ...values: (string | undefined)[]) =>
 export function TasksPage() {
   const { data, edit, busy, today } = useOne();
   const { toggleTask, moveTask, rename, safely } = useActions();
-  const [view, setView] = useState("board"),
-    [query, setQuery] = useState(""),
-    [project, setProject] = useState("all");
+  const [view, setView] = useViewState<string>("tasks.view", "board"),
+    [query, setQuery] = useViewState<string>("tasks.query", ""),
+    [project, setProject] = useViewState<string>("tasks.project", "all");
   const [dragOver, setDragOver] = useState("");
   const collectionId = useId(),
     collectionTransition = useSettle();
+  const activeProject =
+    project === "all" || data.projects.some((item) => item.id === project)
+      ? project
+      : "all";
   const tasks = data.tasks.filter(
     (t) =>
       matches(query, t.title, t.description, t.tags?.join(" ")) &&
-      (project === "all" || t.projectId === project),
+      (activeProject === "all" || t.projectId === activeProject),
   );
   const open = data.tasks.filter((t) => !t.completedAt).length;
   return (
@@ -143,7 +148,7 @@ export function TasksPage() {
         />
         <FilterPicker
           label="Filter by project"
-          value={project}
+          value={activeProject}
           onChange={setProject}
           options={[
             { value: "all", label: "All projects" },
@@ -193,7 +198,9 @@ export function TasksPage() {
                       </span>
                       <IconButton
                         label={"Add task in " + stage.title}
-                        onClick={() => edit({ kind: "task" })}
+                        onClick={() =>
+                          edit({ kind: "task", initialStage: stage.id })
+                        }
                       >
                         <Plus size={15} />
                       </IconButton>
@@ -409,9 +416,12 @@ function TaskCard({ task }: { task: Task }) {
 }
 export function ProjectsPage() {
   const { data, edit } = useOne();
-  const [query, setQuery] = useState(""),
-    [view, setView] = useState("board"),
-    [stageFilter, setStageFilter] = useState("all");
+  const [query, setQuery] = useViewState<string>("projects.query", ""),
+    [view, setView] = useViewState<string>("projects.view", "board"),
+    [stageFilter, setStageFilter] = useViewState<string>(
+      "projects.status",
+      "all",
+    );
   const status = (p: Project) =>
     p.completedAt ? "done" : p.workStatus === "on_hold" ? "hold" : "progress";
   const projects = data.projects.filter(
@@ -480,7 +490,9 @@ export function ProjectsPage() {
                           "Add project in " +
                           (stage.id === "progress" ? "In motion" : stage.title)
                         }
-                        onClick={() => edit({ kind: "project" })}
+                        onClick={() =>
+                          edit({ kind: "project", initialStage: stage.id })
+                        }
                       >
                         <Plus size={15} />
                       </IconButton>
@@ -534,10 +546,10 @@ export { default as HabitsPage } from "./Habits";
 export { default as SleepPage } from "./SleepHistory";
 export function ThoughtsPage() {
   const { data, edit, zone, today, execute, busy, notify } = useOne();
-  const [query, setQuery] = useState(""),
-    [filter, setFilter] = useState("all"),
-    [day, setDay] = useState(""),
-    [month, setMonth] = useState(today);
+  const [query, setQuery] = useViewState<string>("thoughts.query", ""),
+    [filter, setFilter] = useViewState<string>("thoughts.filter", "all"),
+    [day, setDay] = useViewState<string>("thoughts.day", ""),
+    [month, setMonth] = useViewState<string>("thoughts.month", today);
   const thoughts = data.thoughts
     .filter(
       (t) =>
@@ -719,9 +731,9 @@ export function ThoughtsPage() {
 export function NotesPage() {
   const { data, edit } = useOne();
   const collectionId = useId();
-  const [view, setView] = useState("notes"),
-    [query, setQuery] = useState(""),
-    [databaseId, setDatabaseId] = useState("");
+  const [view, setView] = useViewState<string>("notes.view", "notes"),
+    [query, setQuery] = useViewState<string>("notes.query", ""),
+    [databaseId, setDatabaseId] = useViewState<string>("notes.database", "");
   const notes = data.notes
     .filter((n) => matches(query, n.title, n.content, n.tags?.join(" ")))
     .toSorted((a, b) => b.updatedAt.localeCompare(a.updatedAt));

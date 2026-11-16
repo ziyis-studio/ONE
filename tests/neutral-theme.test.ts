@@ -17,6 +17,8 @@ describe("ONE neutral foundation and configurable accent", () => {
       "src/components/workspace-loading.css",
       "src/components/date-time-field.css",
       "src/components/appearance-settings.css",
+      "src/components/confirmation.css",
+      "src/components/sleep-history.css",
     ]) {
       const source = readFileSync(file, "utf8");
       const colors = [

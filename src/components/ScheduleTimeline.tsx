@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent, RefObject } from "react";
 import { GripHorizontal } from "lucide-react";
 import type { TimeBlock } from "../domain/model";
+import ScheduleDeadline from "./ScheduleDeadline";
 import { useOne } from "../lib/workspace";
 import {
   blocksOnDay,
@@ -34,7 +35,7 @@ type Actions = {
     duration?: number,
   ) => Promise<void>;
   onAttach: (block: TimeBlock, taskId: string) => Promise<void>;
-  onPlan: (taskId: string, day: string, minute: number) => void;
+  onPlan: (taskId: string, day: string, minute: number) => Promise<void>;
 };
 function clockLabel(minute: number) {
   return (
@@ -49,7 +50,12 @@ export default function ScheduleTimeline({
   onDay,
   ...actions
 }: Actions & { days: string[]; week: boolean; onDay: (day: string) => void }) {
-  const { today, zone } = useOne();
+  const { today, zone, data } = useOne();
+  const dueDays = days.map((day) =>
+    data.tasks
+      .filter((task) => task.deadline === day)
+      .toSorted((a, b) => Number(!!a.completedAt) - Number(!!b.completedAt)),
+  );
   const scroller = useRef<HTMLDivElement>(null);
   const key = days.join(":");
   useEffect(() => {
@@ -63,31 +69,55 @@ export default function ScheduleTimeline({
     >
       <div className="one-timeline-zone">{zone.replaceAll("_", " ")}</div>
       <div className="one-timeline-scroll" ref={scroller}>
-        <div
-          className="one-timeline-header"
-          style={{
-            gridTemplateColumns: `54px repeat(${days.length},minmax(${week ? 100 : 0}px,1fr))`,
-          }}
-        >
-          <span />
-          {days.map((day) => (
-            <button
-              key={day}
-              className={day === today ? "is-today" : ""}
-              onClick={() => onDay(day)}
-              aria-label={"Open day " + day}
+        <div className="one-timeline-heading">
+          <div
+            className="one-timeline-header"
+            style={{
+              gridTemplateColumns: `54px repeat(${days.length},minmax(${week ? 100 : 0}px,1fr))`,
+            }}
+          >
+            <span />
+            {days.map((day) => (
+              <button
+                key={day}
+                className={day === today ? "is-today" : ""}
+                onClick={() => onDay(day)}
+                aria-label={"Open day " + day}
+              >
+                <span>
+                  {dateLabel(day, { weekday: week ? "short" : "long" })}
+                </span>
+                <strong>
+                  {dateLabel(day, {
+                    month: week ? undefined : "short",
+                    day: "numeric",
+                  })}
+                </strong>
+              </button>
+            ))}
+          </div>
+          {dueDays.some((tasks) => tasks.length) && (
+            <div
+              className="one-deadline-row"
+              style={{
+                gridTemplateColumns: `54px repeat(${days.length},minmax(${week ? 100 : 0}px,1fr))`,
+              }}
             >
-              <span>
-                {dateLabel(day, { weekday: week ? "short" : "long" })}
-              </span>
-              <strong>
-                {dateLabel(day, {
-                  month: week ? undefined : "short",
-                  day: "numeric",
-                })}
-              </strong>
-            </button>
-          ))}
+              <span>Due</span>
+              {days.map((day, index) => (
+                <div
+                  className="one-deadline-cell"
+                  key={day}
+                  role="group"
+                  aria-label={"Tasks due " + day}
+                >
+                  {dueDays[index].map((task) => (
+                    <ScheduleDeadline key={task.id} task={task} />
+                  ))}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
         <div
           className="one-time-grid"
@@ -287,15 +317,23 @@ function TimelineTrack({
           event.dataTransfer.types.some((type) =>
             ["text/one-task", "text/one-block"].includes(type),
           )
-        )
+        ) {
           event.preventDefault();
+          event.dataTransfer.dropEffect = "move";
+        }
       }}
       onDrop={(event) => {
         event.preventDefault();
         const taskId = event.dataTransfer.getData("text/one-task");
         const minute = Math.min(1425, pointerMinute(event.clientY));
-        if (taskId) onPlan(taskId, day, minute);
-        else {
+        if (taskId) {
+          setPending({
+            kind: "create",
+            start: minute,
+            duration: Math.min(30, 1440 - minute),
+          });
+          void onPlan(taskId, day, minute).finally(() => setPending(null));
+        } else {
           const block = data.timeBlocks.find(
             (item) => item.id === event.dataTransfer.getData("text/one-block"),
           );
@@ -329,6 +367,7 @@ function TimelineTrack({
                 if (event.dataTransfer.types.includes("text/one-task")) {
                   event.preventDefault();
                   event.stopPropagation();
+                  event.dataTransfer.dropEffect = "move";
                   setTaskOver(block.id);
                 }
               }}
@@ -432,15 +471,15 @@ function TimelineTrack({
           );
         },
       )}
-      {preview?.kind === "create" && (
+      {display?.kind === "create" && (
         <div
           className="schedule-create-preview"
-          style={{ top: preview.start, height: preview.duration }}
+          style={{ top: display.start, height: display.duration }}
         >
-          <strong>New time block</strong>
+          <strong>{pending ? "Scheduling…" : "New time block"}</strong>
           <small>
-            {clockLabel(preview.start)} –{" "}
-            {clockLabel(preview.start + preview.duration)}
+            {clockLabel(display.start)} –{" "}
+            {clockLabel(display.start + display.duration)}
           </small>
         </div>
       )}

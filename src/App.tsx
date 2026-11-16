@@ -28,6 +28,7 @@ import { ChartTooltipScope } from "./components/ChartTooltip";
 import { timeBlockTitle } from "./lib/schedule";
 import WorkspaceLoading from "./components/WorkspaceLoading";
 import { ThemeProvider } from "./lib/theme";
+import { ConfirmationProvider } from "./lib/confirmation";
 import Dashboard from "./components/Dashboard";
 import Navigation, {
   useSidebar,
@@ -62,7 +63,9 @@ export default function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider>
-        <SessionApp />
+        <ConfirmationProvider>
+          <SessionApp />
+        </ConfirmationProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );

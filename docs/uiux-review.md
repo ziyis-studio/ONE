@@ -17,15 +17,27 @@ this is not an audit of credentialed production records or physical touch device
 - All nine desktop and phone routes remained within the viewport and produced
   no browser runtime errors in the checks.
 
-## Prioritized follow-ups
+## Follow-ups completed
 
-| Priority | Observed issue                                                                                                                       | Recommended result                                                                                                                                    | Evidence                                                                                                                                                                 |
-| -------- | ------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| High     | Discard/delete/reset confirmations still use browser dialogs. The account username form also relies on native constraint validation. | One ONE confirmation component, safe cancel focus, specific action labels, and inline username feedback. Preserve existing unsaved-change protection. | `src/components/ui.tsx`, `Editor.tsx`, `Settings.tsx` still contain `window.confirm`; the username form has native `required`, `pattern`, and no custom invalid handler. |
-| Medium   | Switching Tasks to List, visiting Home and returning restores Board. Calendar and project view/filter state also initialize anew.    | Remember view, filters and selected calendar date while moving between modules; optionally persist these preferences between visits.                  | The Tasks navigation sequence was reproduced in Chromium; route-local initial state in `Pages.tsx` and `Schedule.tsx`.                                                   |
-| Medium   | Column header plus controls open a generic new task/project editor, regardless of column.                                            | Default the new item's status to the clicked column. Decide explicitly how creation in Done should work.                                              | Both handlers in `Pages.tsx` pass only the item kind; `Editor.tsx` initializes new work status to Active.                                                                |
-| Medium   | The phone Sleep heatmap opens at January even late in the year, so recent dates are off-screen.                                      | Initially reveal the selected/current date, or offer recent 30 days / this month with the year as an overview.                                        | Phone Sleep capture `test-results/appearance/review-mobile-sleep.png` shows Jan–May for a November workspace date.                                                       |
-| Later    | Appearance, timezone and sidebar preferences are saved only in this browser.                                                         | If cross-device personalization is wanted, sync a small preference object to the account while keeping a local startup cache.                         | Existing local preference storage; current Settings accurately states its browser-only scope.                                                                            |
+The four approved items are now implemented; see
+[workflow-followups-plan.md](workflow-followups-plan.md) and the detailed checks
+in [REHEARSAL.md](../src/components/REHEARSAL.md).
 
-Suggested next pass: confirmation/validation consistency first, then navigation
-memory and contextual column creation, followed by the mobile history view.
+- ONE confirmation dialogs replace native discard/delete/reset prompts. Username
+  errors appear inline. Cancel preserves drafts and restores focus.
+- Views, searches, filters and calendar/history selection survive navigation for
+  this workspace visit. Signing out clears this temporary state.
+- Column plus controls preselect the column status. Creation saves that status
+  atomically through validated API input, including Done and completion gates.
+- Sleep starts with Last 30 days; month/year modes remain available, and the year
+  view reveals the current selection on phones.
+
+Additional requests are included: a white/primary two-part favicon; task deadline
+entries in calendar month/week/day; direct drag-to-schedule without a creation
+popup; move drag feedback; and a compact current-day date badge.
+
+## Later option
+
+Appearance, timezone and sidebar preferences remain browser-local, as stated in
+Settings. Cross-device preference synchronization can be added separately with
+an account preference record and a local startup cache.

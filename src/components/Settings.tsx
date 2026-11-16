@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Download,
   LogOut,
@@ -15,8 +15,14 @@ import { PageIntro } from "./Pages";
 import { SelectField } from "./SelectField";
 import { Spinner } from "./ui";
 import AppearanceSettings from "./AppearanceSettings";
+import { useConfirm } from "../lib/confirmation";
+import { useResetViews } from "../lib/view-state";
 export default function Settings({ onExit }: { onExit: () => void }) {
   const { data, zone, setZone, session, demo, notify, reload } = useOne();
+  const confirm = useConfirm();
+  const resetViews = useResetViews();
+  const usernameRef = useRef<HTMLInputElement>(null),
+    savingRef = useRef(false);
   const [username, setUsername] = useState(""),
     [saving, setSaving] = useState(false),
     [loading, setLoading] = useState(!demo),
@@ -42,6 +48,18 @@ export default function Settings({ onExit }: { onExit: () => void }) {
     };
   }, [demo, session?.user.id]);
   async function saveProfile() {
+    if (loading || savingRef.current) return;
+    const normalized = username.trim().toLowerCase();
+    if (!/^[a-z0-9][a-z0-9_.-]{2,31}$/.test(normalized)) {
+      setProfileError(
+        !normalized
+          ? "Enter a username."
+          : "Use 3–32 letters, numbers, dots, dashes or underscores. Start with a letter or number.",
+      );
+      usernameRef.current?.focus();
+      return;
+    }
+    savingRef.current = true;
     setSaving(true);
     setProfileError("");
     try {
@@ -49,14 +67,16 @@ export default function Settings({ onExit }: { onExit: () => void }) {
       if (!auth.session) throw new Error("Please sign in again.");
       await api("/v1/profile", auth.session.access_token, {
         method: "PATCH",
-        body: JSON.stringify({ username: username.trim().toLowerCase() }),
+        body: JSON.stringify({ username: normalized }),
       });
+      setUsername(normalized);
       notify("Your username is saved.");
     } catch (cause) {
       setProfileError(
         cause instanceof Error ? cause.message : "Could not save.",
       );
     } finally {
+      savingRef.current = false;
       setSaving(false);
     }
   }
@@ -154,6 +174,7 @@ export default function Settings({ onExit }: { onExit: () => void }) {
           </header>
           {!demo && (
             <form
+              noValidate
               onSubmit={(e) => {
                 e.preventDefault();
                 void saveProfile();
@@ -168,9 +189,17 @@ export default function Settings({ onExit }: { onExit: () => void }) {
                 </span>
                 <div className="username-field">
                   <input
+                    ref={usernameRef}
                     aria-label="Username"
                     value={username}
-                    onChange={(e) => setUsername(e.target.value)}
+                    onChange={(e) => {
+                      setUsername(e.target.value);
+                      setProfileError("");
+                    }}
+                    aria-invalid={!!profileError}
+                    aria-describedby={
+                      profileError ? "username-error" : undefined
+                    }
                     disabled={loading || saving}
                     required
                     minLength={3}
@@ -187,7 +216,11 @@ export default function Settings({ onExit }: { onExit: () => void }) {
                 </div>
               </label>
               {profileError && (
-                <p className="form-message error" role="alert">
+                <p
+                  id="username-error"
+                  className="form-message error"
+                  role="alert"
+                >
                   {profileError}
                 </p>
               )}
@@ -228,14 +261,26 @@ export default function Settings({ onExit }: { onExit: () => void }) {
               </span>
               <button
                 className="text-button"
-                onClick={() => {
+                onClick={async () => {
                   if (
-                    window.confirm(
-                      "Reset all changes in this sample workspace?",
-                    )
-                  ) {
+                    !(await confirm({
+                      title: "Reset the sample workspace?",
+                      description:
+                        "Your changes to these sample records will be removed. Your real workspace and appearance preferences stay as they are.",
+                      confirmLabel: "Reset sample",
+                      cancelLabel: "Keep exploring",
+                    }))
+                  )
+                    return;
+                  try {
                     localStorage.removeItem(DEMO_KEY);
-                    void reload();
+                    await reload();
+                    resetViews();
+                  } catch {
+                    notify(
+                      "Could not reset the sample. Browser storage is unavailable.",
+                      true,
+                    );
                   }
                 }}
               >

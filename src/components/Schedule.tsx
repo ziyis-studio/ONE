@@ -1,5 +1,5 @@
 import { PageDate } from "./PageDate";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { DragEvent } from "react";
 import {
   Plus,
@@ -9,6 +9,7 @@ import {
   PanelRightOpen,
 } from "lucide-react";
 import type { TimeBlock } from "../domain/model";
+import { useViewState } from "../lib/view-state";
 import { useOne } from "../lib/workspace";
 import {
   addDays,
@@ -23,11 +24,13 @@ import {
   blocksOnDay,
   timeBlockTitle,
   minuteTimestamp,
+  snapMinute,
   rescheduledBlock,
 } from "../lib/schedule";
 import { IconButton } from "./ui";
 import ScheduleTimeline from "./ScheduleTimeline";
 import ScheduleTasks from "./ScheduleTasks";
+import ScheduleDeadline from "./ScheduleDeadline";
 import { DiscreteTabs } from "./interactions";
 type View = "month" | "week" | "day";
 const weekdays = [
@@ -41,12 +44,65 @@ const weekdays = [
 ];
 export default function SchedulePage() {
   const { data, today, zone, edit, execute, busy, notify } = useOne();
-  const [selected, setSelected] = useState(today);
-  const [view, setView] = useState<View>("month");
+  const [selected, setSelected] = useViewState<string>("schedule.date", today);
+  const [view, setView] = useViewState<View>("schedule.view", "month");
   const [dragOver, setDragOver] = useState("");
   const days = weekDays(selected);
   const month = monthDays(selected);
-  const [showTasks, setShowTasks] = useState(true);
+  const [showTasks, setShowTasks] = useViewState<boolean>(
+    "schedule.tasks",
+    true,
+  );
+  const dropPending = useRef(false);
+  async function dropTask(taskId: string, day: string, minute = 9 * 60) {
+    if (
+      busy ||
+      dropPending.current ||
+      !data.tasks.some((task) => task.id === taskId)
+    )
+      return;
+    dropPending.current = true;
+    try {
+      const start = Math.min(1425, snapMinute(minute));
+      const startsAt = minuteTimestamp(day, start, zone),
+        endsAt = minuteTimestamp(day, Math.min(1440, start + 30), zone);
+      if (
+        data.timeBlocks.some(
+          (block) =>
+            Date.parse(block.startsAt) === Date.parse(startsAt) &&
+            Date.parse(block.endsAt) === Date.parse(endsAt) &&
+            data.blockTaskLinks.some(
+              (link) => link.timeBlockId === block.id && link.taskId === taskId,
+            ),
+        )
+      ) {
+        notify("This task is already planned here.");
+        return;
+      }
+      await execute({
+        type: "block.save",
+        input: {
+          title: "",
+          description: "",
+          startsAt,
+          endsAt,
+          timeZone: zone,
+          taskIds: [taskId],
+          occurrenceIds: [],
+        },
+      });
+      notify("Task scheduled.");
+    } catch (cause) {
+      notify(
+        cause instanceof Error
+          ? cause.message
+          : "Could not schedule this task.",
+        true,
+      );
+    } finally {
+      dropPending.current = false;
+    }
+  }
   async function saveMove(
     block: TimeBlock,
     day: string,
@@ -154,7 +210,7 @@ export default function SchedulePage() {
     setDragOver("");
     const taskId = event.dataTransfer.getData("text/one-task");
     if (taskId) {
-      planTask(taskId, day);
+      void dropTask(taskId, day);
       return;
     }
     const block = data.timeBlocks.find(
@@ -271,6 +327,22 @@ export default function SchedulePage() {
                   <div className="month-week" role="row" key={week}>
                     {month.slice(week * 7, week * 7 + 7).map((day) => {
                       const entries = blocksOnDay(data.timeBlocks, day, zone);
+                      const deadlines = data.tasks
+                        .filter((task) => task.deadline === day)
+                        .toSorted(
+                          (a, b) =>
+                            Number(!!a.completedAt) - Number(!!b.completedAt),
+                        );
+                      const visibleDeadlines = deadlines.slice(
+                        0,
+                        Math.max(2, 5 - Math.min(3, entries.length)),
+                      );
+                      const visibleEntries = entries.slice(0, 3);
+                      const hiddenEntries =
+                        deadlines.length +
+                        entries.length -
+                        visibleDeadlines.length -
+                        visibleEntries.length;
                       return (
                         <div
                           role="gridcell"
@@ -286,6 +358,7 @@ export default function SchedulePage() {
                           }
                           onDragOver={(event) => {
                             event.preventDefault();
+                            event.dataTransfer.dropEffect = "move";
                             setDragOver(day);
                           }}
                           onDragLeave={(event) => {
@@ -320,7 +393,10 @@ export default function SchedulePage() {
                             </button>
                           </div>
                           <div className="month-entries">
-                            {entries.slice(0, 3).map((block) => (
+                            {visibleDeadlines.map((task) => (
+                              <ScheduleDeadline key={task.id} task={task} />
+                            ))}
+                            {visibleEntries.map((block) => (
                               <button
                                 draggable={!busy}
                                 onDragStart={(event) =>
@@ -341,6 +417,7 @@ export default function SchedulePage() {
                                     )
                                   ) {
                                     event.preventDefault();
+                                    event.dataTransfer.dropEffect = "move";
                                     event.stopPropagation();
                                     setDragOver(block.id);
                                   }
@@ -376,12 +453,12 @@ export default function SchedulePage() {
                                 <span>{timeBlockTitle(block, data)}</span>
                               </button>
                             ))}
-                            {entries.length > 3 && (
+                            {hiddenEntries > 0 && (
                               <button
                                 className="month-more"
                                 onClick={() => changeDay(day)}
                               >
-                                +{entries.length - 3} more
+                                +{hiddenEntries} more
                               </button>
                             )}
                           </div>
@@ -399,7 +476,7 @@ export default function SchedulePage() {
               onDay={changeDay}
               onMove={saveMove}
               onAttach={attachTask}
-              onPlan={planTask}
+              onPlan={dropTask}
             />
           )}
           <footer className="calendar-help">

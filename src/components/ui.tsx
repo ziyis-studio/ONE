@@ -30,6 +30,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { motion } from "motion/react";
 import { useSettle } from "./interactions";
+import { useConfirm, DISCARD_CHANGES } from "../lib/confirmation";
 import { ONE_ARC_LONG, ONE_ARC_SHORT } from "../lib/brand-mark";
 
 export const iconMap: Record<string, LucideIcon> = {
@@ -212,14 +213,18 @@ export function Dialog({
   wide?: boolean;
   dirty?: boolean;
 }) {
+  const confirm = useConfirm();
   const ref = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
   const dirtyRef = useRef(dirty);
   dirtyRef.current = dirty;
-  function dismiss() {
-    if (!dirtyRef.current || window.confirm("Discard your unsaved changes?"))
+  async function dismiss() {
+    if (
+      (!dirtyRef.current || (await confirm(DISCARD_CHANGES))) &&
+      ref.current?.isConnected
+    )
       closeRef.current();
   }
   useEffect(() => {
@@ -235,6 +240,7 @@ export function Dialog({
       // An owned popup handles Escape and focus before its parent editor.
       if (
         event.defaultPrevented ||
+        document.querySelector("[data-one-confirm]") ||
         [...document.querySelectorAll("[data-one-dialog-owner]")].some(
           (popup) => popup.getAttribute("data-one-dialog-owner") === titleId,
         )
@@ -242,11 +248,7 @@ export function Dialog({
         return;
       if (event.key === "Escape") {
         event.preventDefault();
-        if (
-          !dirtyRef.current ||
-          window.confirm("Discard your unsaved changes?")
-        )
-          closeRef.current();
+        void dismiss();
       }
       if (event.key !== "Tab") return;
       const focusables = Array.from(

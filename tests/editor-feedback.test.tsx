@@ -10,6 +10,7 @@ import {
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MotionConfig } from "motion/react";
+import { ConfirmationProvider } from "../src/lib/confirmation";
 import Editor from "../src/components/Editor";
 import { emptyWorkspace } from "../src/domain/model";
 const mock = vi.hoisted(() => ({
@@ -44,7 +45,9 @@ afterEach(() => {
 function show() {
   return render(
     <MotionConfig reducedMotion="always">
-      <Editor />
+      <ConfirmationProvider>
+        <Editor />
+      </ConfirmationProvider>
     </MotionConfig>,
   );
 }

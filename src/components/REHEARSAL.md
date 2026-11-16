@@ -205,3 +205,50 @@ remaining work are recorded in [uiux-review.md](../../docs/uiux-review.md).
 These checks used local sample data and desktop Chromium with phone viewports;
 credentialed production flows, physical touch devices and other browser engines
 were not re-tested in this pass.
+
+# Workspace confirmations, navigation memory and planning
+
+Plan: [workflow-followups-plan.md](../../docs/workflow-followups-plan.md).
+
+- All native confirmations are replaced by one asynchronous alert dialog with
+  cancel as the initial focus, inert background, keyboard trapping, Escape and
+  backdrop cancellation, focus restoration and immediate removal. Parent editors
+  yield keyboard control to the confirmation and their owned dropdown/date
+  popovers. Deletion remains explicit; cancel preserves drafts. Username feedback
+  matches the existing profile API rules and deduplicates pending saves.
+- View/filter/search state, calendar selection/panel and history ranges are
+  retained in memory for this workspace visit. Signing out drops that state;
+  resetting the sample clears views while keeping appearance. A deleted project
+  filter falls back to All projects.
+- All task/project column plus controls preselect the column stage. Optional
+  initial-stage API input stores existing start/work/completion fields atomically.
+  Done tasks with unmet conditions reject without partial records. The shared
+  demo command engine matches the backend; no database migration is needed.
+- Sleep defaults to an accessible 30-day grid, with month/year presets, range
+  statistics and period navigation. Year mode scrolls its own container to the
+  selected date, including the phone layout.
+- Calendar month cells and week/day Due rows show deadline tasks, including
+  completed history. The 22nd was checked with a sample “Finish Telus exam.”
+  Due rows stay above the scrolling hour grid. Existing appointments remain
+  visible and additional entries open through the day view.
+- Real native task dragging uses move effects. Empty-track drops persist linked
+  unnamed blocks directly, with no editor; repeated identical drops are guarded.
+  Default duration is 30 minutes, shortened at the end of the day. Existing block
+  drops keep their link-preserving behavior and the Plan button remains editable.
+  Task deadlines/status are untouched. Today's header now has a compact primary
+  date badge on a neutral surface. The favicon retains a white long arc and
+  themed short arc, exactly like the workspace mark.
+
+Verification: 102 frontend tests in 28 files, the production build, and 48 backend
+tests in 10 files plus backend typechecking passed. Local Chromium 156 at
+1703×1000 and 390×844 covered actual task dragging/persistence and move feedback,
+due dates, contextual creation, confirmation cancel/accept/focus, view memory,
+mobile history and reduced motion. No native browser dialogs or runtime errors
+were observed. API tests cover strict initial-stage parsing, all seven creation
+columns, completed-parent behavior and rejection without partial records.
+
+Artifacts: ignored `test-results/followups/`. Tests used local samples and mocked
+profile responses; credentialed production-user writes and physical phones were
+not exercised. React component/hook, semantics, cleanup and lazy-boundary checks
+were applied. Supabase's current changelog/getSession documentation was reviewed;
+the authenticated profile transport and server ownership/RLS rules are unchanged.

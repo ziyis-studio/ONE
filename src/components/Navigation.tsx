@@ -124,7 +124,7 @@ export default function Navigation({
         event.altKey ||
         event.key.toLowerCase() !== "b" ||
         window.matchMedia("(max-width: 700px)").matches ||
-        document.querySelector('[role="dialog"]') ||
+        document.querySelector('[aria-modal="true"]') ||
         (event.target instanceof Element &&
           event.target.closest(
             'input,textarea,select,[contenteditable],[role="menu"],[role="listbox"],[aria-haspopup="listbox"]',

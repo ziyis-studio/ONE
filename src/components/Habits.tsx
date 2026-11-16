@@ -2,6 +2,7 @@ import { PageDate } from "./PageDate";
 import { useMemo, useState } from "react";
 import { Plus, ArrowUpRight } from "lucide-react";
 import type { Habit, HabitOccurrence, Workspace } from "../domain/model";
+import { useViewState } from "../lib/view-state";
 import { useOne } from "../lib/workspace";
 import { dateLabel } from "../domain/time";
 import { habitDay, habitRange, indexHabitHistory } from "../lib/habit-history";
@@ -16,7 +17,10 @@ const presets: { value: HabitRangePreset; label: string }[] = [
 ];
 export default function HabitsPage() {
   const { data, today, busy, edit, execute, notify } = useOne();
-  const [preset, setPreset] = useState<HabitRangePreset>("week");
+  const [preset, setPreset] = useViewState<HabitRangePreset>(
+    "habits.range",
+    "week",
+  );
   const [detail, setDetail] = useState<{
     habitId: string;
     date: string;

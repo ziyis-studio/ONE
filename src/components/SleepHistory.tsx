@@ -1,5 +1,5 @@
 import { PageDate } from "./PageDate";
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 import {
   Plus,
@@ -9,24 +9,35 @@ import {
   Moon,
 } from "lucide-react";
 import { useOne } from "../lib/workspace";
-import { addDays, dateLabel, dayKey, timeKey } from "../domain/time";
+import { addDays, addMonths, dateLabel, dayKey, timeKey } from "../domain/time";
 import {
   sleepByDay,
   sleepDuration,
   sleepLevel,
-  sleepYearDays,
+  sleepPeriod,
 } from "../lib/sleep-history";
+import type { SleepRange } from "../lib/sleep-history";
+import { useViewState } from "../lib/view-state";
+import { DiscreteTabs } from "./interactions";
 import { Empty, IconButton } from "./ui";
+import "./sleep-history.css";
 export default function SleepPage() {
   const { data, edit, zone, today } = useOne();
-  const [year, setYear] = useState(Number(today.slice(0, 4)));
-  const [selected, setSelected] = useState(today);
+  const [range, setRange] = useViewState<SleepRange>("sleep.range", "30days");
+  const [anchor, setAnchor] = useViewState<string>("sleep.anchor", today);
+  const [selected, setSelected] = useViewState<string>("sleep.selected", today);
   const [focusDay, setFocusDay] = useState(today);
+  const scroll = useRef<HTMLDivElement>(null);
   const history = sleepByDay(data.sleepRecords, zone);
-  const days = sleepYearDays(year);
-  const currentYear = Number(today.slice(0, 4));
+  const { start, end, days } = sleepPeriod(range, anchor);
+  const label =
+    range === "year"
+      ? anchor.slice(0, 4)
+      : range === "month"
+        ? dateLabel(anchor, { month: "long", year: "numeric" })
+        : dateLabel(start) + " – " + dateLabel(end);
   const loggedDays = [...history.entries()].filter(
-    ([date]) => Number(date.slice(0, 4)) === year && date <= today,
+    ([date]) => date >= start && date <= end && date <= today,
   );
   const average = loggedDays.length
     ? Math.round(
@@ -34,31 +45,62 @@ export default function SleepPage() {
           loggedDays.length,
       )
     : 0;
-  const recent = [...history.keys()]
-    .filter((date) => date <= today)
+  const recent = loggedDays
+    .map(([date]) => date)
     .sort()
     .at(-1);
   const records =
     history
       .get(selected)
       ?.records.toSorted((a, b) => a.startsAt.localeCompare(b.startsAt)) || [];
-  function chooseYear(next: number) {
-    setYear(next);
-    const nextDay = next === currentYear ? today : next + "-12-31";
+  function choosePeriod(amount: number) {
+    const next =
+      range === "30days"
+        ? addDays(anchor, amount * 30)
+        : addMonths(anchor, amount * (range === "year" ? 12 : 1));
+    const period = sleepPeriod(range, next);
+    const nextDay = period.end > today ? today : period.end;
+    setAnchor(next);
     setSelected(nextDay);
     setFocusDay(nextDay);
   }
+  function chooseRange(next: string) {
+    setRange(next as SleepRange);
+    setAnchor(today);
+    setSelected(today);
+    setFocusDay(today);
+  }
+  useLayoutEffect(() => {
+    if (range !== "year" || !scroll.current) return;
+    const container = scroll.current;
+    const cell = container.querySelector<HTMLElement>(
+      `[data-date="${selected}"]`,
+    );
+    if (!cell) return;
+    const box = cell.getBoundingClientRect(),
+      bounds = container.getBoundingClientRect();
+    container.scrollTo({
+      left: Math.max(
+        0,
+        container.scrollLeft +
+          box.left -
+          bounds.left -
+          container.clientWidth / 2,
+      ),
+      behavior: "instant",
+    });
+  }, [range, anchor, selected]);
   function keyboard(event: KeyboardEvent<HTMLButtonElement>, date: string) {
     const distance: Record<string, number> = {
-      ArrowUp: -1,
-      ArrowDown: 1,
-      ArrowLeft: -7,
-      ArrowRight: 7,
+      ArrowUp: range === "year" ? -1 : -7,
+      ArrowDown: range === "year" ? 1 : 7,
+      ArrowLeft: range === "year" ? -7 : -1,
+      ArrowRight: range === "year" ? 7 : 1,
     };
     if (!(event.key in distance)) return;
     event.preventDefault();
     const next = addDays(date, distance[event.key]);
-    if (next.slice(0, 4) !== String(year) || next > today) return;
+    if (next < start || next > end || next > today) return;
     setFocusDay(next);
     event.currentTarget
       .closest(".sleep-heatmap")
@@ -89,12 +131,12 @@ export default function SleepPage() {
         <div>
           <span>AVERAGE PER LOGGED DAY</span>
           <strong>{sleepDuration(average)}</strong>
-          <small>{year}</small>
+          <small>{label}</small>
         </div>
         <div>
           <span>DAYS LOGGED</span>
           <strong>{loggedDays.length}</strong>
-          <small>in {year}</small>
+          <small>in this range</small>
         </div>
         <div>
           <span>MOST RECENT</span>
@@ -119,52 +161,80 @@ export default function SleepPage() {
           </div>
           <div className="date-navigation">
             <IconButton
-              label="Previous year"
-              onClick={() => chooseYear(year - 1)}
+              label={"Previous " + (range === "30days" ? "30 days" : range)}
+              onClick={() => choosePeriod(-1)}
             >
               <ChevronLeft size={16} />
             </IconButton>
-            <span className="heatmap-year">{year}</span>
+            <span className="heatmap-year">{label}</span>
             <IconButton
-              label="Next year"
-              disabled={year >= currentYear}
-              onClick={() => chooseYear(year + 1)}
+              label={"Next " + (range === "30days" ? "30 days" : range)}
+              disabled={end >= today}
+              onClick={() => choosePeriod(1)}
             >
               <ChevronRight size={16} />
             </IconButton>
           </div>
         </header>
-        <div className="heatmap-scroll">
-          <div className="heatmap-canvas">
-            <div className="heatmap-month-labels">
-              {Array.from({ length: days.length / 7 }, (_, week) => {
-                const weekDays = days.slice(week * 7, week * 7 + 7);
-                const first = weekDays.find(
-                  (date) =>
-                    date.slice(-2) === "01" &&
-                    date.slice(0, 4) === String(year),
-                );
-                return (
-                  <span key={week}>
-                    {first ? dateLabel(first, { month: "short" }) : ""}
-                  </span>
-                );
-              })}
-            </div>
-            <div className="heatmap-body">
-              <div className="heatmap-weekdays" aria-hidden="true">
-                {["M", "", "W", "", "F", "", "S"].map((day, index) => (
-                  <span key={index}>{day}</span>
-                ))}
+        <div className="one-sleep-ranges">
+          <DiscreteTabs
+            label="Sleep history range"
+            value={range}
+            onChange={chooseRange}
+            items={[
+              { value: "30days", label: "Last 30 days" },
+              { value: "month", label: "This month" },
+              { value: "year", label: "Year" },
+            ]}
+          />
+        </div>
+        <div className="heatmap-scroll" ref={scroll}>
+          <div
+            className={
+              "heatmap-canvas" + (range === "year" ? "" : " one-sleep-period")
+            }
+          >
+            {range === "year" ? (
+              <div className="heatmap-month-labels">
+                {Array.from({ length: days.length / 7 }, (_, week) => {
+                  const weekDays = days.slice(week * 7, week * 7 + 7);
+                  const first = weekDays.find(
+                    (date) =>
+                      date.slice(-2) === "01" &&
+                      date.slice(0, 4) === anchor.slice(0, 4),
+                  );
+                  return (
+                    <span key={week}>
+                      {first ? dateLabel(first, { month: "short" }) : ""}
+                    </span>
+                  );
+                })}
               </div>
+            ) : (
+              <div className="one-sleep-weekdays" aria-hidden="true">
+                {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(
+                  (day) => (
+                    <span key={day}>{day}</span>
+                  ),
+                )}
+              </div>
+            )}
+            <div className="heatmap-body">
+              {range === "year" && (
+                <div className="heatmap-weekdays" aria-hidden="true">
+                  {["M", "", "W", "", "F", "", "S"].map((day, index) => (
+                    <span key={index}>{day}</span>
+                  ))}
+                </div>
+              )}
               <div
                 className="sleep-heatmap"
                 role="group"
-                aria-label={"Daily sleep in " + year}
+                aria-label={"Daily sleep · " + label}
               >
                 {days.map((date) => {
                   const current = history.get(date),
-                    outside = date.slice(0, 4) !== String(year),
+                    outside = date < start || date > end,
                     future = date > today;
                   const label =
                     dateLabel(date, {
@@ -198,11 +268,29 @@ export default function SleepPage() {
                           ? sleepDuration(current.minutes) + " net sleep"
                           : "No sleep logged"
                       }
-                      tabIndex={date === focusDay ? 0 : -1}
+                      tabIndex={
+                        date ===
+                        (focusDay >= start && focusDay <= end
+                          ? focusDay
+                          : selected)
+                          ? 0
+                          : -1
+                      }
                       onFocus={() => setFocusDay(date)}
                       onKeyDown={(event) => keyboard(event, date)}
                       onClick={() => setSelected(date)}
-                    />
+                    >
+                      {range !== "year" && (
+                        <>
+                          <span aria-hidden="true">
+                            {Number(date.slice(-2))}
+                          </span>
+                          <small aria-hidden="true">
+                            {current ? sleepDuration(current.minutes) : "·"}
+                          </small>
+                        </>
+                      )}
+                    </button>
                   );
                 })}
               </div>

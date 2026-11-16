@@ -67,13 +67,14 @@ function mix(hex: string, amount: number, target: number) {
 }
 export function applyAccent(color: string) {
   const root = document.documentElement;
+  const mark = mix(color, 0.28, 255);
   root.style.setProperty("--one-accent", color);
   root.style.setProperty("--one-accent-hover", mix(color, 0.1, 0));
-  root.style.setProperty("--one-accent-mark", mix(color, 0.28, 255));
+  root.style.setProperty("--one-accent-mark", mark);
   root.dataset.primaryColor = color;
   const favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
   if (favicon) {
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke="${color}" stroke-width="8" stroke-linecap="round"><path d="${ONE_ARC_LONG}"/><path d="${ONE_ARC_SHORT}"/></svg>`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke-width="8" stroke-linecap="round"><path d="${ONE_ARC_LONG}" stroke="#eee"/><path d="${ONE_ARC_SHORT}" stroke="${mark}"/></svg>`;
     favicon.href = "data:image/svg+xml," + encodeURIComponent(svg);
   }
 }

@@ -42,7 +42,19 @@ describe("primary color preference", () => {
       decodeURIComponent(
         document.querySelector<HTMLLinkElement>('link[rel="icon"]')!.href,
       ),
-    ).toContain('stroke="#2563eb"');
+    ).toContain('stroke="#eee"');
+    const icon = new DOMParser().parseFromString(
+      decodeURIComponent(
+        document.querySelector<HTMLLinkElement>('link[rel="icon"]')!.href,
+      )
+        .split(",")
+        .slice(1)
+        .join(","),
+      "image/svg+xml",
+    );
+    expect(icon.querySelectorAll("path")[1].getAttribute("stroke")).toBe(
+      document.documentElement.style.getPropertyValue("--one-accent-mark"),
+    );
     view.unmount();
     view = appearance();
     expect(

@@ -11,8 +11,10 @@ import {
   PencilLine,
   CircleAlert,
 } from "lucide-react";
+import { useConfirm, DISCARD_CHANGES } from "../lib/confirmation";
 import { useOne } from "../lib/workspace";
 import { useActions, stages, taskStage } from "../lib/actions";
+import type { Stage } from "../lib/actions";
 import { Dialog, IconButton, CheckButton, EntityIcon } from "./ui";
 import { SelectField, MultiSelectField } from "./SelectField";
 import { DayPicker, SaveButton } from "./interactions";
@@ -36,6 +38,7 @@ export default function Editor() {
   const { editor, edit, data, execute, busy, notify, zone, today, reload } =
     useOne();
   const { safely, moveTask } = useActions();
+  const confirm = useConfirm();
   const kind = editor!.kind,
     id = editor!.id;
   const task = data.tasks.find((t) => t.id === id),
@@ -92,6 +95,9 @@ export default function Editor() {
   );
   const [status, setStatus] = useState<"active" | "on_hold">(
     task?.workStatus || project?.workStatus || "active",
+  );
+  const [initialStage, setInitialStage] = useState<Stage>(
+    editor!.initialStage || (kind === "project" ? "progress" : "todo"),
   );
   const [icon, setIcon] = useState<string>(
     habit?.icon || project?.icon || (kind === "habit" ? "repeat" : "folder"),
@@ -167,6 +173,7 @@ export default function Editor() {
     projectId,
     deadline,
     status,
+    initialStage,
     icon,
     emotion,
     weekdays,
@@ -288,6 +295,7 @@ export default function Editor() {
             : {
                 type: "task.create",
                 input: {
+                  initialStage,
                   title,
                   description,
                   deadline: deadline || null,
@@ -318,6 +326,8 @@ export default function Editor() {
             : {
                 type: "project.create",
                 input: {
+                  initialStage:
+                    initialStage === "todo" ? "progress" : initialStage,
                   title,
                   description,
                   icon: icon as (typeof projectIconNames)[number],
@@ -437,15 +447,19 @@ export default function Editor() {
     }
   }
   async function remove() {
+    const label =
+      kind === "block" ? "time block" : kind === "sleep" ? "sleep entry" : kind;
     if (
       !id ||
-      !window.confirm(
-        "Delete this " +
-          kind +
-          "?" +
-          (kind === "database" ? " Its records will also be deleted." : "") +
-          " This cannot be undone.",
-      )
+      !(await confirm({
+        title: `Delete this ${label}?`,
+        description:
+          (title ? `“${title}” will be deleted. ` : "") +
+          (kind === "database" ? "Its records will also be deleted. " : "") +
+          "This cannot be undone.",
+        confirmLabel: `Delete ${label}`,
+      })) ||
+      !mounted.current
     )
       return;
     const command: Command =
@@ -577,12 +591,30 @@ export default function Editor() {
             <div className="form-grid editor-status-fields">
               <SelectField
                 label="Status"
-                value={status}
-                onChange={(value) => setStatus(value as typeof status)}
-                options={[
-                  { value: "active", label: "Active" },
-                  { value: "on_hold", label: "On hold" },
-                ]}
+                value={id ? status : initialStage}
+                onChange={(value) =>
+                  id
+                    ? setStatus(value as typeof status)
+                    : setInitialStage(value as Stage)
+                }
+                options={
+                  id
+                    ? [
+                        { value: "active", label: "Active" },
+                        { value: "on_hold", label: "On hold" },
+                      ]
+                    : stages
+                        .filter(
+                          (stage) => kind === "task" || stage.id !== "todo",
+                        )
+                        .map((stage) => ({
+                          value: stage.id,
+                          label:
+                            stage.id === "progress" && kind === "project"
+                              ? "In motion"
+                              : stage.title,
+                        }))
+                }
                 disabled={
                   busy || saveState === "saving" || saveState === "saved"
                 }
@@ -791,11 +823,8 @@ export default function Editor() {
                   <button
                     type="button"
                     key={t.id}
-                    onClick={() => {
-                      if (
-                        !dirty ||
-                        window.confirm("Discard your unsaved changes?")
-                      )
+                    onClick={async () => {
+                      if (!dirty || (await confirm(DISCARD_CHANGES)))
                         edit({ kind: "task", id: t.id });
                     }}
                   >
@@ -1072,14 +1101,20 @@ export default function Editor() {
                     />
                     <IconButton
                       label="Remove property"
-                      onClick={() => {
+                      onClick={async () => {
                         if (
                           !database?.fields.some((f) => f.id === field.id) ||
-                          window.confirm(
-                            "Remove this property and its values from every record?",
-                          )
+                          (await confirm({
+                            title: "Remove this property?",
+                            description:
+                              "Its values will be removed from every record when you save this database.",
+                            confirmLabel: "Remove property",
+                            cancelLabel: "Keep property",
+                          }))
                         ) {
-                          setFields(fields.filter((f) => f.id !== field.id));
+                          setFields((previous) =>
+                            previous.filter((f) => f.id !== field.id),
+                          );
                         }
                       }}
                     >
@@ -1214,10 +1249,14 @@ export default function Editor() {
               <button
                 type="button"
                 className="text-button"
-                onClick={() => {
+                onClick={async () => {
                   if (
                     !dirty ||
-                    window.confirm("Discard changes and reload this item?")
+                    (await confirm({
+                      ...DISCARD_CHANGES,
+                      title: "Discard changes and refresh?",
+                      confirmLabel: "Discard and refresh",
+                    }))
                   ) {
                     edit(null);
                     void reload();
@@ -1244,9 +1283,8 @@ export default function Editor() {
             <button
               type="button"
               className="secondary-button"
-              onClick={() => {
-                if (!dirty || window.confirm("Discard your unsaved changes?"))
-                  close();
+              onClick={async () => {
+                if (!dirty || (await confirm(DISCARD_CHANGES))) close();
               }}
               disabled={busy}
             >

@@ -11,7 +11,7 @@ npm ci
 npm run dev
 ```
 
-Open http://localhost:3000. Choose **Explore ONE** for an explicit local sample, or sign in to the existing Supabase workspace. The checked-in environment defaults contain only a Supabase URL and publishable key. Override them in ignored .env.local when using another backend. Never put a service-role or secret key in a VITE_ variable.
+Open http://localhost:3000. Choose **Explore ONE** for an explicit local sample, or sign in to the existing Supabase workspace. The checked-in environment defaults contain only a Supabase URL and publishable key. Override them in ignored .env.local when using another backend. Never put a service-role or secret key in a VITE\_ variable.
 
 ```sh
 npm run typecheck
@@ -25,11 +25,13 @@ npm run build
 - Email/username password login, signup, password reset and recovery, session refresh, and local sign-out.
 - Task board and list, drag between statuses, project filters, due dates, tags, completion conditions, and server revision checks.
 - Projects with task progress and completion gates.
-- Month/week/day scheduling with month view as the default. Drag blocks between dates, move/resize them directly on the day timeline, or drag empty desktop timeline space to create a time block. Changes snap to 15 minutes; linked tasks/occurrences and revision checks are preserved.
-- Habit activity heatmaps with This week, This month, and Last 30 days presets, completion/undo by date, and separate planned dates and actual executions. Sleep history uses an interactive year heatmap with wake-date grouping, net duration, year navigation, and editable day details.
+- Month/week/day scheduling with month view initially. Due-date tasks appear on their actual date, including an untimed Due row in week/day views. Dragging an open task onto empty timeline space directly saves a linked 30-minute block, snapping to 15 minutes and shortening at the end of the day. Existing-block drops attach links. Blocks remain movable/resizable, and the Plan button opens an editor for manual entry.
+- Habit activity heatmaps with This week, This month, and Last 30 days presets, completion/undo by date, and separate planned dates and actual executions. Sleep starts with Last 30 days and also offers month/year history, range statistics, wake-date grouping and editable day details. Year mode reveals the selected date on narrow screens.
 - Thought timeline, date filtering, emotion labels, and conversion into tasks.
 - Markdown notes, typed databases (text, number, date, status, checkbox, tags), and record editing.
-- Profile username editing and JSON export.
+- Profile username editing with inline validation, accessible ONE confirmations and JSON export.
+- Views, searches, filters and calendar/history selection survive module navigation during a workspace visit. Signing out drops that temporary view state.
+- Eight primary-color presets and custom HEX values, with readable white labels, browser-local persistence, tab synchronization and a matching white/primary two-part logo and favicon.
 - Explicit sample data stored under one-demo-v1; cloud failures never switch to the sample or save business data locally.
 
 ## Data path
@@ -52,7 +54,7 @@ For signup and password reset on a new production domain, add that exact origin 
 
 Automated checks exercise login steps, all workspace modules, task creation and conditions, Markdown preview, typed records, sample isolation, schedule overlaps and drag interactions, sleep history aggregation, the neutral palette, and authenticated proxy behavior. They use synthetic data and mocked cloud responses, never production-user writes.
 
-The managed browser/preview service was unavailable during the initial implementation, so actual desktop/mobile visual QA and an authenticated real-account production round trip still need verification. The application does not claim either check has passed.
+Local Chromium checks cover desktop and phone viewports, real native drag/drop, keyboard/focus behavior and reduced motion. Detailed rehearsals and limits are in `src/components/REHEARSAL.md`. Credentialed production-user writes and physical mobile devices were not used for these checks.
 
 Notes use Markdown rather than a collaborative block editor. Database formulas, relations, rollups, and collaborative editing are outside the existing API contract.
 

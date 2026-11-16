@@ -3,6 +3,7 @@ import {
   sleepByDay,
   sleepLevel,
   sleepYearDays,
+  sleepPeriod,
 } from "../src/lib/sleep-history";
 import type { SleepRecord } from "../src/domain/model";
 function entry(
@@ -23,6 +24,19 @@ function entry(
   };
 }
 describe("sleep heatmap history", () => {
+  it("projects recent and monthly ranges across years and leap days with complete Monday-first weeks", () => {
+    const recent = sleepPeriod("30days", "2026-01-10");
+    expect(recent.start).toBe("2025-12-12");
+    expect(recent.end).toBe("2026-01-10");
+    expect(
+      recent.days.filter((day) => day >= recent.start && day <= recent.end),
+    ).toHaveLength(30);
+    const month = sleepPeriod("month", "2024-02-12");
+    expect(month.start).toBe("2024-02-01");
+    expect(month.end).toBe("2024-02-29");
+    expect(month.days.length % 7).toBe(0);
+    expect(sleepPeriod("year", "2024-02-29").days).toEqual(sleepYearDays(2024));
+  });
   it("groups separate sleep entries by waking date in the workspace time zone", () => {
     const records = [
       entry("night", "2026-11-15T15:00:00Z", "2026-11-15T23:00:00Z", 20),

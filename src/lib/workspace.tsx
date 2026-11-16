@@ -17,6 +17,7 @@ import { loadWorkspace, sendCommand } from "./api";
 import { DEMO_KEY, readDemo } from "./demo";
 import { DEFAULT_ZONE } from "./config";
 import { supabase } from "./auth";
+import { ViewStateProvider } from "./view-state";
 
 export type Page =
   | "home"
@@ -47,6 +48,7 @@ export type Editor = {
   date?: string;
   startsAt?: string;
   endsAt?: string;
+  initialStage?: "todo" | "progress" | "hold" | "done";
 };
 type Notice = { message: string; error?: boolean } | null;
 interface OneContext {
@@ -265,7 +267,7 @@ export function WorkspaceProvider({
         session,
       }}
     >
-      {children}
+      <ViewStateProvider>{children}</ViewStateProvider>
     </Context.Provider>
   );
 }
