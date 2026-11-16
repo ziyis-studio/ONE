@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   render,
+  fireEvent,
   screen,
   cleanup,
   waitFor,
@@ -149,6 +150,70 @@ describe("ONE interface flows", () => {
           c.taskId === task.id && c.description === "Save the first condition",
       ),
     ).toBe(true);
+  });
+  it("creates an open-ended habit and switches between a specific end date and Never end", async () => {
+    await openDemo();
+    await userEvent.click(screen.getAllByRole("button", { name: "Habits" })[0]);
+    await userEvent.click(
+      await screen.findByRole("button", { name: "New habit" }),
+    );
+    let dialog = await screen.findByRole("dialog");
+    const ending = within(dialog).getByRole("combobox", { name: "Ends" });
+    expect((ending as HTMLSelectElement).value).toBe("never");
+    expect(within(dialog).queryByLabelText("End date")).toBe(null);
+    expect(within(dialog).queryByText(/Past executions stay/)).toBe(null);
+    await userEvent.type(
+      within(dialog).getByRole("textbox", { name: "Title" }),
+      "Evening walk",
+    );
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Create habit" }),
+    );
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBe(null));
+    const readHabit = () =>
+      JSON.parse(localStorage.getItem("one-demo-v1")!).habits.find(
+        (habit: { title: string }) => habit.title === "Evening walk",
+      );
+    expect(readHabit().endsOn).toBe(null);
+    await userEvent.click(
+      await screen.findByRole("button", { name: /^Evening walk/ }),
+    );
+    dialog = await screen.findByRole("dialog");
+    await userEvent.selectOptions(
+      within(dialog).getByRole("combobox", { name: "Ends" }),
+      "date",
+    );
+    const start = (
+      within(dialog).getByLabelText("Starts on") as HTMLInputElement
+    ).value;
+    const end =
+      start.slice(0, 4) === "2026"
+        ? "2027-12-31"
+        : Number(start.slice(0, 4)) + 1 + "-12-31";
+    fireEvent.change(within(dialog).getByLabelText("End date"), {
+      target: { value: end },
+    });
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Save changes" }),
+    );
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBe(null));
+    expect(readHabit().endsOn).toBe(end);
+    await userEvent.click(
+      screen.getByRole("button", { name: /^Evening walk/ }),
+    );
+    dialog = await screen.findByRole("dialog");
+    expect(
+      (within(dialog).getByLabelText("End date") as HTMLInputElement).value,
+    ).toBe(end);
+    await userEvent.selectOptions(
+      within(dialog).getByRole("combobox", { name: "Ends" }),
+      "never",
+    );
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Save changes" }),
+    );
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBe(null));
+    expect(readHabit().endsOn).toBe(null);
   });
   it("saves and previews Markdown and round-trips typed database values", async () => {
     await openDemo();

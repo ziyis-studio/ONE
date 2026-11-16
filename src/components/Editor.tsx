@@ -93,6 +93,7 @@ export default function Editor() {
   );
   const [startsOn, setStartsOn] = useState(habit?.startsOn || today),
     [endsOn, setEndsOn] = useState(habit?.endsOn || "");
+  const [neverEnd, setNeverEnd] = useState(!habit?.endsOn);
   const [start, setStart] = useState(
     block || sleep
       ? dayKey((block || sleep)!.startsAt, zone) +
@@ -146,6 +147,7 @@ export default function Editor() {
     weekdays,
     startsOn,
     endsOn,
+    neverEnd,
     start,
     end,
     awake,
@@ -277,6 +279,8 @@ export default function Editor() {
           };
           break;
         case "habit":
+          if (!neverEnd && !endsOn)
+            throw new Error("Choose an end date or select Never end.");
           command = id
             ? {
                 type: "habit.update",
@@ -288,7 +292,7 @@ export default function Editor() {
                   icon: icon as (typeof habitIconNames)[number],
                   timeZone: habit?.timeZone || zone,
                   startsOn,
-                  endsOn: endsOn || null,
+                  endsOn: neverEnd ? null : endsOn,
                   isoWeekdays: weekdays,
                 },
               }
@@ -300,7 +304,7 @@ export default function Editor() {
                   icon: icon as (typeof habitIconNames)[number],
                   timeZone: zone,
                   startsOn,
-                  endsOn: endsOn || null,
+                  endsOn: neverEnd ? null : endsOn,
                   isoWeekdays: weekdays,
                 },
               };
@@ -791,7 +795,7 @@ export default function Editor() {
                 ))}
               </div>
             </div>
-            <div className="form-grid">
+            <div className="form-grid habit-date-fields">
               <Field label="Starts on">
                 <input
                   type="date"
@@ -800,19 +804,31 @@ export default function Editor() {
                   required
                 />
               </Field>
-              <Field label="Ends on · optional">
-                <input
-                  type="date"
-                  min={startsOn}
-                  value={endsOn}
-                  onChange={(e) => setEndsOn(e.target.value)}
-                />
+              <Field label="Ends">
+                <select
+                  value={neverEnd ? "never" : "date"}
+                  onChange={(event) =>
+                    setNeverEnd(event.target.value === "never")
+                  }
+                >
+                  <option value="never">Never end</option>
+                  <option value="date">On a date</option>
+                </select>
               </Field>
+              {!neverEnd && (
+                <div className="habit-end-date">
+                  <Field label="End date">
+                    <input
+                      type="date"
+                      min={startsOn}
+                      value={endsOn}
+                      onChange={(event) => setEndsOn(event.target.value)}
+                      required
+                    />
+                  </Field>
+                </div>
+              )}
             </div>
-            <p className="field-help">
-              Scheduled in {habit?.timeZone || zone}. Past executions stay
-              exactly where they happened.
-            </p>
           </>
         )}
         {(kind === "block" || kind === "sleep") && (

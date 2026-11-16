@@ -361,6 +361,7 @@ export default function Dashboard() {
           title="Thoughts"
           action={() => navigate("thoughts")}
           className="thoughts-card"
+          meta={<span className="fine">Recent</span>}
         >
           {thoughts.length ? (
             <div className="dashboard-thoughts">
@@ -369,13 +370,29 @@ export default function Dashboard() {
                   className="thought-preview"
                   onClick={() => edit({ kind: "thought", id: thought.id })}
                   key={thought.id}
+                  aria-label={
+                    "Edit thought: " + (thought.title || thought.content)
+                  }
                 >
-                  <span className="quote-mark">“</span>
-                  <p>{thought.content}</p>
-                  <span className="thought-preview-foot">
-                    <span>{thought.emotion || "A passing thought"}</span>
-                    <time>{timeKey(thought.createdAt, zone)}</time>
+                  <span className="thought-preview-body">
+                    {thought.title && <strong>{thought.title}</strong>}
+                    <span className="thought-preview-text">
+                      {thought.content}
+                    </span>
+                    <span className="thought-preview-foot">
+                      {thought.emotion && (
+                        <span className="thought-emotion">
+                          {thought.emotion}
+                        </span>
+                      )}
+                      <time dateTime={thought.createdAt}>
+                        {dayKey(thought.createdAt, zone) !== today &&
+                          dateLabel(dayKey(thought.createdAt, zone)) + " · "}
+                        {timeKey(thought.createdAt, zone)}
+                      </time>
+                    </span>
                   </span>
+                  <ArrowUpRight size={14} />
                 </button>
               ))}
             </div>
