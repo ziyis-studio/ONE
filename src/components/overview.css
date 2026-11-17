@@ -132,3 +132,25 @@
     gap: 0.065em;
   }
 }
+/* Reserve the same heading row for text, icons and the Pomodoro mode switch. */
+.dashboard-grid > :is(.clock-card, .pomodoro-card, .sleep-card) > .card-heading {
+  min-height: 38px;
+  flex-shrink: 0;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.dashboard-grid > :is(.clock-card, .pomodoro-card, .sleep-card) > .card-heading h2 {
+  font-size: 13px;
+  line-height: 20px;
+}
+@media (max-width: 700px) {
+  .dashboard-grid > :is(.clock-card, .pomodoro-card, .sleep-card) {
+    padding-top: 21px;
+  }
+  .dashboard-grid > :is(.clock-card, .pomodoro-card, .sleep-card) > .card-heading {
+    min-height: 46px;
+  }
+  .dashboard-grid > :is(.clock-card, .pomodoro-card, .sleep-card) > .card-heading h2 {
+    font-size: 12px;
+  }
+}
