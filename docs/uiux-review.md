@@ -32,7 +32,7 @@ in [REHEARSAL.md](../src/components/REHEARSAL.md).
 - Sleep starts with Last 30 days; month/year modes remain available, and the year
   view reveals the current selection on phones.
 
-Additional requests are included: a white/primary two-part favicon; task deadline
+Additional requests are included: a white/primary three-part favicon; task deadline
 entries in calendar month/week/day; direct drag-to-schedule without a creation
 popup; move drag feedback; and a compact current-day date badge.
 
@@ -41,3 +41,31 @@ popup; move drag feedback; and a compact current-day date badge.
 Appearance, timezone and sidebar preferences remain browser-local, as stated in
 Settings. Cross-device preference synchronization can be added separately with
 an account preference record and a local startup cache.
+
+## Current priorities — November 17, 2026
+
+This update reviews the latest source and the current Home/Sleep/Settings flow,
+building on the earlier nine-route rehearsal. It does not repeat that full audit
+or inspect private production records.
+
+The two reported color issues are fixed: heatmap selection preserves each day's
+duration intensity and uses a white outline; the latest/hovered/focused overview
+sleep bars use the exact configured primary color. High-duration cells retain
+their primary fill because it represents data. Selection no longer overrides it.
+
+| Priority | Improvement                  | Value and current evidence                                                                                                                                                                                                                                                                |
+| -------- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| First    | Task → focus → actual time   | Tasks can be dragged into Schedule, and Pomodoro now creates time blocks. Sessions still have no task association. Starting focus from a task and carrying its name/link into the record would complete the daily workflow. Completion should leave task status under the user's control. |
+| First    | Draft recovery and undo      | Editors have discard/delete confirmation, but no draft restoration or undo/recycle bin. Settings exports workspace JSON without an import/restore flow. Add recoverable drafts and deletion first, then a validated complete-account backup/restore path.                                 |
+| Next     | Planned versus recorded time | Pomodoro blocks and manual plans currently share the same timeline treatment. Mark actual focus/break records distinctly and keep planned duration separate from focused and paused duration in summaries.                                                                                |
+| Next     | Account preferences          | Primary color, time zone and navigation preferences remain browser-local. Sync them to the account, with a local startup cache, so the workspace stays consistent across devices.                                                                                                         |
+
+Use the same visual-state rule across future charts: value/intensity describes
+the data; an outline describes selection; status describes saving or failure.
+Keep save/retry feedback visible when actionable without filling cards with
+permanent technical controls. Larger secondary text and touch targets should
+be part of the next typography/accessibility pass.
+
+Recommendation: prioritize task-linked focus and recovery before adding more
+dashboard cards or animation. These improve repeated daily use and trust in
+saved work. The additional features above are proposals, not implemented here.

@@ -408,3 +408,19 @@ Artifacts: ignored `test-results/pomo-timeline/`. Browser checks used local
 samples/mock weather; authenticated DB verification was rolled back. A signed-in
 production browser write, physical touch devices and other browser engines were
 not exercised. The unrelated full regression suite was not repeated.
+
+# Sleep selection and exact primary chart color
+
+Heatmap selection now retains its underlying duration fill and adds only a
+neutral outline/border. A selected short/no-data day therefore cannot inherit
+the color reserved for high-duration data. The overview sleep chart's latest,
+hovered and keyboard-focused bars use `--one-accent` rather than its lighter
+logo token. Other chart and brand colors keep their existing meanings.
+
+The production build passed. Local Chromium checked Violet and Teal, selection
+in Last 30 days/This month/Year, neutral low/no-data fills, unchanged high fills,
+exact primary latest/hover bars and phone overflow. Artifacts are in ignored
+`test-results/sleep-colors/`. This small CSS change did not add tests or repeat
+the automated suite; physical phones and other engines were not exercised.
+The current source-based product priorities are recorded in
+[uiux-review.md](../../docs/uiux-review.md); those additions remain proposals.

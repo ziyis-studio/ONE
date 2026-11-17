@@ -98,11 +98,11 @@
   background: var(--one-accent-mark);
 }
 .one-shell .sleep-chart i.latest {
-  background: var(--one-accent-mark);
+  background: var(--one-accent);
 }
 .one-shell .sleep-chart > button:hover i,
 .one-shell .sleep-chart > button:focus-visible i {
-  background: var(--one-accent-mark);
+  background: var(--one-accent);
 }
 .one-shell .habit-week-mini i.filled {
   background: var(--one-accent-mark);
@@ -175,8 +175,9 @@
   background: #fff;
 }
 .one-shell .heatmap-cell.selected {
-  background: var(--one-accent);
   border-color: #fff;
+  outline: 2px solid #eee;
+  outline-offset: 2px;
 }
 .one-date-field .one-date-segment[data-focused],
 .one-date-popover .one-date-segment[data-focused] {
