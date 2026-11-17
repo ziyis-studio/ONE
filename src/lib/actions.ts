@@ -16,6 +16,13 @@ export function taskStage(task: Task): Stage {
         ? "progress"
         : "todo";
 }
+export function projectStage(project: Project): Exclude<Stage, "todo"> {
+  return project.completedAt
+    ? "done"
+    : project.workStatus === "on_hold"
+      ? "hold"
+      : "progress";
+}
 export function useActions() {
   const { execute, data, today, edit } = useOne();
   async function toggleTask(task: Task) {
@@ -73,6 +80,29 @@ export function useActions() {
       id: task.id,
       expectedUpdatedAt: task.updatedAt,
     });
+  }
+  async function moveProject(project: Project, stage: Exclude<Stage, "todo">) {
+    if (projectStage(project) === stage) return;
+    if (stage === "done")
+      return execute({ type: "project.complete", id: project.id });
+    if (project.completedAt) {
+      const result = await execute({ type: "project.reopen", id: project.id });
+      project = result.snapshot.projects.find((p) => p.id === project.id)!;
+    }
+    const workStatus = stage === "hold" ? "on_hold" : "active";
+    if ((project.workStatus || "active") !== workStatus)
+      return execute({
+        type: "project.update",
+        id: project.id,
+        expectedUpdatedAt: project.updatedAt,
+        input: {
+          title: project.title,
+          description: project.description,
+          icon: project.icon,
+          tags: project.tags,
+          workStatus,
+        },
+      });
   }
   async function toggleHabit(occurrenceId: string) {
     const execution = data.executions.find(
@@ -143,5 +173,5 @@ export function useActions() {
   const safely = (action: () => Promise<unknown>) => {
     void action().catch(() => {});
   };
-  return { toggleTask, moveTask, toggleHabit, rename, safely };
+  return { toggleTask, moveTask, moveProject, toggleHabit, rename, safely };
 }

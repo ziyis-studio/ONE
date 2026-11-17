@@ -1,3 +1,4 @@
+import "./editor-status.css";
 import { useEffect, useState, useRef } from "react";
 import type { FormEvent, ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
@@ -13,7 +14,7 @@ import {
 } from "lucide-react";
 import { useConfirm } from "../lib/confirmation";
 import { useOne } from "../lib/workspace";
-import { useActions, stages, taskStage } from "../lib/actions";
+import { useActions, stages, taskStage, projectStage } from "../lib/actions";
 import type { Stage } from "../lib/actions";
 import { Dialog, IconButton, CheckButton, EntityIcon } from "./ui";
 import { SelectField, MultiSelectField } from "./SelectField";
@@ -51,7 +52,7 @@ export default function Editor() {
     reload,
     scope,
   } = useOne();
-  const { safely, moveTask } = useActions();
+  const { safely, moveTask, moveProject } = useActions();
   const confirm = useConfirm();
   const kind = editor!.kind,
     id = editor!.id;
@@ -167,6 +168,8 @@ export default function Editor() {
   const [newConditions, setNewConditions] = useState<string[]>([]);
   const [error, setError] = useState("");
   const [preview, setPreview] = useState(false);
+  const [changingStatus, setChangingStatus] = useState(false);
+  const statusLock = useRef(false);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const mounted = useRef(true);
   const saving = useRef(false),
@@ -264,8 +267,40 @@ export default function Editor() {
       .map((v) => v.trim())
       .filter(Boolean);
   const close = () => {
-    if (!busy && !saving.current && draft.flush()) edit(null);
+    if (!busy && !saving.current && !statusLock.current && draft.flush())
+      edit(null);
   };
+  const currentStage = id
+    ? kind === "task" && task
+      ? taskStage(task)
+      : project
+        ? projectStage(project)
+        : initialStage
+    : initialStage;
+  async function changeStage(stage: Stage) {
+    if (!id) {
+      setInitialStage(stage);
+      return;
+    }
+    if (busy || dirty || saving.current || statusLock.current) return;
+    statusLock.current = true;
+    setChangingStatus(true);
+    setError("");
+    try {
+      if (kind === "task" && task) await moveTask(task, stage);
+      else if (kind === "project" && project && stage !== "todo")
+        await moveProject(project, stage);
+      edit(null);
+    } catch (cause) {
+      if (mounted.current)
+        setError(
+          cause instanceof Error ? cause.message : "Could not update status.",
+        );
+    } finally {
+      statusLock.current = false;
+      if (mounted.current) setChangingStatus(false);
+    }
+  }
   function timestamps() {
     const [a, b] = start.split("T"),
       [c, d] = end.split("T");
@@ -277,7 +312,8 @@ export default function Editor() {
   }
   async function save(event: FormEvent) {
     event.preventDefault();
-    if (busy || saving.current || saveState === "saved") return;
+    if (busy || saving.current || statusLock.current || saveState === "saved")
+      return;
     setError("");
     const missing = Array.from(
       (event.currentTarget as HTMLFormElement).querySelectorAll<
@@ -645,7 +681,9 @@ export default function Editor() {
         )}
         <fieldset
           className="editor-fields"
-          disabled={saveState === "saving" || saveState === "saved"}
+          disabled={
+            changingStatus || saveState === "saving" || saveState === "saved"
+          }
         >
           {kind !== "sleep" && (
             <input
@@ -673,36 +711,42 @@ export default function Editor() {
           )}
           {(kind === "task" || kind === "project") && (
             <div className="form-grid editor-status-fields">
-              <SelectField
-                label="Status"
-                value={id ? status : initialStage}
-                onChange={(value) =>
-                  id
-                    ? setStatus(value as typeof status)
-                    : setInitialStage(value as Stage)
-                }
-                options={
-                  id
-                    ? [
-                        { value: "active", label: "Active" },
-                        { value: "on_hold", label: "On hold" },
-                      ]
-                    : stages
-                        .filter(
-                          (stage) => kind === "task" || stage.id !== "todo",
-                        )
-                        .map((stage) => ({
-                          value: stage.id,
-                          label:
-                            stage.id === "progress" && kind === "project"
-                              ? "In motion"
-                              : stage.title,
-                        }))
-                }
-                disabled={
-                  busy || saveState === "saving" || saveState === "saved"
-                }
-              />
+              <div
+                className="editor-state-field"
+                role="group"
+                aria-label="Status"
+              >
+                <span className="field-label" aria-hidden="true">
+                  Status
+                </span>
+                <div className="editor-status-options">
+                  {stages
+                    .filter((stage) => kind === "task" || stage.id !== "todo")
+                    .map((stage) => (
+                      <button
+                        type="button"
+                        key={stage.id}
+                        className={
+                          "tiny-pill " +
+                          (currentStage === stage.id ? "selected" : "")
+                        }
+                        aria-pressed={currentStage === stage.id}
+                        disabled={
+                          busy ||
+                          changingStatus ||
+                          (!!id && dirty) ||
+                          currentStage === stage.id
+                        }
+                        onClick={() => void changeStage(stage.id)}
+                      >
+                        {stage.title}
+                      </button>
+                    ))}
+                </div>
+                {id && dirty && (
+                  <small>Save your changes before changing status.</small>
+                )}
+              </div>
               <Field label="Tags">
                 <input
                   value={tags}
@@ -858,39 +902,6 @@ export default function Editor() {
                   <Plus size={16} />
                 </IconButton>
               </div>
-              {task && (
-                <div className="task-state-actions">
-                  <span className="field-label">MOVE TASK</span>
-                  <div>
-                    {stages.map((stage) => (
-                      <button
-                        type="button"
-                        disabled={busy || dirty || taskStage(task) === stage.id}
-                        className={
-                          "tiny-pill " +
-                          (taskStage(task) === stage.id ? "selected" : "")
-                        }
-                        key={stage.id}
-                        onClick={() =>
-                          safely(async () => {
-                            const result = await moveTask(task, stage.id);
-                            setRevision(
-                              data.tasks.find((t) => t.id === id)?.updatedAt,
-                            );
-                            edit(null);
-                            return result;
-                          })
-                        }
-                      >
-                        {stage.title}
-                      </button>
-                    ))}
-                  </div>
-                  {dirty && (
-                    <small>Save your changes before moving the task.</small>
-                  )}
-                </div>
-              )}
             </>
           )}
           {kind === "project" && project && (
@@ -931,30 +942,6 @@ export default function Editor() {
               >
                 <Plus size={13} />
                 Add a task
-              </button>
-              <button
-                type="button"
-                className="secondary-button project-complete"
-                disabled={busy || dirty}
-                onClick={() =>
-                  safely(async () => {
-                    await execute({
-                      type: project.completedAt
-                        ? "project.reopen"
-                        : "project.complete",
-                      id: project.id,
-                    });
-                    edit(null);
-                    notify(
-                      project.completedAt
-                        ? "Project reopened."
-                        : "A little chapter, completed.",
-                    );
-                  })
-                }
-              >
-                {project.completedAt ? "Reopen project" : "Complete project"}
-                <Check size={14} />
               </button>
             </>
           )}
@@ -1358,7 +1345,11 @@ export default function Editor() {
             )}
             <span />
             {task && kind === "task" && (
-              <FocusTaskButton task={task} onStarted={() => draft.flush()} />
+              <FocusTaskButton
+                task={task}
+                labelled
+                onStarted={() => draft.flush()}
+              />
             )}
             <button
               type="button"

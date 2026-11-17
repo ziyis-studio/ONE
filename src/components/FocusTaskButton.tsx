@@ -6,9 +6,11 @@ import { useConfirm } from "../lib/confirmation";
 export default function FocusTaskButton({
   task,
   onStarted,
+  labelled = false,
 }: {
   task: Task;
   onStarted?: () => boolean | void;
+  labelled?: boolean;
 }) {
   const { state, focusTask } = usePomodoro();
   const { navigate, busy } = useOne();
@@ -16,7 +18,9 @@ export default function FocusTaskButton({
   return (
     <button
       type="button"
-      className="icon-button focus-task-button"
+      className={
+        (labelled ? "secondary-button" : "icon-button") + " focus-task-button"
+      }
       aria-label={"Focus on " + task.title}
       title="Start focus"
       disabled={busy}
@@ -40,6 +44,19 @@ export default function FocusTaskButton({
       }}
     >
       <Target size={16} />
+      {labelled && (
+        <span>
+          {state.mode === "focus" &&
+          state.taskId === task.id &&
+          state.status === "running"
+            ? "Open timer"
+            : state.mode === "focus" &&
+                state.taskId === task.id &&
+                state.status === "paused"
+              ? "Resume focus"
+              : "Start focus"}
+        </span>
+      )}
     </button>
   );
 }

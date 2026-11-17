@@ -4324,6 +4324,12 @@ svg {
     padding-left: 16px;
     padding-right: 16px;
   }
+  .board-scroll,
+  .project-board {
+    margin-right: -16px;
+    padding-right: 16px;
+    max-width: calc(100% + 16px);
+  }
   .home-intro h1 {
     font-size: 28px;
   }

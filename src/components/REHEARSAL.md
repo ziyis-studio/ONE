@@ -424,3 +424,25 @@ exact primary latest/hover bars and phone overflow. Artifacts are in ignored
 the automated suite; physical phones and other engines were not exercised.
 The current source-based product priorities are recorded in
 [uiux-review.md](../../docs/uiux-review.md); those additions remain proposals.
+
+# Unified editor status and visible task focus
+
+Task and project editors now have one Status button group beside Tags, immediately
+below the title and above Description. Tasks use To do / In progress / On hold /
+Done; projects use the last three. New items stage their initial status; existing
+items use the existing guarded state transitions. Unsaved metadata must be saved
+before moving an existing item. Completion conditions and incomplete project
+tasks still block Done. The old MOVE TASK section, Active / On hold selector and
+separate project completion button are removed. Older unreviewed drafts survive
+status changes.
+
+The task editor's target button now includes Start focus, Resume focus or Open
+timer text; card and list shortcuts keep their compact target icons. Phone footers
+keep Close/Delete and Focus/Save aligned in two rows. At 360px and below, board
+scroll gutters follow the workspace's 16px padding.
+
+Verification: 30 relevant tests across six files, nine follow-up checks after
+layout refinement, TypeScript/production build, and Chromium at 1087/390/320px.
+The browser checks top-only status, task/project transitions, preserved project
+metadata, task-linked focus and footer bounds. No browser errors or page overflow.
+Artifacts: ignored `test-results/editor-status/`.

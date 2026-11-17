@@ -124,6 +124,45 @@ describe("approved workspace follow-ups", () => {
       screen.getByRole("button", { name: "Show task panel" }),
     ).toBeTruthy();
   });
+  it("uses one status group above description and exposes labelled task focus", async () => {
+    const state = await demo();
+    await nav("Tasks");
+    const task = state.tasks.find((t) =>
+      state.conditions.some((c) => c.taskId === t.id && !c.isMet),
+    )!;
+    await userEvent.click(
+      screen.getByRole("button", { name: "Open task " + task.title }),
+    );
+    const dialog = await screen.findByRole("dialog"),
+      group = within(dialog).getByRole("group", { name: "Status" });
+    expect(within(dialog).queryByText("MOVE TASK")).toBeNull();
+    expect(
+      dialog.querySelectorAll(".editor-status-fields .one-select").length,
+    ).toBe(0);
+    expect(
+      group.compareDocumentPosition(
+        within(dialog).getByRole("textbox", { name: "Description" }),
+      ) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    await userEvent.click(within(group).getByRole("button", { name: "Done" }));
+    await waitFor(() =>
+      expect(dialog.querySelector(".editor-error")?.textContent).toMatch(
+        /condition/i,
+      ),
+    );
+    expect(
+      saved().tasks.find((t: { id: string }) => t.id === task.id).completedAt,
+    ).toBeNull();
+    const focus = within(dialog).getByRole("button", {
+      name: "Focus on " + task.title,
+    });
+    expect(focus.textContent).toContain("Start focus");
+    await userEvent.click(focus);
+    await screen.findByRole("heading", { name: "Today." });
+    expect(
+      JSON.parse(localStorage.getItem("one-pomodoro-v1:demo")!).state.taskId,
+    ).toBe(task.id);
+  });
   it("creates items directly in all four task columns and all three project columns", async () => {
     await demo();
     await nav("Tasks");
@@ -138,9 +177,12 @@ describe("approved workspace follow-ups", () => {
       );
       const dialog = await screen.findByRole("dialog");
       expect(
-        dialog.querySelector(".editor-status-fields .one-select-value")
-          ?.textContent,
-      ).toContain(label);
+        within(within(dialog).getByRole("group", { name: "Status" }))
+          .getByRole("button", {
+            name: label === "In motion" ? "In progress" : label,
+          })
+          .getAttribute("aria-pressed"),
+      ).toBe("true");
       await userEvent.type(
         within(dialog).getByRole("textbox", { name: "Title" }),
         "Column task " + stage,
@@ -170,9 +212,12 @@ describe("approved workspace follow-ups", () => {
       );
       const dialog = await screen.findByRole("dialog");
       expect(
-        dialog.querySelector(".editor-status-fields .one-select-value")
-          ?.textContent,
-      ).toContain(label);
+        within(within(dialog).getByRole("group", { name: "Status" }))
+          .getByRole("button", {
+            name: label === "In motion" ? "In progress" : label,
+          })
+          .getAttribute("aria-pressed"),
+      ).toBe("true");
       await userEvent.type(
         within(dialog).getByRole("textbox", { name: "Title" }),
         "Column project " + stage,
