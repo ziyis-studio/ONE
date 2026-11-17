@@ -19,6 +19,8 @@ import { DEFAULT_ZONE } from "./config";
 import { supabase } from "./auth";
 import { ViewStateProvider } from "./view-state";
 import { PomodoroProvider } from "./pomodoro-context";
+import type { PomodoroRecord } from "./pomodoro";
+import { pomodoroTimeBlock } from "./pomodoro-timeline";
 
 export type Page =
   | "home"
@@ -160,6 +162,84 @@ export function WorkspaceProvider({
       if (alive.current) setLoading(false);
     }
   }, [demo, zone, token, replace]);
+  const wantedBlocks = useRef(new Set<string>());
+  const [blockRefresh, setBlockRefresh] = useState(0);
+  const syncPomodoroBlocks = useCallback((ids: string[]) => {
+    const missing = ids.filter(
+      (id) => !dataRef.current.timeBlocks.some((block) => block.id === id),
+    );
+    if (!missing.length) return;
+    missing.forEach((id) => wantedBlocks.current.add(id));
+    setBlockRefresh((value) => value + 1);
+  }, []);
+  useEffect(() => {
+    if (
+      demo ||
+      !blockRefresh ||
+      busy ||
+      loading ||
+      error ||
+      !wantedBlocks.current.size
+    )
+      return;
+    if (
+      [...wantedBlocks.current].every((id) =>
+        dataRef.current.timeBlocks.some((block) => block.id === id),
+      )
+    ) {
+      wantedBlocks.current.clear();
+      return;
+    }
+    let current = true;
+    const before = dataRef.current;
+    void (async () => {
+      try {
+        const snapshot = await loadWorkspace(await token());
+        if (
+          current &&
+          alive.current &&
+          !lock.current &&
+          dataRef.current === before
+        ) {
+          replace(snapshot);
+          wantedBlocks.current.clear();
+        }
+      } catch {
+        /* The next reconnect/foreground sync retries without hiding the workspace. */
+      }
+    })();
+    return () => {
+      current = false;
+    };
+  }, [demo, blockRefresh, busy, loading, error, token, replace]);
+  const saveDemoPomodoro = useCallback(
+    (records: PomodoroRecord[]) => {
+      if (!demo || lock.current) return false;
+      const additions = records
+        .filter(
+          (record) =>
+            !dataRef.current.timeBlocks.some((block) => block.id === record.id),
+        )
+        .map((record) => pomodoroTimeBlock(record, zone));
+      if (additions.length) {
+        const snapshot = {
+          ...dataRef.current,
+          timeBlocks: [...dataRef.current.timeBlocks, ...additions],
+        };
+        replace(snapshot);
+        try {
+          localStorage.setItem(DEMO_KEY, JSON.stringify(snapshot));
+        } catch {
+          notify(
+            "Schedule saved for this visit. Browser storage is full.",
+            true,
+          );
+        }
+      }
+      return true;
+    },
+    [demo, zone, replace, notify],
+  );
   const execute = useCallback(
     async (command: Command) => {
       if (lock.current)
@@ -275,6 +355,8 @@ export function WorkspaceProvider({
           zone={zone}
           today={today}
           notify={notify}
+          onDemoRecords={!loading && !busy ? saveDemoPomodoro : undefined}
+          onSyncedBlocks={syncPomodoroBlocks}
         >
           {children}
         </PomodoroProvider>

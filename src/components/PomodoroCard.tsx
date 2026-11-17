@@ -1,14 +1,4 @@
-import {
-  CloudCheck,
-  CloudOff,
-  CloudUpload,
-  Target,
-  Coffee,
-  Armchair,
-  Pause,
-  Play,
-  RotateCcw,
-} from "lucide-react";
+import { Target, Coffee, Armchair, Pause, Play, RotateCcw } from "lucide-react";
 import { motion } from "motion/react";
 import { usePomodoro } from "../lib/pomodoro-context";
 import {
@@ -16,7 +6,7 @@ import {
   POMODORO_MODES,
   pomodoroTime,
 } from "../lib/pomodoro";
-import { ONE_SEGMENTS, segmentProgress } from "../lib/brand-mark";
+import { ONE_SEGMENTS, segmentProgress, pomodoroHead } from "../lib/brand-mark";
 import { useMotionPreference } from "../lib/motion-preference";
 import { Card, IconButton } from "./ui";
 import { DiscreteTabs } from "./interactions";
@@ -27,8 +17,6 @@ export default function PomodoroCard() {
     state,
     remainingMs,
     completedToday,
-    syncStatus,
-    refreshRecords,
     start,
     pause,
     reset,
@@ -39,6 +27,7 @@ export default function PomodoroCard() {
     complete = state.status === "complete";
   const duration = POMODORO_MODES[state.mode].seconds,
     ratio = 1 - remainingMs / (duration * 1000);
+  const head = pomodoroHead(ratio);
   const next = nextPomodoroMode(state),
     label = POMODORO_MODES[state.mode].label;
   const action = running
@@ -55,32 +44,30 @@ export default function PomodoroCard() {
       title="Pomodoro"
       className="pomodoro-card"
       meta={
-        <div className="pomodoro-meta">
-          {syncStatus !== "local" && (
-            <IconButton
-              label={
-                syncStatus === "offline"
-                  ? "Focus records waiting to sync. Retry"
-                  : syncStatus === "syncing"
-                    ? "Saving focus records"
-                    : "Focus records saved. Refresh"
-              }
-              onClick={refreshRecords}
-              disabled={syncStatus === "syncing"}
-            >
-              {syncStatus === "offline" ? (
-                <CloudOff size={14} />
-              ) : syncStatus === "syncing" ? (
-                <CloudUpload size={14} />
-              ) : (
-                <CloudCheck size={14} />
-              )}
-            </IconButton>
-          )}
-          <IconButton label="Reset Pomodoro" onClick={reset}>
-            <RotateCcw size={14} />
-          </IconButton>
-        </div>
+        <DiscreteTabs
+          label="Pomodoro mode"
+          compact
+          iconsOnly
+          value={state.mode}
+          onChange={selectMode}
+          items={[
+            {
+              value: "focus",
+              label: "Focus",
+              icon: <Target size={16} aria-hidden="true" />,
+            },
+            {
+              value: "short",
+              label: "Short break",
+              icon: <Coffee size={16} aria-hidden="true" />,
+            },
+            {
+              value: "long",
+              label: "Long break",
+              icon: <Armchair size={16} aria-hidden="true" />,
+            },
+          ]}
+        />
       }
     >
       <div className="pomodoro-body">
@@ -109,46 +96,39 @@ export default function PomodoroCard() {
               const progress = segmentProgress(ratio, segment);
               return (
                 <motion.path
-                  key={segment.letter}
+                  key={(state.sessionId || state.mode) + segment.letter}
                   d={segment.reverseD}
                   stroke="currentColor"
                   className={`pomodoro-${segment.name}`}
+                  pathLength="1"
                   initial={false}
                   animate={{
-                    pathLength: progress,
-                    opacity: progress > 0 ? 1 : 0,
+                    strokeDasharray: `${progress} 2`,
+                    opacity: progress > 0 ? (complete ? 1 : 0.5) : 0,
                   }}
-                  transition={{ duration: reduced ? 0 : 0.85, ease: "linear" }}
+                  transition={{
+                    duration: reduced || state.status === "ready" ? 0 : 0.85,
+                    ease: "linear",
+                  }}
                 />
               );
             })}
+            {state.status !== "ready" && !complete && (
+              <motion.circle
+                key={head.segment.letter}
+                className={"pomodoro-head pomodoro-" + head.segment.name}
+                data-head={head.segment.letter}
+                r="4"
+                fill="currentColor"
+                stroke="none"
+                initial={false}
+                animate={{ cx: head.x, cy: head.y }}
+                transition={{ duration: reduced ? 0 : 0.85, ease: "linear" }}
+              />
+            )}
           </svg>
         </motion.div>
         <div className="pomodoro-controls">
-          <DiscreteTabs
-            label="Pomodoro mode"
-            compact
-            iconsOnly
-            value={state.mode}
-            onChange={selectMode}
-            items={[
-              {
-                value: "focus",
-                label: "Focus",
-                icon: <Target size={16} aria-hidden="true" />,
-              },
-              {
-                value: "short",
-                label: "Short break",
-                icon: <Coffee size={16} aria-hidden="true" />,
-              },
-              {
-                value: "long",
-                label: "Long break",
-                icon: <Armchair size={16} aria-hidden="true" />,
-              },
-            ]}
-          />
           <div
             className="pomodoro-dial"
             role="progressbar"
@@ -169,23 +149,28 @@ export default function PomodoroCard() {
                   : label}
             </span>
           </div>
-          <button
-            type="button"
-            className="primary-button"
-            onClick={running ? pause : start}
-            aria-label={
-              running
-                ? "Pause Pomodoro"
-                : complete
-                  ? "Start " + POMODORO_MODES[next].label.toLowerCase()
-                  : state.status === "paused"
-                    ? "Resume Pomodoro"
-                    : "Start Pomodoro"
-            }
-          >
-            {running ? <Pause size={14} /> : <Play size={14} />}
-            <span>{action}</span>
-          </button>
+          <div className="pomodoro-action-row">
+            <button
+              type="button"
+              className="primary-button"
+              onClick={running ? pause : start}
+              aria-label={
+                running
+                  ? "Pause Pomodoro"
+                  : complete
+                    ? "Start " + POMODORO_MODES[next].label.toLowerCase()
+                    : state.status === "paused"
+                      ? "Resume Pomodoro"
+                      : "Start Pomodoro"
+              }
+            >
+              {running ? <Pause size={14} /> : <Play size={14} />}
+              <span>{action}</span>
+            </button>
+            <IconButton label="Reset Pomodoro" onClick={reset}>
+              <RotateCcw size={15} />
+            </IconButton>
+          </div>
           <small className="pomodoro-summary">
             {completedToday} {completedToday === 1 ? "session" : "sessions"} ·{" "}
             {completedToday * 25}m focus today

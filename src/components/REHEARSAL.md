@@ -373,3 +373,38 @@ keyboard mode changes, focus labels, start/pause/resume/reset and reduced motion
 No browser runtime errors were observed. Captures/scripts are in ignored
 `test-results/pomo-compact/`. No automated suite was repeated for this visual
 change; physical touch devices and other browser engines were not exercised.
+
+# Pomodoro terminal head and automatic Schedule recording
+
+Plan: [pomodoro-timeline-plan.md](../../docs/pomodoro-timeline-plan.md).
+
+The elapsed stroke now uses a normalized dash with a two-unit gap, preventing a
+zero/tiny dash from repeating at the opposite terminal. Only one explicit head
+is bright; the trail is dimmer and follows the reversed exact master arcs.
+New sessions remount the elapsed paths, reset clears them immediately, and mode
+icons occupy the header. Reset sits beside the main action; the cloud button is
+removed. Header icon labels open below the controls to stay inside the card.
+
+Completion inserts now atomically create ordinary time blocks via an invoker-
+security trigger. Owner RLS, a deferred composite ownership FK and a covering
+unique index protect the link. Actual start/end and focus/break/pause durations
+are recorded. Existing completion rows are backfilled once. Deleting a generated
+block clears the link without deleting history; repeated completion uploads do
+not recreate it. Quiet workspace refreshes discard stale results when a user
+command is in flight. Sample mode mirrors the mapping and remembers each link.
+
+Verification: 18 focused tests across six files and the production build passed.
+Local Chromium at 1703, 1087, 701, 390 and 320px checked header modes, reset/action
+alignment, no cloud control, one startup head, pause/reset, completion visible
+in the day timeline/editor, refresh deduplication, explicit deletion, subsequent
+break recording and preserved tasks. No runtime errors were observed. In the
+startup capture, the head reached RGB 238 while the opposite end remained at 58. Real rolled-back SQL verified atomic block creation, pause data, duplicate
+retry, invoker RLS, invalid-zone rollback and history retention after deletion.
+Security/performance advisors report no new Pomodoro findings after adding the
+composite covering index. Client tests also cover a quiet refresh racing a user
+command without losing its resulting snapshot.
+
+Artifacts: ignored `test-results/pomo-timeline/`. Browser checks used local
+samples/mock weather; authenticated DB verification was rolled back. A signed-in
+production browser write, physical touch devices and other browser engines were
+not exercised. The unrelated full regression suite was not repeated.

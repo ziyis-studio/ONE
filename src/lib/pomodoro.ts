@@ -10,6 +10,7 @@ export type PomodoroRecord = {
   startedAt: number;
   completedAt: number;
   durationSeconds: number;
+  timeBlockId?: string | null;
 };
 export type PomodoroState = {
   mode: PomodoroMode;

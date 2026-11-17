@@ -1,10 +1,32 @@
 .pomodoro-card .card-heading {
   margin-bottom: 14px;
 }
-.pomodoro-meta {
+.pomodoro-card .card-heading .card-actions {
+  min-width: 0;
+}
+.pomodoro-card .card-heading .one-tabs {
+  flex-shrink: 0;
+}
+.pomodoro-card .card-heading .one-tab-tooltip {
+  top: calc(100% + 7px);
+  bottom: auto;
+}
+.pomodoro-head.pomodoro-short {
+  color: var(--one-accent-mark);
+}
+.pomodoro-mark .pomodoro-head {
+  stroke: none;
+}
+.pomodoro-action-row {
   display: flex;
   align-items: center;
   gap: 8px;
+  width: 100%;
+}
+.pomodoro-action-row .icon-button {
+  flex: 0 0 32px;
+  width: 32px;
+  height: 34px;
 }
 .pomodoro-body {
   display: grid;
@@ -58,8 +80,10 @@
   line-height: 1.4;
 }
 .pomodoro-controls .primary-button {
-  width: 120px;
-  max-width: 100%;
+  flex: 1;
+  max-width: 120px;
+  min-width: 0;
+  padding-inline: 8px;
   min-height: 34px;
   justify-content: center;
 }
@@ -68,9 +92,6 @@
   line-height: 1.4;
   color: #999;
   font-variant-numeric: tabular-nums;
-}
-.pomodoro-controls > .one-tabs {
-  flex-shrink: 0;
 }
 @media (max-width: 1100px) and (min-width: 701px) {
   .pomodoro-body {
@@ -83,6 +104,11 @@
   .pomodoro-controls .primary-button {
     padding-inline: 8px;
     font-size: 11px;
+  }
+}
+@media (max-width: 900px) and (min-width: 701px) {
+  .pomodoro-body {
+    grid-template-columns: minmax(60px, 0.6fr) minmax(0, 1.4fr);
   }
 }
 @media (max-width: 700px) {
@@ -98,5 +124,10 @@
   }
   .pomodoro-controls .primary-button {
     min-height: 40px;
+  }
+  .pomodoro-action-row .icon-button {
+    flex-basis: 36px;
+    width: 36px;
+    height: 40px;
   }
 }

@@ -23,7 +23,10 @@ const record = {
 const pending = [record];
 beforeEach(() => {
   vi.clearAllMocks();
-  api.write.mockResolvedValue({ error: null });
+  api.write.mockResolvedValue({
+    error: null,
+    data: [{ time_block_id: "00000000-0000-4000-8000-000000000003" }],
+  });
   api.read.mockResolvedValue({
     error: null,
     data: [
@@ -33,6 +36,7 @@ beforeEach(() => {
         started_at: new Date(record.startedAt).toISOString(),
         completed_at: new Date(record.completedAt).toISOString(),
         duration_seconds: 1500,
+        time_block_id: "00000000-0000-4000-8000-000000000003",
       },
     ],
   });
@@ -44,7 +48,9 @@ beforeEach(() => {
   query.order = () => query;
   query.limit = () => query;
   query.abortSignal = () => api.read();
-  api.upsert.mockImplementation(() => ({ abortSignal: () => api.write() }));
+  api.upsert.mockImplementation(() => ({
+    select: () => ({ abortSignal: () => api.write() }),
+  }));
   api.from.mockReturnValue({ upsert: api.upsert, select: () => query });
 });
 afterEach(cleanup);
@@ -79,7 +85,12 @@ describe("Pomodoro account records", () => {
       "completed_at",
       "2026-11-17T16:00:00.000Z",
     );
-    expect(result.current.records).toEqual(pending);
+    expect(result.current.records).toEqual([
+      { ...record, timeBlockId: "00000000-0000-4000-8000-000000000003" },
+    ]);
+    expect(result.current.linkedBlocks).toEqual([
+      "00000000-0000-4000-8000-000000000003",
+    ]);
   });
   it("keeps demo local and retries the same completion after a network failure", async () => {
     api.write.mockResolvedValueOnce({ error: new Error("Offline") });

@@ -20,7 +20,7 @@ import {
   settlePomodoro,
   startPomodoro,
 } from "./pomodoro";
-import type { PomodoroMode, PomodoroState } from "./pomodoro";
+import type { PomodoroMode, PomodoroState, PomodoroRecord } from "./pomodoro";
 import { usePomodoroRecords } from "./pomodoro-records";
 import type { RecordSyncStatus } from "./pomodoro-records";
 type Timer = {
@@ -42,6 +42,8 @@ export function PomodoroProvider({
   zone,
   today,
   notify,
+  onDemoRecords,
+  onSyncedBlocks,
 }: {
   children: ReactNode;
   scope: string;
@@ -49,6 +51,8 @@ export function PomodoroProvider({
   zone: string;
   today: string;
   notify: (message: string) => void;
+  onDemoRecords?: (records: PomodoroRecord[]) => boolean;
+  onSyncedBlocks?: (ids: string[]) => void;
 }) {
   const key = "one-pomodoro-v1:" + scope;
   const [state, setState] = useState(() => {
@@ -63,7 +67,23 @@ export function PomodoroProvider({
     records: cloudRecords,
     status: syncStatus,
     refresh: refreshRecords,
+    linkedBlocks,
   } = usePomodoroRecords(scope, cloud, state.records, today, zone);
+  useEffect(() => {
+    if (cloud && linkedBlocks.length) onSyncedBlocks?.(linkedBlocks);
+  }, [cloud, linkedBlocks, onSyncedBlocks]);
+  useEffect(() => {
+    if (cloud || !onDemoRecords) return;
+    const pending = state.records.filter((record) => !record.timeBlockId);
+    if (!pending.length || !onDemoRecords(pending)) return;
+    const ids = new Set(pending.map((record) => record.id));
+    setState((current) => ({
+      ...current,
+      records: current.records.map((record) =>
+        ids.has(record.id) ? { ...record, timeBlockId: record.id } : record,
+      ),
+    }));
+  }, [cloud, onDemoRecords, state.records]);
   const announced = useRef(
     state.status === "complete" ? state.completedAt : null,
   );

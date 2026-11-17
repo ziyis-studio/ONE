@@ -10,6 +10,7 @@ type Row = {
   started_at: string;
   completed_at: string;
   duration_seconds: number;
+  time_block_id: string | null;
 };
 
 export function usePomodoroRecords(
@@ -24,6 +25,7 @@ export function usePomodoroRecords(
     enabled ? "syncing" : "local",
   );
   const [revision, setRevision] = useState(0);
+  const [linkedBlocks, setLinkedBlocks] = useState<string[]>([]);
   const refresh = useCallback(() => setRevision((value) => value + 1), []);
   useEffect(() => {
     if (!enabled) return;
@@ -47,8 +49,9 @@ export function usePomodoroRecords(
     const sync = async () => {
       setStatus("syncing");
       try {
+        let createdBlocks: string[] = [];
         if (pending.length) {
-          const { error } = await supabase
+          const { data: inserted, error } = await supabase
             .from("pomodoro_sessions")
             .upsert(
               pending.map((record) => ({
@@ -58,16 +61,25 @@ export function usePomodoroRecords(
                 started_at: new Date(record.startedAt).toISOString(),
                 completed_at: new Date(record.completedAt).toISOString(),
                 duration_seconds: record.durationSeconds,
+                timezone: zone,
               })),
               { onConflict: "owner_id,id", ignoreDuplicates: true },
             )
+            .select("time_block_id")
             .abortSignal(controller.signal);
           if (error) throw error;
+          createdBlocks = (inserted || [])
+            .map((row: { time_block_id: string | null }) => row.time_block_id)
+            .filter((id): id is string => !!id);
+          if (!controller.signal.aborted && createdBlocks.length)
+            setLinkedBlocks(createdBlocks);
         }
         const [start, end] = dayBounds(day, zone);
         const { data, error } = await supabase
           .from("pomodoro_sessions")
-          .select("id,mode,started_at,completed_at,duration_seconds")
+          .select(
+            "id,mode,started_at,completed_at,duration_seconds,time_block_id",
+          )
           .eq("owner_id", owner)
           .gte("completed_at", new Date(start).toISOString())
           .lt("completed_at", new Date(end).toISOString())
@@ -83,8 +95,17 @@ export function usePomodoroRecords(
               startedAt: Date.parse(row.started_at),
               completedAt: Date.parse(row.completed_at),
               durationSeconds: row.duration_seconds,
+              timeBlockId: row.time_block_id,
             })),
           );
+          setLinkedBlocks([
+            ...new Set([
+              ...createdBlocks,
+              ...(data as Row[])
+                .map((row) => row.time_block_id)
+                .filter((id): id is string => !!id),
+            ]),
+          ]);
           setStatus("saved");
         }
       } catch {
@@ -94,5 +115,5 @@ export function usePomodoroRecords(
     void sync();
     return () => controller.abort();
   }, [owner, enabled, pending, day, zone, revision]);
-  return { records, status, refresh };
+  return { records, status, refresh, linkedBlocks };
 }
