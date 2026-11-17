@@ -31,12 +31,14 @@ export function DiscreteTabs<T extends string>({
   items,
   label = "View",
   compact = false,
+  iconsOnly = false,
 }: {
   value: T;
   onChange: (value: T) => void;
   items: { value: T; label: string; icon?: ReactNode }[];
   label?: string;
   compact?: boolean;
+  iconsOnly?: boolean;
 }) {
   const id = useId(),
     transition = useSettle();
@@ -46,12 +48,14 @@ export function DiscreteTabs<T extends string>({
         className={`segmented one-tabs${compact ? " compact" : ""}`}
         role="group"
         aria-label={label}
+        data-icons-only={iconsOnly || undefined}
       >
         {items.map((item) => (
           <button
             key={item.value}
             type="button"
             aria-pressed={value === item.value}
+            aria-label={iconsOnly ? item.label : undefined}
             className={value === item.value ? "active" : ""}
             onClick={() => onChange(item.value)}
           >
@@ -64,8 +68,13 @@ export function DiscreteTabs<T extends string>({
             )}
             <span className="one-tab-label">
               {item.icon}
-              {item.label}
+              {!iconsOnly && item.label}
             </span>
+            {iconsOnly && (
+              <span className="one-tab-tooltip" aria-hidden="true">
+                {item.label}
+              </span>
+            )}
           </button>
         ))}
       </div>

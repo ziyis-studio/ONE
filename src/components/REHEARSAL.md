@@ -355,3 +355,21 @@ Artifacts: ignored `test-results/focus-records/`. Browser checks used samples an
 mock weather; database verification used a rolled-back fixture. A credentialed
 production browser write, physical phones and other browser engines were not
 exercised. The full unrelated regression suite was not repeated in this pass.
+
+# Compact horizontal Pomodoro
+
+Plan: [pomodoro-compact-plan.md](../../docs/pomodoro-compact-plan.md).
+The ring is now alone on the left. Mode icons, a separate larger countdown,
+phase, main action and daily summary share the right column. Focus/short/long
+use Target/Coffee/Armchair, with named pressed buttons, keyboard focus and
+custom hover/focus labels. The shared tabs' icon-only option defaults off.
+The first-row and loading minimum drops from 315px to 250px; actual ready cards
+measured 250–261px across the checked widths. Timer/history behavior is unchanged.
+
+Verification: production build passed. Local Chromium at 1703, 921, 701, 390 and
+320px checked left-ring/right-controls geometry, no countdown inside the ring,
+matching desktop row heights, no viewport overflow, icon names/selection,
+keyboard mode changes, focus labels, start/pause/resume/reset and reduced motion.
+No browser runtime errors were observed. Captures/scripts are in ignored
+`test-results/pomo-compact/`. No automated suite was repeated for this visual
+change; physical touch devices and other browser engines were not exercised.

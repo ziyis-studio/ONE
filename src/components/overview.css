@@ -5,7 +5,7 @@
 .dashboard-grid .pomodoro-card {
   grid-column: 5 / span 5;
   grid-row: 1;
-  min-height: 315px;
+  min-height: 250px;
 }
 .dashboard-grid .sleep-card {
   grid-column: 10 / span 3;
@@ -117,7 +117,7 @@
     grid-row: auto;
   }
   .dashboard-grid .pomodoro-card {
-    min-height: 315px;
+    min-height: 250px;
   }
   .dashboard-grid .sleep-card {
     min-height: 235px;
@@ -130,8 +130,5 @@
   }
   .dashboard-grid .clock-card .clock-main {
     gap: 0.065em;
-  }
-  .pomodoro-dial time {
-    font-size: 30px;
   }
 }

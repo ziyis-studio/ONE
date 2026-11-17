@@ -2,6 +2,9 @@ import {
   CloudCheck,
   CloudOff,
   CloudUpload,
+  Target,
+  Coffee,
+  Armchair,
   Pause,
   Play,
   RotateCcw,
@@ -80,17 +83,6 @@ export default function PomodoroCard() {
         </div>
       }
     >
-      <DiscreteTabs
-        label="Pomodoro mode"
-        compact
-        value={state.mode}
-        onChange={selectMode}
-        items={[
-          { value: "focus", label: "Focus" },
-          { value: "short", label: "Short break" },
-          { value: "long", label: "Long break" },
-        ]}
-      />
       <div className="pomodoro-body">
         <motion.div
           className={"pomodoro-mark" + (running ? " is-running" : "")}
@@ -131,6 +123,32 @@ export default function PomodoroCard() {
               );
             })}
           </svg>
+        </motion.div>
+        <div className="pomodoro-controls">
+          <DiscreteTabs
+            label="Pomodoro mode"
+            compact
+            iconsOnly
+            value={state.mode}
+            onChange={selectMode}
+            items={[
+              {
+                value: "focus",
+                label: "Focus",
+                icon: <Target size={16} aria-hidden="true" />,
+              },
+              {
+                value: "short",
+                label: "Short break",
+                icon: <Coffee size={16} aria-hidden="true" />,
+              },
+              {
+                value: "long",
+                label: "Long break",
+                icon: <Armchair size={16} aria-hidden="true" />,
+              },
+            ]}
+          />
           <div
             className="pomodoro-dial"
             role="progressbar"
@@ -151,8 +169,6 @@ export default function PomodoroCard() {
                   : label}
             </span>
           </div>
-        </motion.div>
-        <div className="pomodoro-controls">
           <button
             type="button"
             className="primary-button"
@@ -170,12 +186,12 @@ export default function PomodoroCard() {
             {running ? <Pause size={14} /> : <Play size={14} />}
             <span>{action}</span>
           </button>
+          <small className="pomodoro-summary">
+            {completedToday} {completedToday === 1 ? "session" : "sessions"} ·{" "}
+            {completedToday * 25}m focus today
+          </small>
         </div>
       </div>
-      <small className="pomodoro-summary">
-        {completedToday} {completedToday === 1 ? "session" : "sessions"} ·{" "}
-        {completedToday * 25}m focus today
-      </small>
     </Card>
   );
 }

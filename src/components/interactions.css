@@ -29,6 +29,52 @@
   font-size: 10px;
   min-height: 26px;
 }
+.one-tabs[data-icons-only] {
+  width: max-content;
+}
+.one-tabs[data-icons-only] > button {
+  width: 34px;
+  height: 30px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+}
+.one-tab-tooltip {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 7px);
+  transform: translate(-50%, 3px);
+  padding: 5px 8px;
+  border: 1px solid #4a4a4a;
+  border-radius: 7px;
+  background: #303030;
+  color: #eee;
+  font-size: 10px;
+  font-weight: 400;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 120ms,
+    transform 120ms;
+  z-index: 4;
+}
+.one-tabs[data-icons-only] > button:hover > .one-tab-tooltip,
+.one-tabs[data-icons-only] > button:focus-visible > .one-tab-tooltip {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+@media (max-width: 700px) {
+  .one-tabs[data-icons-only] > button {
+    width: 40px;
+    height: 40px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .one-tab-tooltip {
+    transition: none;
+  }
+}
 .one-content-switch {
   min-width: 0;
 }
