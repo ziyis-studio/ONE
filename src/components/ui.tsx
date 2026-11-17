@@ -5,7 +5,6 @@ import {
   Plus,
   ArrowUpRight,
   Check,
-  LoaderCircle,
   Folder,
   BookOpen,
   Heart,
@@ -31,7 +30,8 @@ import type { LucideIcon } from "lucide-react";
 import { motion } from "motion/react";
 import { useSettle } from "./interactions";
 import { useConfirm, DISCARD_CHANGES } from "../lib/confirmation";
-import { ONE_ARC_LONG, ONE_ARC_SHORT } from "../lib/brand-mark";
+import { ONE_SEGMENTS } from "../lib/brand-mark";
+import { AuthLogo } from "./AuthLogo";
 import { usePopupExit } from "../lib/popup-exit";
 
 export const iconMap: Record<string, LucideIcon> = {
@@ -78,8 +78,14 @@ export function Logo({ size = 30 }: { size?: number }) {
       strokeLinecap="round"
       aria-hidden="true"
     >
-      <path d={ONE_ARC_LONG} stroke="currentColor" />
-      <path d={ONE_ARC_SHORT} className="one-logo-accent" />
+      {ONE_SEGMENTS.map((segment) => (
+        <path
+          key={segment.letter}
+          d={segment.d}
+          stroke="currentColor"
+          className={segment.name === "short" ? "one-logo-accent" : undefined}
+        />
+      ))}
     </svg>
   );
 }
@@ -198,8 +204,17 @@ export function Empty({
     </div>
   );
 }
-export function Spinner() {
-  return <LoaderCircle size={17} className="spin" aria-label="Loading" />;
+export function Spinner({ size = 24 }: { size?: number }) {
+  return (
+    <span
+      className="one-loading-mark"
+      role="status"
+      aria-label="Loading"
+      style={{ width: size, height: size }}
+    >
+      <AuthLogo state="loading" />
+    </span>
+  );
 }
 export function Dialog({
   title,

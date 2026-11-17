@@ -1,13 +1,15 @@
 import { useLayoutEffect, useRef } from "react";
 import { useMotionPreference } from "../lib/motion-preference";
+import { ONE_SEGMENTS } from "../lib/brand-mark";
 import "./logo-motion.css";
 
 export type AuthLogoState = "idle" | "loading" | "error" | "success";
-// Exact paths from ONE-logo-26deg-master.svg. Keep the two 26° gaps open.
-const arcs = [
-  "M 71.064 77.952 A 35 35 0 1 1 63.111 17.549",
-  "M 76.010 26.580 A 35 35 0 0 1 81.185 65.890",
-];
+// Short E draws slowly, N accelerates, then the long O completes quickly.
+const lighting = {
+  short: { start: 0, duration: 720 },
+  medium: { start: 720, duration: 480 },
+  long: { start: 1200, duration: 260 },
+};
 const ease = (n: number) => n * n * (3 - 2 * n);
 const clamp = (n: number) => Math.max(0, Math.min(n, 1));
 
@@ -24,25 +26,18 @@ export function AuthLogo({ state }: { state: AuthLogoState }) {
     function tick(now: number) {
       if (previous) elapsed += Math.min(now - previous, 64);
       previous = now;
-      const p = (elapsed % 2400) / 2400;
-      let starts = [0, 0],
-        ends = [1, 1],
-        fade = 1;
-      if (p < 0.42) {
-        const k = ease(p / 0.42);
-        ends = [clamp(k * 1.08), clamp((k - 0.2) / 0.8)];
-      } else if (p >= 0.58) {
-        const k = ease((p - 0.58) / 0.42);
-        starts = [k, clamp(k * 1.12)];
-        fade = 1 - k * 0.3;
-      }
+      const time = elapsed % 2400;
+      const fade = 1 - ease(clamp((time - 1840) / 400));
       paths.forEach((path, i) => {
         if (!path) return;
-        const length = ends[i] - starts[i];
+        const beat = lighting[ONE_SEGMENTS[i].name];
+        const length = ease(clamp((time - beat.start) / beat.duration));
         path.style.strokeDasharray = `${Math.max(0, length)} 2`;
-        path.style.strokeDashoffset = String(-starts[i]);
+        path.style.strokeDashoffset = "0";
         path.style.opacity = String(
-          length < 0.003 ? 0 : fade * ease(clamp(elapsed / 500)),
+          length < 0.003
+            ? 0
+            : fade * (0.3 + length * 0.7) * ease(clamp(elapsed / 320)),
         );
       });
       frame = requestAnimationFrame(tick);
@@ -80,11 +75,8 @@ export function AuthLogo({ state }: { state: AuthLogoState }) {
       data-state={state}
       data-reduced={!!reduced}
     >
-      {arcs.map((d, i) => (
-        <g
-          key={d}
-          className={`auth-arc auth-arc-${i === 0 ? "long" : "short"}`}
-        >
+      {ONE_SEGMENTS.map(({ d, name }, i) => (
+        <g key={d} className={`auth-arc auth-arc-${name}`}>
           <path
             d={d}
             stroke="currentColor"

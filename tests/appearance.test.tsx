@@ -52,7 +52,7 @@ describe("primary color preference", () => {
         .join(","),
       "image/svg+xml",
     );
-    expect(icon.querySelectorAll("path")[1].getAttribute("stroke")).toBe(
+    expect(icon.querySelectorAll("path")[2].getAttribute("stroke")).toBe(
       document.documentElement.style.getPropertyValue("--one-accent-mark"),
     );
     view.unmount();

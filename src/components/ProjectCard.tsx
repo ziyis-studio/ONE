@@ -9,6 +9,7 @@ import { useMotionPreference } from "../lib/motion-preference";
 import { CardOpen, openCardBackground } from "./CardOpen";
 import { EntityIcon, CheckButton } from "./ui";
 import { InlineTitle, useSettle } from "./interactions";
+import { ONE_SEGMENTS, segmentProgress } from "../lib/brand-mark";
 
 export default function ProjectCard({
   project,
@@ -73,45 +74,26 @@ export default function ProjectCard({
           tabIndex={0}
           data-chart-title={project.title}
           data-chart-detail={`${percent}% complete`}
+          strokeWidth="8"
+          strokeLinecap="round"
         >
-          <path
-            d="M 71.064 77.952 A 35 35 0 1 1 63.111 17.549"
-            stroke="currentColor"
-            strokeWidth="7"
-            strokeLinecap="round"
-          />
-          <path
-            d="M 76.010 26.580 A 35 35 0 0 1 81.185 65.890"
-            stroke="currentColor"
-            strokeWidth="7"
-            strokeLinecap="round"
-          />
-          <motion.path
-            className="one-progress-fill"
-            d="M 71.064 77.952 A 35 35 0 1 1 63.111 17.549"
-            stroke="currentColor"
-            strokeWidth="7"
-            strokeLinecap="round"
-            initial={false}
-            animate={{
-              pathLength: Math.min(1, progress / (239 / 308)),
-              opacity: progress > 0 ? 1 : 0,
-            }}
-            transition={transition}
-          />
-          <motion.path
-            className="one-progress-fill"
-            d="M 76.010 26.580 A 35 35 0 0 1 81.185 65.890"
-            stroke="currentColor"
-            strokeWidth="7"
-            strokeLinecap="round"
-            initial={false}
-            animate={{
-              pathLength: Math.max(0, (progress - 239 / 308) / (69 / 308)),
-              opacity: progress > 239 / 308 ? 1 : 0,
-            }}
-            transition={transition}
-          />
+          {ONE_SEGMENTS.map((segment) => (
+            <path key={segment.letter} d={segment.d} stroke="currentColor" />
+          ))}
+          {ONE_SEGMENTS.map((segment) => {
+            const value = segmentProgress(progress, segment);
+            return (
+              <motion.path
+                key={segment.letter}
+                className="one-progress-fill"
+                d={segment.d}
+                stroke="currentColor"
+                initial={false}
+                animate={{ pathLength: value, opacity: value > 0 ? 1 : 0 }}
+                transition={transition}
+              />
+            );
+          })}
         </svg>
         <div>
           <strong>{percent}%</strong>

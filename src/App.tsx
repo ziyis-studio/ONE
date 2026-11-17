@@ -126,8 +126,7 @@ function SessionApp() {
   if (booting)
     return (
       <div className="boot-screen">
-        <Logo size={40} />
-        <Spinner />
+        <Spinner size={48} />
       </div>
     );
   if ((!session && !demo) || recovery || authPending)
@@ -135,7 +134,7 @@ function SessionApp() {
       <Suspense
         fallback={
           <div className="boot-screen">
-            <Spinner />
+            <Spinner size={48} />
           </div>
         }
       >
@@ -401,7 +400,7 @@ function Shell({
         <Suspense
           fallback={
             <div className="dialog-shade">
-              <Spinner />
+              <Spinner size={48} />
             </div>
           }
         >

@@ -39,7 +39,7 @@
 .pomodoro-mark.is-running .pomodoro-track.pomodoro-short {
   animation: one-pomodoro-breathe 2.4s ease-in-out infinite;
 }
-.pomodoro-mark.is-running .pomodoro-short:not(.pomodoro-track) {
+.pomodoro-mark.is-running .pomodoro-short:not(.pomodoro-track)[data-active] {
   animation: one-pomodoro-active 2.4s ease-in-out infinite;
 }
 .pomodoro-mark[data-reduced="true"] .pomodoro-short {

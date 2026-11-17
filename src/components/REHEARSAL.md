@@ -295,3 +295,22 @@ Artifacts: ignored `test-results/pomodoro/`. These are actual component/applicat
 checks with local sample data and mocked weather, not a Stageshow faux-demo gate.
 Credentialed production-user writes, physical phones and other browser engines
 were not exercised in this pass.
+
+# Tri-segment brand update
+
+Plan: [tri-segment-motion-plan.md](../../docs/tri-segment-motion-plan.md).
+The supplied three exact O/N/E paths now share one geometry definition across
+navigation, auth/save/loading feedback, themed favicon, Pomodoro and project
+progress. O/N remain white and E follows the primary mark color. The original
+black, white and currentColor masters are retained under `public/brand/`.
+
+Loading draws E slowly (720ms), N at medium speed (480ms), O quickly (260ms),
+holds, then fades together on a 2.4s loop. Error uses a staggered three-piece
+recoil; success lights and gathers the three pieces. Reduced motion stays still;
+existing hidden/offscreen pause, frame cleanup and login transition ownership
+remain. Progress distributes over the new 180:72:36 arc lengths.
+
+The user explicitly requested skipping tests to save tokens. No automated suite,
+browser rehearsal, Stageshow film gate or visual check was run for this update.
+The production build passed. React hook cleanup, stable keys, shared geometry
+and reduced-motion behavior were reviewed in source.

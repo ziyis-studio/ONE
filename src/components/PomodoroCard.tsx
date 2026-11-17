@@ -6,7 +6,7 @@ import {
   POMODORO_MODES,
   pomodoroTime,
 } from "../lib/pomodoro";
-import { ONE_ARC_LONG, ONE_ARC_SHORT } from "../lib/brand-mark";
+import { ONE_SEGMENTS, segmentProgress } from "../lib/brand-mark";
 import { useMotionPreference } from "../lib/motion-preference";
 import { Card, IconButton } from "./ui";
 import { DiscreteTabs } from "./interactions";
@@ -26,8 +26,7 @@ export default function PomodoroCard() {
     running = state.status === "running",
     complete = state.status === "complete";
   const duration = POMODORO_MODES[state.mode].seconds,
-    ratio = complete ? 1 : remainingMs / (duration * 1000),
-    longRatio = 239 / 308;
+    ratio = complete ? 1 : remainingMs / (duration * 1000);
   const next = nextPomodoroMode(state),
     label = POMODORO_MODES[state.mode].label;
   const action = running
@@ -71,28 +70,35 @@ export default function PomodoroCard() {
           <svg
             viewBox="0 0 100 100"
             fill="none"
-            strokeWidth="6"
+            strokeWidth="8"
             strokeLinecap="round"
             aria-hidden="true"
           >
-            <path d={ONE_ARC_LONG} className="pomodoro-track" />
-            <path d={ONE_ARC_SHORT} className="pomodoro-track pomodoro-short" />
-            <motion.path
-              d={ONE_ARC_LONG}
-              stroke="currentColor"
-              initial={false}
-              animate={{ pathLength: Math.min(1, ratio / longRatio) }}
-              transition={{ duration: reduced ? 0 : 0.3, ease: "linear" }}
-            />
-            <motion.path
-              d={ONE_ARC_SHORT}
-              className="pomodoro-short"
-              initial={false}
-              animate={{
-                pathLength: Math.max(0, (ratio - longRatio) / (1 - longRatio)),
-              }}
-              transition={{ duration: reduced ? 0 : 0.3, ease: "linear" }}
-            />
+            {ONE_SEGMENTS.map((segment) => (
+              <path
+                key={segment.letter}
+                d={segment.d}
+                className={`pomodoro-track pomodoro-${segment.name}`}
+              />
+            ))}
+            {ONE_SEGMENTS.map((segment) => {
+              const progress = segmentProgress(ratio, segment);
+              return (
+                <motion.path
+                  key={segment.letter}
+                  d={segment.d}
+                  stroke="currentColor"
+                  className={`pomodoro-${segment.name}`}
+                  data-active={progress > 0 || undefined}
+                  initial={false}
+                  animate={{
+                    pathLength: progress,
+                    opacity: progress > 0 ? 1 : 0,
+                  }}
+                  transition={{ duration: reduced ? 0 : 0.3, ease: "linear" }}
+                />
+              );
+            })}
           </svg>
           <div
             className="pomodoro-dial"

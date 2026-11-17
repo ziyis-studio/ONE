@@ -1,4 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
-  <path d="M 71.064 77.952 A 35 35 0 1 1 63.111 17.549" stroke="#eeeeee" stroke-width="8" stroke-linecap="round"/>
-  <path d="M 76.010 26.580 A 35 35 0 0 1 81.185 65.890" stroke="#a882ff" stroke-width="8" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" aria-label="ONE tri-segment ring">
+  <path id="segment-O" d="M 36.32441 82.21767 A 35 35 0 0 1 63.67559 17.78233" stroke="#eeeeee" stroke-width="8" stroke-linecap="round"/>
+  <path id="segment-N" d="M 83.47067 60.23301 A 35 35 0 0 1 50.61083 84.99467" stroke="#eeeeee" stroke-width="8" stroke-linecap="round"/>
+  <path id="segment-E" d="M 75.59738 26.13006 A 35 35 0 0 1 84.73912 45.73457" stroke="#a882ff" stroke-width="8" stroke-linecap="round"/>
 </svg>

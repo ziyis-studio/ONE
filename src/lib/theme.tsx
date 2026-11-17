@@ -7,7 +7,7 @@ import {
   useState,
 } from "react";
 import type { ReactNode } from "react";
-import { ONE_ARC_LONG, ONE_ARC_SHORT } from "./brand-mark";
+import { ONE_SEGMENTS } from "./brand-mark";
 
 export const THEME_KEY = "one-appearance-v1";
 export const DEFAULT_ACCENT = "#7852ee";
@@ -74,7 +74,7 @@ export function applyAccent(color: string) {
   root.dataset.primaryColor = color;
   const favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
   if (favicon) {
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke-width="8" stroke-linecap="round"><path d="${ONE_ARC_LONG}" stroke="#eee"/><path d="${ONE_ARC_SHORT}" stroke="${mark}"/></svg>`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke-width="8" stroke-linecap="round">${ONE_SEGMENTS.map((segment) => `<path d="${segment.d}" stroke="${segment.name === "short" ? mark : "#eee"}"/>`).join("")}</svg>`;
     favicon.href = "data:image/svg+xml," + encodeURIComponent(svg);
   }
 }

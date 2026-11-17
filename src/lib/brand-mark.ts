@@ -1,3 +1,34 @@
-// The two exact paths from the supplied ONE 26° master.
-export const ONE_ARC_LONG = "M 71.064 77.952 A 35 35 0 1 1 63.111 17.549";
-export const ONE_ARC_SHORT = "M 76.010 26.580 A 35 35 0 0 1 81.185 65.890";
+// Exact paths from ONE-Tri-Segment-master.svg: O / N / E, three 24° gaps.
+export const ONE_SEGMENTS = [
+  {
+    name: "long",
+    letter: "O",
+    d: "M 36.32441 82.21767 A 35 35 0 0 1 63.67559 17.78233",
+    degrees: 180,
+    start: 0,
+  },
+  {
+    name: "medium",
+    letter: "N",
+    d: "M 83.47067 60.23301 A 35 35 0 0 1 50.61083 84.99467",
+    degrees: 72,
+    start: 180,
+  },
+  {
+    name: "short",
+    letter: "E",
+    d: "M 75.59738 26.13006 A 35 35 0 0 1 84.73912 45.73457",
+    degrees: 36,
+    start: 252,
+  },
+] as const;
+
+export function segmentProgress(
+  ratio: number,
+  segment: (typeof ONE_SEGMENTS)[number],
+) {
+  return Math.max(
+    0,
+    Math.min(1, (ratio * 288 - segment.start) / segment.degrees),
+  );
+}
