@@ -15,7 +15,12 @@ export function pomodoroTimeBlock(
   const stamp = new Date(record.completedAt).toISOString();
   return {
     id: record.id,
-    title: `Pomodoro · ${POMODORO_MODES[record.mode].label}`,
+    title:
+      record.mode === "focus" && record.taskTitle
+        ? record.taskTitle
+        : `Pomodoro · ${POMODORO_MODES[record.mode].label}`,
+    recordedType: record.mode,
+    sourceSessionId: record.id,
     description: `${record.mode === "focus" ? "Focus" : "Break"} time: ${record.durationSeconds / 60} min\nElapsed: ${Math.round(elapsedMinutes * 10) / 10} min\nPaused: ${Math.round(pausedMinutes * 10) / 10} min\nAutomatically recorded from Pomodoro.`,
     startsAt: new Date(record.startedAt).toISOString(),
     endsAt: stamp,

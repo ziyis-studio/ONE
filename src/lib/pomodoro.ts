@@ -11,9 +11,13 @@ export type PomodoroRecord = {
   completedAt: number;
   durationSeconds: number;
   timeBlockId?: string | null;
+  taskId?: string | null;
+  taskTitle?: string;
 };
 export type PomodoroState = {
   mode: PomodoroMode;
+  taskId: string | null;
+  taskTitle: string;
   status: "ready" | "running" | "paused" | "complete";
   remainingMs: number;
   endsAt: number | null;
@@ -27,6 +31,8 @@ export type PomodoroState = {
 export function initialPomodoro(mode: PomodoroMode = "focus"): PomodoroState {
   return {
     mode,
+    taskId: null,
+    taskTitle: "",
     status: "ready",
     remainingMs: POMODORO_MODES[mode].seconds * 1000,
     endsAt: null,
@@ -70,6 +76,8 @@ export function settlePomodoro(
             {
               id: state.sessionId,
               mode: state.mode,
+              taskId: state.mode === "focus" ? state.taskId : null,
+              taskTitle: state.mode === "focus" ? state.taskTitle : "",
               startedAt: state.startedAt,
               completedAt: state.endsAt,
               durationSeconds: POMODORO_MODES[state.mode].seconds,
@@ -93,6 +101,8 @@ export function changePomodoroMode(
   const settled = settlePomodoro(state, now);
   return {
     ...initialPomodoro(mode),
+    taskId: settled.taskId,
+    taskTitle: settled.taskTitle,
     focusCount: settled.focusCount,
     focusHistory: settled.focusHistory,
     records: settled.records,
@@ -212,7 +222,26 @@ export function parsePomodoro(raw: string | null, now: number): PomodoroState {
       (!Number.isFinite(startedAt) || startedAt <= 0 || startedAt > now)
     )
       return initialPomodoro();
-    return { ...state, sessionId, startedAt, records };
+    const taskId =
+      typeof state.taskId === "string" && uuid.test(state.taskId)
+        ? state.taskId
+        : null;
+    const taskTitle =
+      typeof state.taskTitle === "string" ? state.taskTitle.slice(0, 300) : "";
+    return {
+      ...state,
+      taskId,
+      taskTitle,
+      sessionId,
+      startedAt,
+      records: records.map((r) => ({
+        ...r,
+        taskId:
+          typeof r.taskId === "string" && uuid.test(r.taskId) ? r.taskId : null,
+        taskTitle:
+          typeof r.taskTitle === "string" ? r.taskTitle.slice(0, 300) : "",
+      })),
+    };
   } catch {
     return initialPomodoro();
   }
@@ -220,4 +249,26 @@ export function parsePomodoro(raw: string | null, now: number): PomodoroState {
 export function pomodoroTime(milliseconds: number) {
   const seconds = Math.ceil(milliseconds / 1000);
   return `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
+}
+
+export function focusTaskPomodoro(
+  state: PomodoroState,
+  task: { id: string; title: string },
+  now: number,
+): PomodoroState {
+  const settled = settlePomodoro(state, now);
+  if (
+    settled.mode === "focus" &&
+    settled.taskId === task.id &&
+    ["running", "paused"].includes(settled.status)
+  )
+    return startPomodoro({ ...settled, taskTitle: task.title }, now);
+  return startPomodoro(
+    {
+      ...changePomodoroMode(settled, "focus", now),
+      taskId: task.id,
+      taskTitle: task.title,
+    },
+    now,
+  );
 }

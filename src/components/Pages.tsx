@@ -1,3 +1,4 @@
+import FocusTaskButton from "./FocusTaskButton";
 import { useId, useRef, useState } from "react";
 import {
   Plus,
@@ -249,6 +250,7 @@ export function TasksPage() {
                     >
                       <td>
                         <div className="table-task-title">
+                          <FocusTaskButton task={task} />
                           <CheckButton
                             checked={!!task.completedAt}
                             disabled={busy}
@@ -362,6 +364,7 @@ function TaskCard({ task }: { task: Task }) {
     >
       <CardOpen label={"Open task " + task.title} onOpen={open} />
       <div className="task-card-top">
+        <FocusTaskButton task={task} />
         <span className="tag">
           {task.tags?.[0] || project?.title || "Personal"}
         </span>

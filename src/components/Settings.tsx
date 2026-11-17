@@ -1,12 +1,6 @@
+import RecoverySettings from "./RecoverySettings";
 import { useEffect, useRef, useState } from "react";
-import {
-  Download,
-  LogOut,
-  RotateCcw,
-  Check,
-  Globe2,
-  ShieldCheck,
-} from "lucide-react";
+import { LogOut, RotateCcw, Check, Globe2, ShieldCheck } from "lucide-react";
 import { useOne } from "../lib/workspace";
 import { api } from "../lib/api";
 import { supabase } from "../lib/auth";
@@ -18,7 +12,7 @@ import AppearanceSettings from "./AppearanceSettings";
 import { useConfirm } from "../lib/confirmation";
 import { useResetViews } from "../lib/view-state";
 export default function Settings({ onExit }: { onExit: () => void }) {
-  const { data, zone, setZone, session, demo, notify, reload } = useOne();
+  const { zone, setZone, session, demo, notify, reload } = useOne();
   const confirm = useConfirm();
   const resetViews = useResetViews();
   const usernameRef = useRef<HTMLInputElement>(null),
@@ -79,26 +73,6 @@ export default function Settings({ onExit }: { onExit: () => void }) {
       savingRef.current = false;
       setSaving(false);
     }
-  }
-  function download() {
-    const blob = new Blob(
-      [
-        JSON.stringify(
-          { app: "ONE", exportedAt: new Date().toISOString(), workspace: data },
-          null,
-          2,
-        ),
-      ],
-      { type: "application/json" },
-    );
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download =
-      "one-workspace-" + new Date().toISOString().slice(0, 10) + ".json";
-    link.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    notify("A copy of your workspace, kept.");
   }
   const zones = [
     ...new Set([
@@ -241,17 +215,9 @@ export default function Settings({ onExit }: { onExit: () => void }) {
             </button>
           </div>
         </section>
-        <section className="settings-card">
-          <h2>A copy, just in case</h2>
-          <p>
-            Download your workspace as JSON. It includes your plans and notes,
-            without account credentials.
-          </p>
-          <button className="secondary-button" onClick={download}>
-            <Download size={14} />
-            Export workspace
-          </button>
-          {demo && (
+        <RecoverySettings />
+        {demo && (
+          <section className="settings-card">
             <div className="settings-row">
               <span>
                 Begin again
@@ -266,7 +232,7 @@ export default function Settings({ onExit }: { onExit: () => void }) {
                     !(await confirm({
                       title: "Reset the sample workspace?",
                       description:
-                        "Your changes to these sample records will be removed. Your real workspace and appearance preferences stay as they are.",
+                        "Your sample records, drafts, Trash and focus history will be reset. Your real workspace and appearance preferences stay as they are.",
                       confirmLabel: "Reset sample",
                       cancelLabel: "Keep exploring",
                     }))
@@ -274,6 +240,15 @@ export default function Settings({ onExit }: { onExit: () => void }) {
                     return;
                   try {
                     localStorage.removeItem(DEMO_KEY);
+                    localStorage.removeItem("one-drafts-v1:demo");
+                    localStorage.removeItem("one-trash-v1:demo");
+                    localStorage.removeItem("one-pomodoro-v1:demo");
+                    window.dispatchEvent(
+                      new StorageEvent("storage", {
+                        key: "one-pomodoro-v1:demo",
+                      }),
+                    );
+                    window.dispatchEvent(new Event("one-drafts"));
                     await reload();
                     resetViews();
                   } catch {
@@ -288,8 +263,8 @@ export default function Settings({ onExit }: { onExit: () => void }) {
                 Reset demo
               </button>
             </div>
-          )}
-        </section>
+          </section>
+        )}
         <p className="settings-foot">
           ONE <span>·</span> A little space for everything that matters.
         </p>

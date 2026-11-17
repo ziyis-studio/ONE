@@ -6,7 +6,7 @@ const defaultApi = "https://planner-api-ziyis-studio.vercel.app";
 const supabaseUrl = "https://dwzwlqzsdozcsrrauggi.supabase.co";
 const publishableKey = "sb_publishable_w7OhhWtpsXTEQDBGLL7j-g_D0RzZiur";
 const resource =
-  /^\/v1\/(health|workspace|commands|profile|tasks|projects|conditions|thoughts|habits|occurrences|executions|schedule|sleep|tags|notes|databases|records|images)(\/[a-zA-Z0-9._/-]+)?$/;
+  /^\/v1\/(health|workspace|commands|profile|tasks|projects|conditions|thoughts|habits|occurrences|executions|schedule|sleep|tags|notes|databases|records|images|recovery|backup)(\/[a-zA-Z0-9._/-]+)?$/;
 
 export async function handleProxy(
   request: Request,
@@ -61,7 +61,11 @@ export async function handleProxy(
   try {
     const body =
       request.method === "GET" ? undefined : await request.arrayBuffer();
-    if (body && body.byteLength > (login ? 4096 : 1_048_576))
+    if (
+      body &&
+      body.byteLength >
+        (login ? 4096 : path === "/v1/backup" ? 3_500_000 : 1_048_576)
+    )
       return reply(413, "body_too_large", "Request is too large.");
     const upstream = await transport(target, {
       method: request.method,

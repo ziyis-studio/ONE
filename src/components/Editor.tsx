@@ -11,7 +11,7 @@ import {
   PencilLine,
   CircleAlert,
 } from "lucide-react";
-import { useConfirm, DISCARD_CHANGES } from "../lib/confirmation";
+import { useConfirm } from "../lib/confirmation";
 import { useOne } from "../lib/workspace";
 import { useActions, stages, taskStage } from "../lib/actions";
 import type { Stage } from "../lib/actions";
@@ -35,9 +35,22 @@ import type { DatabaseField, DatabaseValue } from "../domain/note-databases";
 import type { NoteTarget } from "../domain/model";
 import type { Command } from "../domain/commands";
 import EmotionPicker from "./EmotionPicker";
+import { useEditorDraft } from "../lib/drafts";
+import type { DraftValues } from "../lib/drafts";
+import FocusTaskButton from "./FocusTaskButton";
 export default function Editor() {
-  const { editor, edit, data, execute, busy, notify, zone, today, reload } =
-    useOne();
+  const {
+    editor,
+    edit,
+    data,
+    execute,
+    busy,
+    notify,
+    zone,
+    today,
+    reload,
+    scope,
+  } = useOne();
   const { safely, moveTask } = useActions();
   const confirm = useConfirm();
   const kind = editor!.kind,
@@ -194,6 +207,39 @@ export default function Editor() {
   });
   const baseline = useRef(signature);
   const dirty = baseline.current !== signature;
+  const draft = useEditorDraft({
+    scope,
+    editor: editor!,
+    revision,
+    signature,
+    dirty,
+    restore: (v: DraftValues) => {
+      setTitle(v.title);
+      setDescription(v.description);
+      setContent(v.content);
+      setTags(v.tags);
+      setProjectId(v.projectId);
+      setDeadline(v.deadline);
+      setStatus(v.status);
+      setInitialStage(v.initialStage);
+      setIcon(v.icon);
+      setEmotion(v.emotion);
+      setWeekdays(v.weekdays);
+      setStartsOn(v.startsOn);
+      setEndsOn(v.endsOn);
+      setNeverEnd(v.neverEnd);
+      setStart(v.start);
+      setEnd(v.end);
+      setAwake(v.awake);
+      setSleepNote(v.sleepNote);
+      setTaskIds(v.taskIds);
+      setFields(v.fields);
+      setNoteId(v.noteId);
+      setValues(v.values);
+      setNewConditions(v.newConditions);
+      setCondition(v.condition);
+    },
+  });
   const conditions = data.conditions
     .filter((c) => c.taskId === id)
     .toSorted((a, b) => a.position - b.position);
@@ -218,7 +264,7 @@ export default function Editor() {
       .map((v) => v.trim())
       .filter(Boolean);
   const close = () => {
-    if (!busy && !saving.current) edit(null);
+    if (!busy && !saving.current && draft.flush()) edit(null);
   };
   function timestamps() {
     const [a, b] = start.split("T"),
@@ -436,6 +482,7 @@ export default function Editor() {
       await execute(command);
       if (!mounted.current) return;
       baseline.current = signature;
+      draft.clear();
       setSaveState("saved");
       notify(id ? "Changes saved." : "A little space, made.");
       saveTimer.current = setTimeout(() => edit(null), reduced ? 120 : 480);
@@ -457,7 +504,7 @@ export default function Editor() {
         description:
           (title ? `“${title}” will be deleted. ` : "") +
           (kind === "database" ? "Its records will also be deleted. " : "") +
-          "This cannot be undone.",
+          "You can restore it from Trash in Settings.",
         confirmLabel: `Delete ${label}`,
       })) ||
       !mounted.current
@@ -491,8 +538,8 @@ export default function Editor() {
                         };
     try {
       await execute(command);
+      draft.clear();
       edit(null);
-      notify("Deleted. A little more breathing room.");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not delete.");
     }
@@ -557,9 +604,45 @@ export default function Editor() {
       }
       onClose={close}
       wide={kind === "note" || kind === "database"}
-      dirty={dirty && saveState !== "saved" && saveState !== "saving"}
+      dirty={false}
     >
       <form className="editor-form" onSubmit={save} noValidate>
+        {draft.stored && (
+          <div className="draft-banner" role="status">
+            <span>A draft from an earlier version is available.</span>
+            <button type="button" onClick={draft.resume}>
+              Restore draft
+            </button>
+            <button type="button" onClick={draft.discard}>
+              Discard
+            </button>
+          </div>
+        )}
+        {draft.status && (
+          <div
+            className={"draft-status" + (draft.problem ? " error" : "")}
+            role="status"
+          >
+            {draft.status}
+            {!draft.problem && dirty && (
+              <button
+                type="button"
+                onClick={async () => {
+                  if (
+                    await confirm({
+                      title: "Discard this draft?",
+                      description: "Your saved item stays unchanged.",
+                      confirmLabel: "Discard draft",
+                    })
+                  )
+                    draft.discard();
+                }}
+              >
+                Discard draft
+              </button>
+            )}
+          </div>
+        )}
         <fieldset
           className="editor-fields"
           disabled={saveState === "saving" || saveState === "saved"}
@@ -825,8 +908,7 @@ export default function Editor() {
                     type="button"
                     key={t.id}
                     onClick={async () => {
-                      if (!dirty || (await confirm(DISCARD_CHANGES)))
-                        edit({ kind: "task", id: t.id });
+                      if (draft.flush()) edit({ kind: "task", id: t.id });
                     }}
                   >
                     <span
@@ -1252,14 +1334,7 @@ export default function Editor() {
                 type="button"
                 className="text-button"
                 onClick={async () => {
-                  if (
-                    !dirty ||
-                    (await confirm({
-                      ...DISCARD_CHANGES,
-                      title: "Discard changes and refresh?",
-                      confirmLabel: "Discard and refresh",
-                    }))
-                  ) {
+                  if (draft.flush()) {
                     edit(null);
                     void reload();
                   }
@@ -1282,15 +1357,18 @@ export default function Editor() {
               </button>
             )}
             <span />
+            {task && kind === "task" && (
+              <FocusTaskButton task={task} onStarted={() => draft.flush()} />
+            )}
             <button
               type="button"
               className="secondary-button"
               onClick={async () => {
-                if (!dirty || (await confirm(DISCARD_CHANGES))) close();
+                close();
               }}
               disabled={busy}
             >
-              Cancel
+              Close
             </button>
             <SaveButton
               state={saveState}

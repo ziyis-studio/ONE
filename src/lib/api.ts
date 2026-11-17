@@ -19,15 +19,15 @@ export async function api<T>(
   const headers = new Headers(options.headers);
   headers.set("Authorization", `Bearer ${token}`);
   if (options.body) headers.set("Content-Type", "application/json");
-  const response = await fetch(
-    `${API_PROXY}?path=${encodeURIComponent(path)}`,
-    {
-      ...options,
-      headers,
-      cache: "no-store",
-      signal: AbortSignal.timeout(30_000),
-    },
-  );
+  const [route, query] = path.split("?", 2);
+  const params = new URLSearchParams(query);
+  params.set("path", route);
+  const response = await fetch(`${API_PROXY}?${params}`, {
+    ...options,
+    headers,
+    cache: "no-store",
+    signal: AbortSignal.timeout(30_000),
+  });
   const body = await response.json();
   if (!response.ok)
     throw new ApiError(
@@ -40,7 +40,11 @@ export async function api<T>(
 export const loadWorkspace = (token: string) =>
   api<Workspace>("/v1/workspace", token);
 export const sendCommand = (token: string, command: Command) =>
-  api<{ snapshot: Workspace; id?: string }>("/v1/commands", token, {
-    method: "POST",
-    body: JSON.stringify(command),
-  });
+  api<{ snapshot: Workspace; id?: string; recoveryId?: string }>(
+    "/v1/commands",
+    token,
+    {
+      method: "POST",
+      body: JSON.stringify(command),
+    },
+  );

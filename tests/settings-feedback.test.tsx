@@ -30,6 +30,8 @@ vi.mock("../src/lib/workspace", () => ({
     notify: mock.notify,
     reload: vi.fn(),
     today: "2026-11-17",
+    scope:"test-user",
+    listRecovery:async()=>[],
   }),
 }));
 beforeEach(() => {

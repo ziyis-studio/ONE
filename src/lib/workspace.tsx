@@ -13,7 +13,7 @@ import { emptyWorkspace } from "../domain/model";
 import { applyCommand } from "../domain/commands";
 import type { Command } from "../domain/commands";
 import { addDays, dayKey } from "../domain/time";
-import { loadWorkspace, sendCommand } from "./api";
+import { api, loadWorkspace, sendCommand } from "./api";
 import { DEMO_KEY, readDemo } from "./demo";
 import { DEFAULT_ZONE } from "./config";
 import { supabase } from "./auth";
@@ -21,6 +21,15 @@ import { ViewStateProvider } from "./view-state";
 import { PomodoroProvider } from "./pomodoro-context";
 import type { PomodoroRecord } from "./pomodoro";
 import { pomodoroTimeBlock } from "./pomodoro-timeline";
+import {
+  recoveryPatch,
+  restorePatch,
+  parseBackup,
+  copyBackup,
+  mergeWorkspace,
+} from "../domain/recovery";
+import type { Backup, RecoveryEntry } from "../domain/recovery";
+import { readTrash, writeTrash } from "./recovery-store";
 
 export type Page =
   | "home"
@@ -53,7 +62,12 @@ export type Editor = {
   endsAt?: string;
   initialStage?: "todo" | "progress" | "hold" | "done";
 };
-type Notice = { message: string; error?: boolean } | null;
+type NoticeAction = { label: string; run: () => void };
+type Notice = {
+  message: string;
+  error?: boolean;
+  action?: NoticeAction;
+} | null;
 interface OneContext {
   data: Workspace;
   busy: boolean;
@@ -71,7 +85,16 @@ interface OneContext {
   execute: (command: Command) => Promise<{ snapshot: Workspace; id?: string }>;
   reload: () => Promise<void>;
   notice: Notice;
-  notify: (message: string, error?: boolean) => void;
+  notify: (message: string, error?: boolean, action?: NoticeAction) => void;
+  scope: string;
+  listRecovery: (offset?: number) => Promise<RecoveryEntry[]>;
+  restoreRecovery: (id: string) => Promise<void>;
+  purgeRecovery: (id: string) => Promise<void>;
+  exportBackup: () => Promise<Backup>;
+  importBackup: (
+    raw: unknown,
+    asCopy?: boolean,
+  ) => Promise<Record<string, string>>;
   session: Session | null;
 }
 const Context = createContext<OneContext | null>(null);
@@ -126,18 +149,22 @@ export function WorkspaceProvider({
   );
   const alive = useRef(true);
   const today = dayKey(now, zone);
+  const scope = demo ? "demo" : session!.user.id;
   const replace = useCallback((value: Workspace) => {
     dataRef.current = value;
     setData(value);
   }, []);
-  const notify = useCallback((message: string, isError = false) => {
-    setNotice({ message, error: isError });
-    clearTimeout(noticeTimer.current);
-    noticeTimer.current = setTimeout(
-      () => setNotice(null),
-      isError ? 9000 : 3500,
-    );
-  }, []);
+  const notify = useCallback(
+    (message: string, isError = false, action?: NoticeAction) => {
+      setNotice({ message, error: isError, action });
+      clearTimeout(noticeTimer.current);
+      noticeTimer.current = setTimeout(
+        () => setNotice(null),
+        action ? 12000 : isError ? 9000 : 3500,
+      );
+    },
+    [],
+  );
   const token = useCallback(async () => {
     const { data: auth, error: authError } = await supabase.auth.getSession();
     if (authError || !auth.session)
@@ -225,6 +252,20 @@ export function WorkspaceProvider({
         const snapshot = {
           ...dataRef.current,
           timeBlocks: [...dataRef.current.timeBlocks, ...additions],
+          blockTaskLinks: [
+            ...dataRef.current.blockTaskLinks,
+            ...records
+              .filter(
+                (r) =>
+                  r.mode === "focus" &&
+                  r.taskId &&
+                  dataRef.current.tasks.some((t) => t.id === r.taskId) &&
+                  !dataRef.current.blockTaskLinks.some(
+                    (l) => l.timeBlockId === r.id && l.taskId === r.taskId,
+                  ),
+              )
+              .map((r) => ({ timeBlockId: r.id, taskId: r.taskId! })),
+          ],
         };
         replace(snapshot);
         try {
@@ -240,6 +281,150 @@ export function WorkspaceProvider({
     },
     [demo, zone, replace, notify],
   );
+  const persist = useCallback(
+    (snapshot: Workspace) => {
+      if (demo) localStorage.setItem(DEMO_KEY, JSON.stringify(snapshot));
+      if (alive.current) replace(snapshot);
+    },
+    [demo, replace],
+  );
+  const withRecoveryLock = useCallback(
+    async <T,>(run: () => Promise<T>): Promise<T> => {
+      if (lock.current)
+        throw new Error("Please wait for your previous change to finish.");
+      lock.current = true;
+      setBusy(true);
+      try {
+        return await run();
+      } finally {
+        lock.current = false;
+        if (alive.current) setBusy(false);
+      }
+    },
+    [],
+  );
+  const listRecovery = useCallback(
+    async (offset = 0) =>
+      demo
+        ? readTrash(scope)
+            .filter((e) => !e.restoredAt)
+            .slice(offset, offset + 50)
+        : api<RecoveryEntry[]>("/v1/recovery?offset=" + offset, await token()),
+    [demo, scope, token],
+  );
+  const restoreRecovery = useCallback(
+    async (id: string) =>
+      withRecoveryLock(async () => {
+        if (demo) {
+          const entries = readTrash(scope),
+            entry = entries.find((e) => e.id === id);
+          if (!entry) throw new Error("This item is no longer in Trash.");
+          if (!entry.restoredAt) {
+            const snapshot = restorePatch(dataRef.current, entry.patch);
+            persist(snapshot);
+            writeTrash(
+              scope,
+              entries.map((e) =>
+                e.id === id
+                  ? { ...e, restoredAt: new Date().toISOString() }
+                  : e,
+              ),
+            );
+          }
+        } else {
+          const result = await api<{ snapshot: Workspace }>(
+            "/v1/recovery/" + id + "/restore",
+            await token(),
+            { method: "POST" },
+          );
+          persist(result.snapshot);
+        }
+        notify("Restored from Trash.");
+      }),
+    [demo, scope, token, persist, notify, withRecoveryLock],
+  );
+  const purgeRecovery = useCallback(
+    async (id: string) =>
+      withRecoveryLock(async () => {
+        if (demo)
+          writeTrash(
+            scope,
+            readTrash(scope).filter((e) => e.id !== id),
+          );
+        else
+          await api("/v1/recovery/" + id, await token(), { method: "DELETE" });
+      }),
+    [demo, scope, token, withRecoveryLock],
+  );
+  const exportBackup = useCallback(async (): Promise<Backup> => {
+    if (!demo) return api<Backup>("/v1/backup", await token());
+    return {
+      app: "ONE",
+      version: 2,
+      id: crypto.randomUUID(),
+      ownerId: scope,
+      exportedAt: new Date().toISOString(),
+      workspace: dataRef.current,
+      sessions: [],
+      trash: readTrash(scope),
+    };
+  }, [demo, scope, token]);
+  const importBackup = useCallback(
+    async (raw: unknown, asCopy = false) =>
+      withRecoveryLock(async () => {
+        if (demo) {
+          const { backup, idMap } = await copyBackup(
+            parseBackup(raw),
+            scope,
+            asCopy,
+          );
+          const snapshot = mergeWorkspace(dataRef.current, backup.workspace);
+          for (const r of backup.sessions) {
+            if (
+              !r.time_block_id ||
+              snapshot.timeBlocks.some((b) => b.id === r.time_block_id)
+            )
+              continue;
+            const block = pomodoroTimeBlock(
+              {
+                id: r.id,
+                mode: r.mode,
+                startedAt: Date.parse(r.started_at),
+                completedAt: Date.parse(r.completed_at),
+                durationSeconds: r.duration_seconds,
+                taskId: r.task_id,
+                taskTitle: r.task_title,
+              },
+              r.timezone,
+            );
+            snapshot.timeBlocks.push({ ...block, id: r.time_block_id });
+            if (r.task_id && snapshot.tasks.some((t) => t.id === r.task_id))
+              snapshot.blockTaskLinks.push({
+                timeBlockId: r.time_block_id,
+                taskId: r.task_id,
+              });
+          }
+          const entries = readTrash(scope);
+          const known = new Set(entries.map((e) => e.id));
+          persist(snapshot);
+          writeTrash(scope, [
+            ...entries,
+            ...backup.trash.filter((e) => !known.has(e.id)),
+          ]);
+          return idMap;
+        }
+        const result = await api<{
+          snapshot: Workspace;
+          idMap: Record<string, string>;
+        }>("/v1/backup", await token(), {
+          method: "POST",
+          body: JSON.stringify({ backup: raw, asCopy }),
+        });
+        persist(result.snapshot);
+        return result.idMap;
+      }),
+    [demo, scope, token, persist, withRecoveryLock],
+  );
   const execute = useCallback(
     async (command: Command) => {
       if (lock.current)
@@ -247,10 +432,45 @@ export function WorkspaceProvider({
       lock.current = true;
       setBusy(true);
       try {
+        const before = dataRef.current;
         const result = demo
           ? applyCommand(dataRef.current, command)
           : await sendCommand(await token(), command);
+        let recoveryId =
+          "recoveryId" in result
+            ? (result.recoveryId as string | undefined)
+            : undefined;
+        if (demo && command.type.endsWith(".delete")) {
+          const patch = recoveryPatch(before, result.snapshot);
+          if (Object.keys(patch.removed).length || patch.changed.length) {
+            recoveryId = crypto.randomUUID();
+            const id = "id" in command ? command.id : undefined;
+            const root = Object.values(before)
+              .flat()
+              .find((r: any) => r?.id === id) as any;
+            writeTrash(scope, [
+              {
+                id: recoveryId,
+                kind: command.type.split(".")[0],
+                title: root?.title || root?.description || "Deleted item",
+                deletedAt: new Date().toISOString(),
+                restoredAt: null,
+                patch,
+              },
+              ...readTrash(scope),
+            ]);
+          }
+        }
         if (alive.current) replace(result.snapshot);
+        if (recoveryId) {
+          const id = recoveryId;
+          notify("Moved to Trash.", false, {
+            label: "Undo",
+            run: () => {
+              void restoreRecovery(id).catch((e) => notify(e.message, true));
+            },
+          });
+        }
         if (demo) {
           try {
             localStorage.setItem(DEMO_KEY, JSON.stringify(result.snapshot));
@@ -271,7 +491,7 @@ export function WorkspaceProvider({
         if (alive.current) setBusy(false);
       }
     },
-    [demo, token, replace, notify],
+    [demo, scope, token, replace, notify, restoreRecovery],
   );
   useEffect(() => {
     alive.current = true;
@@ -346,6 +566,12 @@ export function WorkspaceProvider({
         notice,
         notify,
         session,
+        scope,
+        listRecovery,
+        restoreRecovery,
+        purgeRecovery,
+        exportBackup,
+        importBackup,
       }}
     >
       <ViewStateProvider>

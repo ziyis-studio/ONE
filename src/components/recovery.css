@@ -1,0 +1,211 @@
+.recovery-card header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.recovery-card header > div {
+  flex: 1;
+  min-width: 0;
+}
+.recovery-card header h2 {
+  margin: 0 0 7px;
+}
+.recovery-card header p {
+  margin: 0;
+}
+.recovery-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--border, #2c2c2c);
+}
+.recovery-row > span {
+  flex: 1;
+  min-width: 0;
+}
+.recovery-row strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.recovery-row small {
+  display: block;
+  color: var(--muted, #999);
+  font-size: 11px;
+  margin-top: 6px;
+}
+.recovery-row .secondary-button {
+  padding: 7px 10px;
+  font-size: 12px;
+}
+.recovery-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+.backup-preview {
+  margin-top: 24px;
+  padding: 20px;
+  background: var(--surface, #171717);
+  border: 1px solid var(--border, #333);
+  border-radius: 12px;
+}
+.backup-preview h3 {
+  margin: 0 0 12px;
+}
+.backup-preview > small {
+  display: block;
+  color: var(--muted, #999);
+  margin: 12px 0 18px;
+}
+.backup-preview > label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13px;
+  margin: 12px 0;
+}
+.backup-preview input {
+  accent-color: var(--one-accent);
+}
+.recovery-progress {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 13px;
+}
+.recovery-error {
+  overflow-wrap: anywhere;
+}
+.draft-status,
+.draft-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 11px;
+  color: var(--muted, #999);
+  padding: 0 0 16px;
+  flex-wrap: wrap;
+}
+.draft-status button,
+.draft-banner button {
+  border: 0;
+  background: transparent;
+  text-decoration: underline;
+  color: var(--text, #eee);
+  font: inherit;
+  cursor: pointer;
+}
+.draft-status.error {
+  color: #f18a8a;
+}
+.toast-action {
+  border: 0;
+  border-radius: 6px;
+  color: white;
+  background: var(--one-accent);
+  padding: 6px 12px;
+  cursor: pointer;
+  font: inherit;
+}
+.task-card-top .focus-task-button {
+  order: 2;
+  margin-left: auto;
+}
+.pomodoro-task {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis !important;
+  font-size: 12px !important;
+  text-align: left;
+  margin: 10px 0 0;
+  padding: 0 !important;
+}
+.pomodoro-task:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.schedule-legend {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  color: var(--muted, #999);
+  font-size: 11px;
+  margin: -8px 0 16px;
+}
+.schedule-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.schedule-kind {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 400;
+  vertical-align: middle;
+  color: var(--muted, #aaa);
+}
+.schedule-kind.compact {
+  margin-right: 6px;
+  flex-shrink: 0;
+}
+.schedule-kind.focus {
+  color: var(--one-accent-mark);
+}
+.kind-focus {
+  border-left-color: var(--one-accent) !important;
+}
+.kind-break {
+  border-left-style: dashed !important;
+}
+.scheduled-block strong {
+  display: flex;
+  align-items: center;
+}
+.month-event .schedule-kind {
+  overflow: visible;
+}
+.focus-title {
+  min-width: 0;
+}
+.recovery-card .fine {
+  line-height: 1.6;
+}
+@media (max-width: 560px) {
+  .recovery-row {
+    gap: 5px;
+  }
+  .recovery-card {
+    padding: 20px;
+  }
+  .recovery-row .secondary-button svg {
+    display: none;
+  }
+}
+
+.pomodoro-task-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+}
+.pomodoro-task-row .pomodoro-task {
+  margin: 0;
+  min-width: 0;
+}
+.pomodoro-task-row .icon-button {
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+}

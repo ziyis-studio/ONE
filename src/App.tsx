@@ -1,3 +1,4 @@
+import "./components/recovery.css";
 import { Component, Suspense, lazy, useState, useEffect } from "react";
 import type { ReactNode, ErrorInfo } from "react";
 import type { Session } from "@supabase/supabase-js";
@@ -393,6 +394,15 @@ function Shell({
           >
             {notice.error ? <CircleAlert size={16} /> : <Check size={16} />}
             <span>{notice.message}</span>
+            {notice.action && (
+              <button
+                className="toast-action"
+                disabled={busy}
+                onClick={notice.action.run}
+              >
+                {notice.action.label}
+              </button>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
@@ -404,7 +414,7 @@ function Shell({
             </div>
           }
         >
-          <Editor key={editor.kind + ":" + (editor.id || "new")} />
+          <Editor key={JSON.stringify(editor)} />
         </Suspense>
       )}
       {search && <SearchDialog onClose={() => setSearch(false)} />}

@@ -19,6 +19,7 @@ import {
   remainingPomodoro,
   settlePomodoro,
   startPomodoro,
+  focusTaskPomodoro,
 } from "./pomodoro";
 import type { PomodoroMode, PomodoroState, PomodoroRecord } from "./pomodoro";
 import { usePomodoroRecords } from "./pomodoro-records";
@@ -30,6 +31,8 @@ type Timer = {
   syncStatus: RecordSyncStatus;
   refreshRecords: () => void;
   start: () => void;
+  focusTask: (task: { id: string; title: string }) => void;
+  unlinkTask: () => void;
   pause: () => void;
   reset: () => void;
   selectMode: (mode: PomodoroMode) => void;
@@ -144,6 +147,15 @@ export function PomodoroProvider({
     setNow(time);
     setState((current) => startPomodoro(current, time, id));
   }, []);
+  const focusTask = useCallback((task: { id: string; title: string }) => {
+    const time = Date.now();
+    setNow(time);
+    setState((current) => focusTaskPomodoro(current, task, time));
+  }, []);
+  const unlinkTask = useCallback(
+    () => setState((current) => ({ ...current, taskId: null, taskTitle: "" })),
+    [],
+  );
   const pause = useCallback(() => {
     const time = Date.now();
     setNow(time);
@@ -185,6 +197,8 @@ export function PomodoroProvider({
         syncStatus,
         refreshRecords,
         start,
+        focusTask,
+        unlinkTask,
         pause,
         reset,
         selectMode,

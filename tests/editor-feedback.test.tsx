@@ -21,6 +21,7 @@ const mock = vi.hoisted(() => ({
 vi.mock("../src/lib/workspace", () => ({ useOne: () => mock.context }));
 beforeEach(() => {
   vi.resetAllMocks();
+  localStorage.clear();
   vi.stubGlobal("matchMedia", () => ({
     matches: true,
     addEventListener: vi.fn(),

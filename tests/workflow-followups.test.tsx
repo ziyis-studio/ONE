@@ -249,7 +249,7 @@ describe("approved workspace follow-ups", () => {
     dialog = await screen.findByRole("dialog");
     expect(readDate(dialog, "Due date")).toBe(due);
     await userEvent.click(
-      within(dialog).getByRole("button", { name: "Cancel" }),
+      within(dialog).getByRole("button", { name: "Close" }),
     );
     await userEvent.click(
       screen.getByRole("button", { name: "Open day " + due }),

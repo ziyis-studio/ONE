@@ -1,3 +1,4 @@
+import ScheduleKind, { scheduleKind } from "./ScheduleKind";
 import { useEffect, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent, RefObject } from "react";
 import { GripHorizontal } from "lucide-react";
@@ -354,7 +355,12 @@ function TimelineTrack({
             height = active?.duration ?? duration;
           return (
             <div
-              className={"scheduled-block " + (active ? "moving" : "")}
+              className={
+                "scheduled-block kind-" +
+                scheduleKind(block) +
+                " " +
+                (active ? "moving" : "")
+              }
               key={block.id}
               data-block-id={block.id}
               data-task-over={taskOver === block.id || undefined}
@@ -422,7 +428,10 @@ function TimelineTrack({
                   }
                 }}
               >
-                <strong>{timeBlockTitle(block, data)}</strong>
+                <strong>
+                  <ScheduleKind block={block} compact />
+                  {timeBlockTitle(block, data)}
+                </strong>
                 {data.blockTaskLinks.some(
                   (link) => link.timeBlockId === block.id,
                 ) && (

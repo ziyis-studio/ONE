@@ -62,6 +62,8 @@ export function usePomodoroRecords(
                 completed_at: new Date(record.completedAt).toISOString(),
                 duration_seconds: record.durationSeconds,
                 timezone: zone,
+                task_id: record.taskId || null,
+                task_title: record.taskTitle || "",
               })),
               { onConflict: "owner_id,id", ignoreDuplicates: true },
             )

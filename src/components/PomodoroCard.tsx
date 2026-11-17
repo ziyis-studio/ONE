@@ -1,4 +1,13 @@
-import { Target, Coffee, Armchair, Pause, Play, RotateCcw } from "lucide-react";
+import { useOne } from "../lib/workspace";
+import {
+  Target,
+  Coffee,
+  Armchair,
+  Pause,
+  Play,
+  RotateCcw,
+  X,
+} from "lucide-react";
 import { motion } from "motion/react";
 import { usePomodoro } from "../lib/pomodoro-context";
 import {
@@ -15,6 +24,7 @@ import "./pomodoro.css";
 export default function PomodoroCard() {
   const {
     state,
+    unlinkTask,
     remainingMs,
     completedToday,
     start,
@@ -22,6 +32,7 @@ export default function PomodoroCard() {
     reset,
     selectMode,
   } = usePomodoro();
+  const { edit, data } = useOne();
   const reduced = useMotionPreference(),
     running = state.status === "running",
     complete = state.status === "complete";
@@ -149,6 +160,22 @@ export default function PomodoroCard() {
                   : label}
             </span>
           </div>
+          {state.mode === "focus" && state.taskTitle && (
+            <div className="pomodoro-task-row">
+              <button
+                type="button"
+                className="pomodoro-task text-button"
+                title={state.taskTitle}
+                disabled={!data.tasks.some((t) => t.id === state.taskId)}
+                onClick={() => edit({ kind: "task", id: state.taskId! })}
+              >
+                {state.taskTitle}
+              </button>
+              <IconButton label="Unlink focus task" onClick={unlinkTask}>
+                <X size={12} />
+              </IconButton>
+            </div>
+          )}
           <div className="pomodoro-action-row">
             <button
               type="button"

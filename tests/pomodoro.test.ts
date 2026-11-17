@@ -28,6 +28,8 @@ describe("deadline-based Pomodoro", () => {
       {
         id: timer.sessionId,
         mode: "focus",
+        taskId:null,
+        taskTitle:"",
         startedAt: now,
         completedAt: end,
         durationSeconds: 1500,

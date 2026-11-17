@@ -1,3 +1,4 @@
+import ScheduleKind, { ScheduleLegend, scheduleKind } from "./ScheduleKind";
 import { PageDate } from "./PageDate";
 import { useRef, useState } from "react";
 import type { DragEvent } from "react";
@@ -249,6 +250,7 @@ export default function SchedulePage() {
           Plan time
         </button>
       </div>
+      <ScheduleLegend />
       <div className={"one-schedule-layout " + (showTasks ? "with-tasks" : "")}>
         <section
           className={"calendar-workspace view-" + view}
@@ -404,7 +406,9 @@ export default function SchedulePage() {
                                 }
                                 onDragEnd={() => setDragOver("")}
                                 className={
-                                  "month-event " +
+                                  "month-event kind-" +
+                                  scheduleKind(block) +
+                                  " " +
                                   (dragOver === block.id
                                     ? "task-drop-target"
                                     : "")
@@ -445,6 +449,7 @@ export default function SchedulePage() {
                                   timeKey(block.endsAt, zone)
                                 }
                               >
+                                <ScheduleKind block={block} compact />
                                 <time>
                                   {dayKey(block.startsAt, zone) < day
                                     ? "↳"

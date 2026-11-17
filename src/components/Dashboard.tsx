@@ -1,3 +1,5 @@
+import ScheduleKind from "./ScheduleKind";
+import FocusTaskButton from "./FocusTaskButton";
 import { motion } from "motion/react";
 import { ContentSwitch, DiscreteTabs, useSettle } from "./interactions";
 import { Plus, ArrowUpRight, Moon, ArrowRight, Clock3 } from "lucide-react";
@@ -274,6 +276,7 @@ export default function Dashboard() {
                     }
                     key={task.id}
                   >
+                    <FocusTaskButton task={task} />
                     <CheckButton
                       checked={!!task.completedAt}
                       label={
@@ -361,7 +364,10 @@ export default function Dashboard() {
                       onClick={() => edit({ kind: "block", id: block.id })}
                     >
                       <span>
-                        <strong>{timeBlockTitle(block, data)}</strong>
+                        <strong>
+                          <ScheduleKind block={block} compact />
+                          {timeBlockTitle(block, data)}
+                        </strong>
                         <small>
                           <Clock3 size={11} />
                           {timeKey(block.startsAt, zone)} –{" "}
