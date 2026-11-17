@@ -22,7 +22,7 @@ npm run build
 ## Included
 
 - A neutral dark interface with white/gray type, a time-and-weather card with spaced hour/minute groups and animated seconds, varied dashboard card widths, sidebar and mobile navigation, keyboard search (⌘/Ctrl K), and quick creation (N).
-- An overview Pomodoro with the white/primary three-part logo as its progress dial, 25-minute focus, 5-minute short breaks and 15-minute long breaks after every four focuses. Start, pause, resume, reset and choose modes; completion offers the next phase without starting it automatically. Timer state and daily focus counts persist locally per workspace, survive navigation/refresh and synchronize browser tabs; they do not change task status or sync across devices.
+- An overview Pomodoro with a dim three-part logo that fills counterclockwise from the long arc as time elapses, 25-minute focus, 5-minute short breaks and 15-minute long breaks after every four focuses. Start, pause, resume, reset and choose modes; completion offers the next phase without starting it automatically. The active timer persists in this browser across navigation, refresh and tabs. Completed focus/break records save to the signed-in user's Supabase account, with offline retry and a daily summary shared across devices. The sample stays local and Pomodoro never changes task status.
 - Email/username password login, signup, password reset and recovery, session refresh, and local sign-out.
 - Task board and list, drag between statuses, project filters, due dates, tags, completion conditions, and server revision checks.
 - Projects with task progress and completion gates.
@@ -42,7 +42,7 @@ Browser → /api/proxy?path=/v1/… → the existing https://planner-api-ziyis-s
 
 The same-origin proxy is a small Vercel Node function. It forwards only supported API routes and selected headers, bounds request bodies, rejects foreign origins, and does not retry writes. Planner API continues to own validation, transactions, revision checks, ownership, and RLS. Username login goes through the existing username-login Edge Function. Email login and session refresh use Supabase Auth directly.
 
-No database migration or elevated Supabase credentials are required. The domain files in src/domain are carried from Planner API for type compatibility and correct sample-mode behavior; authenticated mutations always execute on the server.
+The domain files in src/domain are carried from Planner API for type compatibility and correct sample-mode behavior; workspace mutations execute on the server. Pomodoro completion records use the existing Supabase client and owner-only RLS directly, with SELECT/INSERT privileges and idempotent session IDs. Their additive migration is kept in Planner API's canonical `supabase/migrations/20261117084448_pomodoro_sessions.sql` and has been applied to planner-core. No elevated credentials are shipped to the browser. Completed-session history is cloud-backed; active countdown state remains browser-local. A browser retains the latest 128 completion records for retry; pre-existing timer-only history stays local.
 
 Server-only overrides: PLANNER_API_URL, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY. Public overrides: VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY, VITE_API_PROXY_URL.
 

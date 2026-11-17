@@ -6,11 +6,13 @@ import "./logo-motion.css";
 export type AuthLogoState = "idle" | "loading" | "error" | "success";
 // Short E draws slowly, N accelerates, then the long O completes quickly.
 const lighting = {
-  short: { start: 0, duration: 720 },
-  medium: { start: 720, duration: 480 },
-  long: { start: 1200, duration: 260 },
+  short: { start: 0, duration: 860 },
+  medium: { start: 860, duration: 600 },
+  long: { start: 1460, duration: 860 },
 };
 const ease = (n: number) => n * n * (3 - 2 * n);
+// Zero velocity/acceleration at each join; the long arc has room to accelerate.
+const lightEase = (n: number) => n * n * n * (n * (n * 6 - 15) + 10);
 const clamp = (n: number) => Math.max(0, Math.min(n, 1));
 
 export function AuthLogo({ state }: { state: AuthLogoState }) {
@@ -26,12 +28,12 @@ export function AuthLogo({ state }: { state: AuthLogoState }) {
     function tick(now: number) {
       if (previous) elapsed += Math.min(now - previous, 64);
       previous = now;
-      const time = elapsed % 2400;
-      const fade = 1 - ease(clamp((time - 1840) / 400));
+      const time = elapsed % 3300;
+      const fade = 1 - ease(clamp((time - 2680) / 440));
       paths.forEach((path, i) => {
         if (!path) return;
         const beat = lighting[ONE_SEGMENTS[i].name];
-        const length = ease(clamp((time - beat.start) / beat.duration));
+        const length = lightEase(clamp((time - beat.start) / beat.duration));
         path.style.strokeDasharray = `${Math.max(0, length)} 2`;
         path.style.strokeDashoffset = "0";
         path.style.opacity = String(

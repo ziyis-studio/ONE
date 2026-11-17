@@ -21,10 +21,14 @@ import {
   startPomodoro,
 } from "./pomodoro";
 import type { PomodoroMode, PomodoroState } from "./pomodoro";
+import { usePomodoroRecords } from "./pomodoro-records";
+import type { RecordSyncStatus } from "./pomodoro-records";
 type Timer = {
   state: PomodoroState;
   remainingMs: number;
   completedToday: number;
+  syncStatus: RecordSyncStatus;
+  refreshRecords: () => void;
   start: () => void;
   pause: () => void;
   reset: () => void;
@@ -34,12 +38,14 @@ const Context = createContext<Timer | null>(null);
 export function PomodoroProvider({
   children,
   scope,
+  cloud = false,
   zone,
   today,
   notify,
 }: {
   children: ReactNode;
   scope: string;
+  cloud?: boolean;
   zone: string;
   today: string;
   notify: (message: string) => void;
@@ -53,6 +59,11 @@ export function PomodoroProvider({
     }
   });
   const [now, setNow] = useState(Date.now);
+  const {
+    records: cloudRecords,
+    status: syncStatus,
+    refresh: refreshRecords,
+  } = usePomodoroRecords(scope, cloud, state.records, today, zone);
   const announced = useRef(
     state.status === "complete" ? state.completedAt : null,
   );
@@ -109,8 +120,9 @@ export function PomodoroProvider({
   }, [state, notify]);
   const start = useCallback(() => {
     const time = Date.now();
+    const id = crypto.randomUUID();
     setNow(time);
-    setState((current) => startPomodoro(current, time));
+    setState((current) => startPomodoro(current, time, id));
   }, []);
   const pause = useCallback(() => {
     const time = Date.now();
@@ -134,10 +146,15 @@ export function PomodoroProvider({
   const remainingMs = remainingPomodoro(state, now);
   const completedToday = useMemo(
     () =>
-      state.focusHistory.filter(
-        (time) => dayKey(new Date(time), zone) === today,
-      ).length,
-    [state.focusHistory, zone, today],
+      [
+        ...new Set([
+          ...state.focusHistory,
+          ...cloudRecords
+            .filter((record) => record.mode === "focus")
+            .map((record) => record.completedAt),
+        ]),
+      ].filter((time) => dayKey(new Date(time), zone) === today).length,
+    [state.focusHistory, cloudRecords, zone, today],
   );
   return (
     <Context.Provider
@@ -145,6 +162,8 @@ export function PomodoroProvider({
         state,
         remainingMs,
         completedToday,
+        syncStatus,
+        refreshRecords,
         start,
         pause,
         reset,

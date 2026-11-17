@@ -271,6 +271,7 @@ export function WorkspaceProvider({
       <ViewStateProvider>
         <PomodoroProvider
           scope={demo ? "demo" : session!.user.id}
+          cloud={!demo}
           zone={zone}
           today={today}
           notify={notify}

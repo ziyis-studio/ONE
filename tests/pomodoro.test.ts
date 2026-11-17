@@ -24,6 +24,16 @@ describe("deadline-based Pomodoro", () => {
     expect(timer.status).toBe("complete");
     expect(timer.focusCount).toBe(1);
     expect(timer.focusHistory).toEqual([end]);
+    expect(timer.records).toEqual([
+      {
+        id: timer.sessionId,
+        mode: "focus",
+        startedAt: now,
+        completedAt: end,
+        durationSeconds: 1500,
+      },
+    ]);
+    expect(timer.records[0].id).toBeTruthy();
     expect(settlePomodoro(timer, end + 86400_000)).toBe(timer);
     expect(
       pausePomodoro(startPomodoro(initialPomodoro(), now), now + 25 * 60_000)
@@ -60,7 +70,40 @@ describe("deadline-based Pomodoro", () => {
     timer = changePomodoroMode(timer, "focus", now + 26 * 60_000);
     expect(timer.focusCount).toBe(1);
     expect(timer.focusHistory).toHaveLength(1);
+    expect(timer.records).toHaveLength(1);
     expect(timer.remainingMs).toBe(25 * 60_000);
+  });
+  it("upgrades legacy active timers and retains one record through refresh and reset", () => {
+    const old = { ...startPomodoro(initialPomodoro(), now) } as Record<
+      string,
+      unknown
+    >;
+    delete old.sessionId;
+    delete old.startedAt;
+    delete old.records;
+    const restored = parsePomodoro(
+      JSON.stringify({ version: 1, state: old }),
+      now + 60_000,
+    );
+    expect(restored.endsAt).toBe(old.endsAt);
+    const saved = parsePomodoro(
+      JSON.stringify({ version: 1, state: restored }),
+      now + 60_000,
+    );
+    expect(saved.sessionId).toBe(restored.sessionId);
+    const reset = changePomodoroMode(saved, "short", saved.endsAt!);
+    expect(reset.records).toHaveLength(1);
+    expect(reset.records[0].id).toBe(restored.sessionId);
+    const corrupt = {
+      ...reset,
+      records: [{ ...reset.records[0], durationSeconds: 123 }],
+    };
+    expect(
+      parsePomodoro(
+        JSON.stringify({ version: 1, state: corrupt }),
+        saved.endsAt!,
+      ),
+    ).toEqual(initialPomodoro());
   });
   it("restores an elapsed deadline without inventing sessions, bounds history and rejects corrupt storage", () => {
     const timer = startPomodoro(initialPomodoro(), now),

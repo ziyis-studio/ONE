@@ -62,7 +62,7 @@
 .one-loading-dashboard .clock-card,
 .one-loading-dashboard .pomodoro-card,
 .one-loading-dashboard .sleep-card {
-  min-height: 276px;
+  min-height: 315px;
 }
 .one-loading-dashboard .habits-card,
 .one-loading-dashboard .tasks-card,
@@ -244,7 +244,7 @@
     min-height: 192px;
   }
   .one-page-loading .one-loading-dashboard .pomodoro-card {
-    min-height: 285px;
+    min-height: 315px;
   }
   .one-page-loading .one-loading-dashboard .sleep-card,
   .one-page-loading .one-loading-dashboard .habits-card {

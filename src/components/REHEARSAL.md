@@ -314,3 +314,44 @@ The user explicitly requested skipping tests to save tokens. No automated suite,
 browser rehearsal, Stageshow film gate or visual check was run for this update.
 The production build passed. React hook cleanup, stable keys, shared geometry
 and reduced-motion behavior were reviewed in source.
+
+# Smooth logo acceleration and recorded Pomodoro sessions
+
+Plan: [pomodoro-records-plan.md](../../docs/pomodoro-records-plan.md).
+
+Loading now uses quintic smoothing with zero initial velocity/acceleration per
+segment. E/N/O draw over 860/600/860ms on a 3.3s cycle, so the long arc has time
+to build speed and settle. Error changes only E to the semantic red token;
+white O/N and reduced-motion handling stay intact.
+
+The Pomodoro removes its narrative heading/paragraph, centers its dial and keeps
+one main action plus a daily summary. Dim tracks fill with actual elapsed time,
+counterclockwise from O to N to E, using reversed versions of the exact supplied
+paths. Start/reset stays dim; pause freezes progress; completion fills the ring.
+The repeated decorative pulse is removed.
+
+Completed focus/break sessions have stable UUIDs and keep their original start
+through pauses/resumes. The existing planner-core project now has an append-only
+`pomodoro_sessions` table, with owner-only SELECT/INSERT RLS, validated mode,
+duration/time constraints, a composite ownership key and indexed day lookup.
+Its canonical Planner API migration is `20261117084448_pomodoro_sessions.sql`,
+matching the applied Supabase migration version. The frontend uses the existing
+publishable client/session; no elevated key or backend API change was added.
+The latest 128 browser records retry idempotently after reconnect or manual
+refresh. Cloud history and local completions merge for the workspace day's
+count. Active countdowns remain browser-local; demo never contacts this table.
+
+Verification: 18 tests in six files and the production build passed. Real local
+Chromium at 1703px, 921px and 390px checked the long arc's acceleration, red-only
+error segment, centered clean card, counterclockwise progress, dim reset,
+pause/completion persistence, demo isolation and reduced motion; no runtime
+errors or native dialogs were observed. Rolled-back queries on the actual
+database verified owner reads/inserts, cross-owner/anonymous denial, duration
+validation, immutable records and duplicate retry handling. Catalog checks
+confirmed enabled RLS and exactly SELECT/INSERT grants for authenticated users.
+The client tests cover owner/day queries and offline retry of the same IDs.
+
+Artifacts: ignored `test-results/focus-records/`. Browser checks used samples and
+mock weather; database verification used a rolled-back fixture. A credentialed
+production browser write, physical phones and other browser engines were not
+exercised. The full unrelated regression suite was not repeated in this pass.

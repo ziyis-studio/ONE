@@ -41,6 +41,10 @@
 .auth-mark[data-state="error"] .auth-arc {
   animation: one-tri-recoil 640ms cubic-bezier(0.45, 0, 0.1, 1);
 }
+.auth-mark[data-state="error"] .auth-arc-short .auth-arc-track,
+.auth-mark[data-state="error"] .auth-arc-short .auth-arc-light {
+  color: var(--one-error-mark);
+}
 .auth-mark[data-state="error"] .auth-arc-medium {
   animation-delay: 35ms;
 }

@@ -45,7 +45,14 @@ describe("ONE neutral foundation and configurable accent", () => {
   });
   it("keeps default violet tokens and neutral surfaces in the accent sheet", () => {
     const css = readFileSync("src/brand.css", "utf8");
-    const approved = new Set(["7852ee", "7048e5", "a882ff", "fff", "eee"]);
+    const approved = new Set([
+      "7852ee",
+      "7048e5",
+      "a882ff",
+      "ef6b6b",
+      "fff",
+      "eee",
+    ]);
     for (const [, hex] of css.matchAll(/#([a-f0-9]{6}|[a-f0-9]{3})\b/gi)) {
       const expanded =
         hex.length === 3 ? [...hex].map((c) => c + c).join("") : hex;

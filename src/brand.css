@@ -3,6 +3,7 @@
   --one-accent: #7852ee;
   --one-accent-hover: #7048e5;
   --one-accent-mark: #a882ff;
+  --one-error-mark: #ef6b6b;
 }
 .logo {
   filter: none;

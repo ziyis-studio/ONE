@@ -5,7 +5,7 @@
 .dashboard-grid .pomodoro-card {
   grid-column: 5 / span 5;
   grid-row: 1;
-  min-height: 276px;
+  min-height: 315px;
 }
 .dashboard-grid .sleep-card {
   grid-column: 10 / span 3;
@@ -97,27 +97,6 @@
   .dashboard-grid .timeline-card .schedule-track {
     margin-left: 0;
   }
-  .pomodoro-body {
-    grid-template-columns: minmax(94px, 0.85fr) minmax(0, 1fr);
-    gap: 7px;
-  }
-  .pomodoro-controls h3 {
-    font-size: 14px;
-  }
-  .pomodoro-controls p {
-    font-size: 10px;
-  }
-  .pomodoro-card > .one-tabs.compact > button {
-    font-size: 9px;
-    padding: 5px 4px;
-  }
-  .pomodoro-controls .primary-button {
-    padding-inline: 8px;
-    font-size: 11px;
-  }
-  .pomodoro-dial time {
-    font-size: 23px;
-  }
   .dashboard-grid .sleep-readout strong {
     font-size: 24px;
   }
@@ -138,7 +117,7 @@
     grid-row: auto;
   }
   .dashboard-grid .pomodoro-card {
-    min-height: 285px;
+    min-height: 315px;
   }
   .dashboard-grid .sleep-card {
     min-height: 235px;
