@@ -2,6 +2,7 @@ import {
   forwardRef,
   useEffect,
   useImperativeHandle,
+  useId,
   useLayoutEffect,
   useRef,
   useState,
@@ -47,6 +48,8 @@ export default forwardRef<
     [posting, setPosting] = useState(false),
     [error, setError] = useState("");
   const [notesError, setNotesError] = useState("");
+  const [tab, setTab] = useState<"log" | "notes">("log");
+  const activityId = useId();
   const [loadFailed, setLoadFailed] = useState(false);
   const [draft, setDraft] = useState(() => {
     const old = id
@@ -142,14 +145,14 @@ export default forwardRef<
     void load();
   }, [kind, id, scope, session?.access_token]);
   useLayoutEffect(() => {
-    if (scrollToEnd.current && feed.current) {
+    if (tab === "log" && scrollToEnd.current && feed.current) {
       feed.current.scrollTo({
         top: feed.current.scrollHeight,
         behavior: reduced ? "instant" : "smooth",
       });
       scrollToEnd.current = false;
     }
-  }, [items, reduced]);
+  }, [items, reduced, tab]);
   async function post() {
     const current = latest.current,
       body = current.body.trim();
@@ -247,25 +250,69 @@ export default forwardRef<
           : "Task log and linked notes"
       }
     >
+      <div className="entity-activity-header">
+        <div
+          className="entity-activity-tabs"
+          role="tablist"
+          aria-label="Activity sections"
+          onKeyDown={(event) => {
+            if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key))
+              return;
+            event.preventDefault();
+            const next =
+              event.key === "Home"
+                ? "log"
+                : event.key === "End"
+                  ? "notes"
+                  : tab === "log"
+                    ? "notes"
+                    : "log";
+            setTab(next);
+            document.getElementById(`${activityId}-${next}-tab`)?.focus();
+          }}
+        >
+          <button
+            type="button"
+            role="tab"
+            id={`${activityId}-log-tab`}
+            aria-controls={`${activityId}-log`}
+            aria-selected={tab === "log"}
+            tabIndex={tab === "log" ? 0 : -1}
+            onClick={() => setTab("log")}
+          >
+            <MessageSquare size={14} />
+            Log
+          </button>
+          <button
+            type="button"
+            role="tab"
+            id={`${activityId}-notes-tab`}
+            aria-controls={`${activityId}-notes`}
+            aria-selected={tab === "notes"}
+            tabIndex={tab === "notes" ? 0 : -1}
+            onClick={() => setTab("notes")}
+          >
+            <FileText size={14} />
+            Notes <span>{notes.length}</span>
+          </button>
+        </div>
+        {id && tab === "log" && (
+          <IconButton
+            label="Refresh log"
+            onClick={() => void load()}
+            disabled={loading || posting}
+          >
+            <RefreshCw size={14} />
+          </IconButton>
+        )}
+      </div>
       <section
         className="entity-log-section"
-        aria-labelledby="entity-log-heading"
+        id={`${activityId}-log`}
+        role="tabpanel"
+        aria-labelledby={`${activityId}-log-tab`}
+        hidden={tab !== "log"}
       >
-        <header>
-          <h3 id="entity-log-heading">
-            <MessageSquare size={15} />
-            Log
-          </h3>
-          {id && (
-            <IconButton
-              label="Refresh log"
-              onClick={() => void load()}
-              disabled={loading || posting}
-            >
-              <RefreshCw size={13} />
-            </IconButton>
-          )}
-        </header>
         <p className="entity-log-description">
           {kind === "project"
             ? "Project entries and updates from its tasks."
@@ -374,7 +421,10 @@ export default forwardRef<
       </section>
       <section
         className="entity-linked-notes"
-        aria-labelledby="entity-notes-heading"
+        id={`${activityId}-notes`}
+        role="tabpanel"
+        aria-labelledby={`${activityId}-notes-tab`}
+        hidden={tab !== "notes"}
       >
         <header>
           <h3 id="entity-notes-heading">

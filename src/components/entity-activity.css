@@ -1,5 +1,5 @@
 .dialog:has(.entity-editor-layout) {
-  width: min(1000px, calc(100vw - 40px));
+  width: min(1080px, calc(100vw - 40px));
 }
 .entity-editor-layout {
   display: grid;
@@ -237,4 +237,106 @@
   color: var(--one-accent-mark);
   font-size: 10px;
   text-decoration: underline;
+}
+
+/* One activity view at a time gives the feed and composer their own space. */
+.entity-activity-panel {
+  height: clamp(340px, calc(100dvh - 210px), 620px);
+  max-height: none;
+  gap: 14px;
+}
+.entity-activity-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex: none;
+}
+.entity-activity-tabs {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  background: #ffffff04;
+  border: 1px solid #ffffff08;
+  border-radius: 9px;
+}
+.entity-activity-tabs > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 32px;
+  padding: 0 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  color: #919191;
+}
+.entity-activity-tabs > button[aria-selected="true"] {
+  background: #ffffff09;
+  color: #ececec;
+  box-shadow: inset 0 0 0 1px #ffffff0c;
+}
+.entity-activity-tabs > button:focus-visible {
+  outline: 1px solid var(--one-accent-mark);
+  outline-offset: 2px;
+}
+.entity-activity-tabs span {
+  font-size: 9px;
+  color: #888;
+}
+.entity-activity-panel > section[hidden] {
+  display: none;
+}
+.entity-activity-panel .entity-log-section {
+  min-height: 0;
+  overflow: visible;
+}
+.entity-activity-panel .entity-log-description {
+  margin: 0 0 12px;
+  line-height: 1.7;
+}
+.entity-activity-panel .entity-log-feed {
+  min-height: 90px;
+  max-height: none;
+  padding: 2px 10px 10px 0;
+}
+.entity-activity-panel .entity-log-entry {
+  padding: 12px 0 16px;
+}
+.entity-activity-panel .entity-log-entry:first-of-type {
+  padding-top: 4px;
+}
+.entity-activity-panel .entity-log-entry time {
+  font-size: 10px;
+  color: #8d8d8d;
+}
+.entity-activity-panel .entity-log-composer {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #ffffff0b;
+}
+.entity-activity-panel .entity-log-composer textarea {
+  min-height: 82px;
+  max-height: 130px;
+}
+.entity-activity-panel .entity-log-composer > div {
+  margin-top: 10px;
+}
+.entity-activity-panel .entity-linked-notes {
+  border-top: 0;
+  padding: 4px 0 0;
+  min-height: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.entity-activity-panel .entity-note-list {
+  max-height: none;
+  min-height: 0;
+  flex: 1;
+}
+@media (max-width: 800px) {
+  .entity-activity-panel {
+    height: 430px;
+    padding-top: 20px;
+  }
 }

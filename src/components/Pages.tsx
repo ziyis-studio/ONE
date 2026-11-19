@@ -4,7 +4,7 @@ import TaskTiming from "./TaskTiming";
 import { plannedTaskIds } from "../lib/schedule";
 import EmotionTag from "./EmotionTag";
 import FocusTaskButton from "./FocusTaskButton";
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import {
   Plus,
   Search,
@@ -18,7 +18,7 @@ import {
   Table2,
   FileText,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import type { ReactNode, Ref } from "react";
 import type { Task, Note } from "../domain/model";
 import { useViewState } from "../lib/view-state";
 import { useOne } from "../lib/workspace";
@@ -79,15 +79,18 @@ function SearchField({
   value,
   onChange,
   placeholder,
+  inputRef,
 }: {
   value: string;
   onChange: (value: string) => void;
   placeholder: string;
+  inputRef?: Ref<HTMLInputElement>;
 }) {
   return (
     <label className="search-field">
       <Search size={15} />
       <input
+        ref={inputRef}
         aria-label={placeholder}
         placeholder={placeholder}
         value={value}
@@ -112,6 +115,8 @@ const matches = (query: string, ...values: (string | undefined)[]) =>
 export function TasksPage() {
   const { data, edit, busy, now } = useOne();
   const { toggleTask, moveTask, rename, safely } = useActions();
+  const [showAllDone, setShowAllDone] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
   const [view, setView] = useViewState<string>("tasks.view", "board"),
     [query, setQuery] = useViewState<string>("tasks.query", ""),
     [project, setProject] = useViewState<string>("tasks.project", "all");
@@ -135,8 +140,29 @@ export function TasksPage() {
     onMove: moveTask,
   });
   const tasks = sort.items;
+  const doneTasks = tasks.filter((task) => sort.stageOf(task) === "done");
+  const recentDone = new Set(
+    [...doneTasks]
+      .sort((a, b) =>
+        (b.completedAt || "9999").localeCompare(a.completedAt || "9999"),
+      )
+      .slice(0, 5)
+      .map((task) => task.id),
+  );
+  const visibleDone =
+    showAllDone || query.trim()
+      ? doneTasks
+      : doneTasks.filter(
+          (task) => recentDone.has(task.id) || sort.activeId === task.id,
+        );
   const planned = plannedTaskIds(data, now);
   const open = data.tasks.filter((t) => !t.completedAt).length;
+  const hasFilters = !!query.trim() || activeProject !== "all";
+  function clearFilters() {
+    setQuery("");
+    setProject("all");
+    searchRef.current?.focus();
+  }
   return (
     <>
       <PageIntro
@@ -155,6 +181,7 @@ export function TasksPage() {
           ]}
         />
         <SearchField
+          inputRef={searchRef}
           value={query}
           onChange={setQuery}
           placeholder="Find a task…"
@@ -173,6 +200,14 @@ export function TasksPage() {
         />
         <span className="fine toolbar-count">{tasks.length} tasks</span>
       </div>
+      {!tasks.length && hasFilters && (
+        <div className="collection-filter-empty" role="status">
+          <span>No tasks match these filters.</span>
+          <button type="button" onClick={clearFilters}>
+            Clear filters
+          </button>
+        </div>
+      )}
       {sort.feedback}
       <LayoutGroup id={collectionId}>
         <ContentSwitch value={view} className="one-collection">
@@ -206,18 +241,34 @@ export function TasksPage() {
                       </IconButton>
                     </header>
                     <div className="lane-stack">
-                      {tasks
-                        .filter((t) => sort.stageOf(t) === stage.id)
-                        .map((task) => (
-                          <TaskCard
-                            key={task.id}
-                            task={task}
-                            planned={planned.has(task.id)}
-                            drag={sort.card(task)}
-                            descriptionId={sort.descriptionId}
-                          />
-                        ))}
+                      {(stage.id === "done"
+                        ? visibleDone
+                        : tasks.filter((t) => sort.stageOf(t) === stage.id)
+                      ).map((task) => (
+                        <TaskCard
+                          key={task.id}
+                          task={task}
+                          planned={planned.has(task.id)}
+                          drag={sort.card(task)}
+                          descriptionId={sort.descriptionId}
+                          compact={stage.id === "done" && !!task.completedAt}
+                        />
+                      ))}
                     </div>
+                    {stage.id === "done" &&
+                      doneTasks.length > 5 &&
+                      !query.trim() && (
+                        <button
+                          type="button"
+                          className="completed-history-toggle"
+                          aria-expanded={showAllDone}
+                          onClick={() => setShowAllDone((value) => !value)}
+                        >
+                          {showAllDone
+                            ? "Show recent 5"
+                            : `Show ${doneTasks.length - visibleDone.length} older completed tasks`}
+                        </button>
+                      )}
                   </section>
                 ))}
               </div>
@@ -301,7 +352,7 @@ export function TasksPage() {
                   ))}
                 </tbody>
               </table>
-              {!tasks.length && (
+              {!tasks.length && !hasFilters && (
                 <Empty
                   title="A little breathing room."
                   detail={
@@ -325,13 +376,15 @@ function TaskCard({
   planned,
   drag,
   descriptionId,
+  compact = false,
 }: {
   task: Task;
   planned: boolean;
   drag: CardDragBinding;
   descriptionId: string;
+  compact?: boolean;
 }) {
-  const { data, edit, busy } = useOne();
+  const { data, edit, busy, zone } = useOne();
   const { toggleTask, rename, safely } = useActions();
   const transition = useSettle();
   const [renameContainer, setRenameContainer] = useState<HTMLElement | null>(
@@ -346,7 +399,11 @@ function TaskCard({
       layout="position"
       layoutId={`task-${task.id}`}
       transition={transition}
-      className={"task-card " + (task.completedAt ? "is-complete" : "")}
+      className={
+        "task-card " +
+        (task.completedAt ? "is-complete" : "") +
+        (compact ? " is-compact-complete" : "")
+      }
       data-unscheduled={(!task.completedAt && !planned) || undefined}
       {...drag}
       onClick={(event) => openCardBackground(event, open)}
@@ -379,11 +436,11 @@ function TaskCard({
           onSave={(title) => rename("task", task, title)}
           disabled={busy}
         />
-        <p className="one-task-description">
-          {task.description || "One little thing, worth doing well."}
-        </p>
+        {!compact && task.description && (
+          <p className="one-task-description">{task.description}</p>
+        )}
       </div>
-      {conditions.length > 0 && (
+      {!compact && conditions.length > 0 && (
         <div className="condition-progress">
           <span className="progress-track">
             <i style={{ width: (done / conditions.length) * 100 + "%" }} />
@@ -394,7 +451,18 @@ function TaskCard({
         </div>
       )}
       <div className="task-card-foot">
-        <TaskTiming task={task} planned={planned} />
+        {compact && task.completedAt ? (
+          <time
+            dateTime={task.completedAt}
+            title={dateLabel(dayKey(task.completedAt, zone), {
+              dateStyle: "full",
+            })}
+          >
+            Completed {dateLabel(dayKey(task.completedAt, zone))}
+          </time>
+        ) : (
+          <TaskTiming task={task} planned={planned} />
+        )}
       </div>
     </motion.article>
   );
@@ -402,6 +470,7 @@ function TaskCard({
 export function ProjectsPage() {
   const { data, edit, busy } = useOne();
   const { moveProject } = useActions();
+  const searchRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useViewState<string>("projects.query", ""),
     [view, setView] = useViewState<string>("projects.view", "board"),
     [stageFilter, setStageFilter] = useViewState<string>(
@@ -424,6 +493,11 @@ export function ProjectsPage() {
       moveProject(item, stage as Exclude<Stage, "todo">, beforeId),
   });
   const projects = sort.items;
+  function clearFilters() {
+    setQuery("");
+    setStageFilter("all");
+    searchRef.current?.focus();
+  }
   const collectionId = useId();
   return (
     <>
@@ -443,6 +517,7 @@ export function ProjectsPage() {
           ]}
         />
         <SearchField
+          inputRef={searchRef}
           value={query}
           onChange={setQuery}
           placeholder="Find a project…"
@@ -460,6 +535,14 @@ export function ProjectsPage() {
         />
         <span className="fine toolbar-count">{projects.length} projects</span>
       </div>
+      {!projects.length && (query.trim() || stageFilter !== "all") && (
+        <div className="collection-filter-empty" role="status">
+          <span>No projects match these filters.</span>
+          <button type="button" onClick={clearFilters}>
+            Clear filters
+          </button>
+        </div>
+      )}
       {sort.feedback}
       <LayoutGroup id={collectionId}>
         <ContentSwitch value={view} className="one-collection">

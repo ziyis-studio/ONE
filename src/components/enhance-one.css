@@ -406,3 +406,57 @@
 .thought-calendar .calendar-grid button.selected.has-record i {
   background: white;
 }
+.completed-history-toggle {
+  margin-top: 12px;
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px dashed #ffffff12;
+  border-radius: 9px;
+  color: #aaa;
+  font-size: 11px;
+  line-height: 1.5;
+  text-align: center;
+}
+.completed-history-toggle:hover {
+  color: #ddd;
+  background: #ffffff04;
+  border-color: #ffffff25;
+}
+.task-card.is-compact-complete {
+  padding: 13px 15px 11px;
+}
+.task-card.is-compact-complete .task-card-top {
+  margin-bottom: 7px;
+}
+.task-card.is-compact-complete .task-card-foot {
+  margin-top: 8px;
+  padding-top: 0;
+  border-top: 0;
+}
+.task-card.is-compact-complete time {
+  color: #858585;
+  font-size: 9px;
+}
+.collection-filter-empty {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  margin: 0 0 20px;
+  border: 1px solid #ffffff10;
+  border-radius: 11px;
+  color: #999;
+  font-size: 12px;
+}
+.collection-filter-empty > button {
+  flex: none;
+  padding: 7px 10px;
+  border-radius: 7px;
+  color: #ddd;
+  background: #ffffff08;
+  font-size: 11px;
+}
+.collection-filter-empty > button:hover {
+  background: #ffffff12;
+}
