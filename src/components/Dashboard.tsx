@@ -3,7 +3,7 @@ import EmotionTag from "./EmotionTag";
 import ScheduleKind from "./ScheduleKind";
 import FocusTaskButton from "./FocusTaskButton";
 import { ContentSwitch, DiscreteTabs } from "./interactions";
-import { Plus, ArrowUpRight, ArrowRight, Clock3 } from "lucide-react";
+import { Plus, ArrowUpRight, Clock3 } from "lucide-react";
 import { useViewState } from "../lib/view-state";
 import { useOne } from "../lib/workspace";
 import { useActions } from "../lib/actions";
@@ -160,15 +160,6 @@ export default function Dashboard() {
               }
               label={data.habits.length ? "View habits" : "New habit"}
             />
-          )}
-          {occurrences.length > 0 && (
-            <button
-              className="card-bottom-link"
-              onClick={() => navigate("habits")}
-            >
-              A little consistency goes a long way
-              <ArrowRight size={13} />
-            </button>
           )}
         </Card>
         <Card
