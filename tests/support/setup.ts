@@ -15,6 +15,11 @@ vi.mock("../../src/lib/api", async (importOriginal) => {
     api: async (path: string, token: string, options: RequestInit = {}) => {
       if (path.startsWith("/v1/weather"))
         return { temperature: 28, code: 2, updatedAt: "2026-11-19T12:00" };
+      if (path === "/v1/sample/insights") {
+        const { workspaceInsights } = await import("./insights");
+        const input = JSON.parse(String(options.body));
+        return workspaceInsights(input.workspace, input.query);
+      }
       if (!path.startsWith("/v1/sample"))
         return original.api(path, token, options);
       if (path.startsWith("/v1/sample?"))

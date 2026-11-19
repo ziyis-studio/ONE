@@ -179,3 +179,35 @@ test("a failed cloud post keeps the draft and retries with the same identity", a
     JSON.parse(mock.api.mock.calls[2][2].body).id,
   );
 });
+test("a cloud load failure stays beside the log, retries successfully and shows saved entries", async () => {
+  mock.context = {
+    ...mock.context,
+    demo: false,
+    scope: "account",
+    session: { access_token: "token" },
+  };
+  mock.api.mockRejectedValueOnce(
+    Object.assign(new Error("Invalid request."), { code: "invalid" }),
+  );
+  render(<EntityActivityPanel kind="project" id={project} onOpen={vi.fn()} />);
+  const error = await screen.findByRole("alert");
+  expect(error.closest(".entity-log-section")).toBeTruthy();
+  expect(error.textContent).toContain("Could not load the log");
+  expect(screen.queryByText("No entries yet.")).toBeNull();
+  const row = {
+    id: crypto.randomUUID(),
+    target_kind: "project",
+    target_id: project,
+    body: "Already saved in the cloud",
+    created_at: "2026-11-19T16:45:58.193467+00:00",
+  };
+  mock.api.mockResolvedValueOnce({ items: [row], next: null });
+  await userEvent.click(
+    screen.getByRole("button", { name: "Retry loading log" }),
+  );
+  await screen.findByText(row.body);
+  expect(screen.queryByRole("alert")).toBeNull();
+  expect(mock.api.mock.calls[1][0]).toBe(
+    `/v1/activity?kind=project&id=${project}`,
+  );
+});

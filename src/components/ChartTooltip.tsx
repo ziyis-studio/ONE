@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useMotionPreference } from "../lib/motion-preference";
 import "./chart-tooltip.css";
 type Tip = {
-  anchor: HTMLElement;
+  anchor: HTMLElement | SVGElement;
   title: string;
   detail: string;
   x: number;
@@ -15,7 +15,7 @@ type Tip = {
 /** One delegated tooltip serves every data mark, including large heatmaps. */
 export function ChartTooltipScope({ children }: { children: ReactNode }) {
   const [tip, setTip] = useState<Tip | null>(null);
-  const current = useRef<HTMLElement | null>(null);
+  const current = useRef<HTMLElement | SVGElement | null>(null);
   const id = useId();
   const reduced = useMotionPreference();
   function hide() {
@@ -25,7 +25,7 @@ export function ChartTooltipScope({ children }: { children: ReactNode }) {
   function show(target: EventTarget | null) {
     const anchor =
       target instanceof Element
-        ? target.closest<HTMLElement>("[data-chart-title]")
+        ? target.closest<HTMLElement | SVGElement>("[data-chart-title]")
         : null;
     if (!anchor) {
       hide();

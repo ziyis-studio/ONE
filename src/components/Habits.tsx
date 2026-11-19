@@ -1,19 +1,24 @@
 import { PageDate } from "./PageDate";
-import { useMemo, useState } from "react";
+import HabitSummary from "./HabitSummary";
+import { useInsights } from "../lib/insights";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import type { KeyboardEvent } from "react";
 import { Plus, ArrowUpRight } from "lucide-react";
 import type { Habit, HabitOccurrence, Workspace } from "../domain/model";
 import { useViewState } from "../lib/view-state";
 import { useOne } from "../lib/workspace";
-import { dateLabel } from "../domain/time";
-import { habitDay, habitRange, indexHabitHistory } from "../lib/habit-history";
+import { addDays, dateLabel } from "../domain/time";
+import { habitRange } from "../lib/habit-history";
 import type { HabitRangePreset } from "../lib/habit-history";
 import { CheckButton, Dialog, Empty, EntityIcon, IconButton } from "./ui";
 import { DiscreteTabs } from "./interactions";
+import "./habit-insights.css";
 
 const presets: { value: HabitRangePreset; label: string }[] = [
   { value: "week", label: "This week" },
   { value: "month", label: "This month" },
   { value: "30days", label: "Last 30 days" },
+  { value: "year", label: "Year" },
 ];
 export default function HabitsPage() {
   const { data, today, busy, edit, execute, notify } = useOne();
@@ -26,18 +31,70 @@ export default function HabitsPage() {
     date: string;
   } | null>(null);
   const range = useMemo(() => habitRange(preset, today), [preset, today]);
-  const history = useMemo(() => indexHabitHistory(data), [data]);
+  const summary = useInsights("habits", range.from, range.to);
+  const heatmaps = useRef<HTMLDivElement>(null),
+    revealedYear = useRef<string | null>(null);
+  const [yearFocus, setYearFocus] = useState<Record<string, string>>({});
+  useLayoutEffect(() => {
+    if (preset !== "year") {
+      revealedYear.current = null;
+      return;
+    }
+    if (!summary.insights || revealedYear.current === range.from) return;
+    revealedYear.current = range.from;
+    heatmaps.current
+      ?.querySelectorAll<HTMLElement>(".habit-year-scroll")
+      .forEach((container) => {
+        const cell = container.querySelector<HTMLElement>(
+          `[data-date="${today}"]`,
+        );
+        if (cell)
+          container.scrollTo({
+            left: Math.max(0, cell.offsetLeft - container.clientWidth / 2),
+            behavior: "instant",
+          });
+      });
+  }, [preset, summary.insights, range.from, today]);
+  function yearKeyboard(
+    event: KeyboardEvent<HTMLButtonElement>,
+    habitId: string,
+    date: string,
+  ) {
+    const step = (
+      { ArrowUp: -1, ArrowDown: 1, ArrowLeft: -7, ArrowRight: 7 } as Record<
+        string,
+        number
+      >
+    )[event.key];
+    if (!step) return;
+    event.preventDefault();
+    for (
+      let next = addDays(date, step);
+      next >= range.from && next <= range.to && next <= today;
+      next = addDays(next, step)
+    ) {
+      const target = event.currentTarget
+        .closest(".habit-year-cells")
+        ?.querySelector<HTMLButtonElement>(`[data-date="${next}"]`);
+      if (target && !target.disabled) {
+        setYearFocus((old) => ({ ...old, [habitId]: next }));
+        target.focus();
+        break;
+      }
+    }
+  }
   const rows = data.habits.map((habit) => {
-    const cells = range.days.map((day) => habitDay(history, habit, day));
-    const due = cells.filter((cell) => cell.date <= today);
+    const row = summary.insights?.habits.find((h) => h.id === habit.id);
     return {
       habit,
-      completed: due.reduce((sum, cell) => sum + cell.completed, 0),
-      planned: due.reduce((sum, cell) => sum + cell.planned, 0),
+      completed: row?.completed || 0,
+      planned: row?.planned || 0,
+      days: new Map(row?.days.map((d) => [d.date, d]) || []),
+      focusDate:
+        yearFocus[habit.id] ||
+        row?.days.findLast((d) => d.date <= today && d.planned > 0)?.date,
     };
   });
-  const completed = rows.reduce((sum, row) => sum + row.completed, 0);
-  const planned = rows.reduce((sum, row) => sum + row.planned, 0);
   async function toggleOccurrence(
     occurrence: HabitOccurrence,
     snapshot: Workspace = data,
@@ -63,8 +120,8 @@ export default function HabitsPage() {
     if (busy || date > today) return;
     try {
       let snapshot = data;
-      const cell = habitDay(history, habit, date);
-      if (!cell.planned) return;
+      const cell = rows.find((r) => r.habit.id === habit.id)?.days.get(date);
+      if (!cell?.planned) return;
       if (cell.needsMaterialization)
         snapshot = (
           await execute({
@@ -125,143 +182,190 @@ export default function HabitsPage() {
       </div>
       {data.habits.length ? (
         <>
-          <div className="habit-range-stats">
-            <div>
-              <span>Completed</span>
-              <strong>
-                {completed}
-                <small> / {planned}</small>
-              </strong>
-            </div>
-            <div>
-              <span>Completion</span>
-              <strong>
-                {planned ? Math.round((completed / planned) * 100) : 0}
-                <small>%</small>
-              </strong>
-            </div>
-            <div>
-              <span>Habits</span>
-              <strong>{data.habits.length}</strong>
-            </div>
-          </div>
-          <div className="habit-heatmap-grid">
-            {rows.map(({ habit, completed: done, planned: due }) => (
-              <section
-                className="habit-activity-card"
-                aria-label={habit.title + " activity"}
-                key={habit.id}
-              >
-                <header>
-                  <span className="habit-activity-icon">
-                    <EntityIcon name={habit.icon || "repeat"} size={17} />
-                  </span>
-                  <div>
-                    <h2>
-                      <button
-                        onClick={() => edit({ kind: "habit", id: habit.id })}
-                      >
-                        {habit.title}
-                      </button>
-                    </h2>
-                    <p>
-                      {habit.isoWeekdays.length === 7
-                        ? "Every day"
-                        : habit.isoWeekdays.length + " days a week"}
-                    </p>
-                  </div>
-                  <IconButton
-                    label={"Edit " + habit.title}
-                    onClick={() => edit({ kind: "habit", id: habit.id })}
-                  >
-                    <ArrowUpRight size={15} />
-                  </IconButton>
-                </header>
-                <div className="habit-heatmap-weekdays" aria-hidden="true">
-                  {["M", "T", "W", "T", "F", "S", "S"].map((day, index) => (
-                    <span key={index}>{day}</span>
-                  ))}
-                </div>
-                <div
-                  className="habit-activity-cells"
-                  role="group"
-                  aria-label={habit.title + " completion history"}
+          <HabitSummary insights={summary.insights} loading={summary.loading} />
+          {summary.error && (
+            <p className="insights-error" role="status">
+              Could not load habit activity.{" "}
+              <button onClick={summary.reload}>Try again</button>
+            </p>
+          )}
+          <div
+            ref={heatmaps}
+            className={
+              "habit-heatmap-grid" + (preset === "year" ? " is-year" : "")
+            }
+          >
+            {rows.map(
+              ({ habit, completed: done, planned: due, days, focusDate }) => (
+                <section
+                  className="habit-activity-card"
+                  aria-label={habit.title + " activity"}
+                  key={habit.id}
                 >
-                  {range.calendarDays.map((date) => {
-                    if (date < range.from || date > range.to)
-                      return (
-                        <span className="habit-activity-blank" key={date} />
-                      );
-                    const cell = habitDay(history, habit, date);
-                    const allDone =
-                      cell.planned > 0 && cell.completed === cell.planned;
-                    const actualDates = [
-                      ...new Set(
-                        cell.occurrences.flatMap((occurrence) =>
-                          history.executions.has(occurrence.id)
-                            ? [
-                                history.executions.get(occurrence.id)!
-                                  .performedOn,
-                              ]
-                            : [],
-                        ),
-                      ),
-                    ];
-                    const title =
-                      dateLabel(date, {
-                        weekday: "long",
-                        month: "short",
-                        day: "numeric",
-                      }) +
-                      " · " +
-                      (cell.planned
-                        ? cell.completed + "/" + cell.planned + " completed"
-                        : "Not scheduled") +
-                      (actualDates.length
-                        ? " · Recorded " + actualDates.join(", ")
-                        : "");
-                    return (
-                      <button
-                        key={date}
-                        className={
-                          "habit-activity-cell activity-" +
-                          cell.level +
-                          (date === today ? " is-today" : "") +
-                          (date > today ? " future" : "")
-                        }
-                        aria-label={
-                          (allDone ? "Undo " : "Complete ") +
-                          habit.title +
-                          " for " +
-                          date
-                        }
-                        aria-pressed={cell.level === 2 ? "mixed" : allDone}
-                        data-chart-title={habit.title + " · " + dateLabel(date)}
-                        data-chart-detail={title
-                          .split(" · ")
-                          .slice(1)
-                          .join(" · ")}
-                        disabled={busy || date > today || !cell.planned}
-                        onClick={() => void selectDay(habit, date)}
-                      >
-                        <span>{Number(date.slice(-2))}</span>
-                        {cell.planned > 1 && (
-                          <small>
-                            {cell.completed}/{cell.planned}
-                          </small>
+                  <header>
+                    <span className="habit-activity-icon">
+                      <EntityIcon name={habit.icon || "repeat"} size={17} />
+                    </span>
+                    <div>
+                      <h2>
+                        <button
+                          onClick={() => edit({ kind: "habit", id: habit.id })}
+                        >
+                          {habit.title}
+                        </button>
+                      </h2>
+                      <p>
+                        {habit.isoWeekdays.length === 7
+                          ? "Every day"
+                          : habit.isoWeekdays.length + " days a week"}
+                      </p>
+                    </div>
+                    <IconButton
+                      label={"Edit " + habit.title}
+                      onClick={() => edit({ kind: "habit", id: habit.id })}
+                    >
+                      <ArrowUpRight size={15} />
+                    </IconButton>
+                  </header>
+                  <div className={preset === "year" ? "habit-year-scroll" : ""}>
+                    {preset === "year" && (
+                      <div className="habit-year-months" aria-hidden="true">
+                        {Array.from(
+                          { length: range.calendarDays.length / 7 },
+                          (_, i) => {
+                            const first = range.calendarDays
+                              .slice(i * 7, i * 7 + 7)
+                              .find(
+                                (d) =>
+                                  d.slice(-2) === "01" &&
+                                  d >= range.from &&
+                                  d <= range.to,
+                              );
+                            return (
+                              <span key={i}>
+                                {first
+                                  ? dateLabel(first, { month: "short" })
+                                  : ""}
+                              </span>
+                            );
+                          },
                         )}
-                      </button>
-                    );
-                  })}
-                </div>
-                <footer>
-                  <span>
-                    {done} / {due} completed
-                  </span>
-                  <strong>{due ? Math.round((done / due) * 100) : 0}%</strong>
-                </footer>
-              </section>
-            ))}
+                      </div>
+                    )}
+                    <div className="habit-heatmap-weekdays" aria-hidden="true">
+                      {["M", "T", "W", "T", "F", "S", "S"].map((day, index) => (
+                        <span key={index}>{day}</span>
+                      ))}
+                    </div>
+                    <div
+                      className={
+                        "habit-activity-cells" +
+                        (preset === "year" ? " habit-year-cells" : "")
+                      }
+                      role="group"
+                      aria-label={habit.title + " completion history"}
+                    >
+                      {range.calendarDays.map((date) => {
+                        if (date < range.from || date > range.to)
+                          return (
+                            <span className="habit-activity-blank" key={date} />
+                          );
+                        const cell = days.get(date);
+                        if (!cell)
+                          return (
+                            <span
+                              className="habit-activity-blank is-loading"
+                              key={date}
+                            />
+                          );
+                        const allDone =
+                          cell.planned > 0 && cell.completed === cell.planned;
+                        const actualDates = cell.actualDates;
+                        const title =
+                          dateLabel(date, {
+                            weekday: "long",
+                            month: "short",
+                            day: "numeric",
+                          }) +
+                          " · " +
+                          (cell.planned
+                            ? cell.completed + "/" + cell.planned + " completed"
+                            : "Not scheduled") +
+                          (actualDates.length
+                            ? " · Recorded " + actualDates.join(", ")
+                            : "");
+                        return (
+                          <button
+                            key={date}
+                            data-date={date}
+                            tabIndex={
+                              preset === "year"
+                                ? date === focusDate
+                                  ? 0
+                                  : -1
+                                : undefined
+                            }
+                            onFocus={() => {
+                              if (preset === "year")
+                                setYearFocus((old) =>
+                                  old[habit.id] === date
+                                    ? old
+                                    : { ...old, [habit.id]: date },
+                                );
+                            }}
+                            onKeyDown={
+                              preset === "year"
+                                ? (event) => yearKeyboard(event, habit.id, date)
+                                : undefined
+                            }
+                            className={
+                              "habit-activity-cell activity-" +
+                              cell.level +
+                              (date === today ? " is-today" : "") +
+                              (date > today ? " future" : "")
+                            }
+                            aria-label={
+                              (allDone ? "Undo " : "Complete ") +
+                              habit.title +
+                              " for " +
+                              date
+                            }
+                            aria-pressed={cell.level === 2 ? "mixed" : allDone}
+                            data-chart-title={
+                              habit.title + " · " + dateLabel(date)
+                            }
+                            data-chart-detail={title
+                              .split(" · ")
+                              .slice(1)
+                              .join(" · ")}
+                            disabled={
+                              busy ||
+                              summary.loading ||
+                              date > today ||
+                              !cell.planned
+                            }
+                            onClick={() => void selectDay(habit, date)}
+                          >
+                            <span>{Number(date.slice(-2))}</span>
+                            {cell.planned > 1 && (
+                              <small>
+                                {cell.completed}/{cell.planned}
+                              </small>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <footer>
+                    <span>
+                      {done} / {due} completed
+                    </span>
+                    <strong>{due ? Math.round((done / due) * 100) : 0}%</strong>
+                  </footer>
+                </section>
+              ),
+            )}
           </div>
           <div className="habit-heatmap-legend">
             <span>
@@ -299,7 +403,9 @@ export default function HabitsPage() {
         >
           <div className="habit-day-occurrences">
             {selectedOccurrences.map((occurrence, index) => {
-              const execution = history.executions.get(occurrence.id);
+              const execution = data.executions.find(
+                (e) => e.occurrenceId === occurrence.id,
+              );
               return (
                 <div key={occurrence.id}>
                   <CheckButton

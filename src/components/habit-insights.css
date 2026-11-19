@@ -1,0 +1,232 @@
+.habit-summary-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 17px;
+  margin-bottom: 24px;
+}
+.habit-stat-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 22px;
+  margin: 0;
+  box-shadow: none;
+}
+.habit-stat-card > .card-heading {
+  margin-bottom: 20px;
+}
+.habit-stat-card .card-heading h2 {
+  font-size: 13px;
+  font-weight: 500;
+}
+.habit-stat-value {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.habit-stat-value > strong {
+  color: #eee;
+  font-size: 35px;
+  font-weight: 450;
+  letter-spacing: -0.04em;
+  line-height: 1.3;
+}
+.habit-stat-value small {
+  font-size: 15px;
+  color: #999;
+  letter-spacing: 0;
+}
+.habit-stat-value > span {
+  font-size: 11px;
+  color: #9c9c9c;
+}
+.habit-completion-bars {
+  width: 100%;
+  height: 56px;
+  margin: 18px 0 0;
+  color: var(--one-accent-mark);
+}
+.habit-bar-planned {
+  fill: #ffffff0b;
+}
+.habit-bar-complete {
+  fill: currentColor;
+}
+.habit-completion-bars g:focus-visible {
+  outline: none;
+}
+.habit-completion-bars g:focus-visible .habit-bar-planned,
+.habit-completion-bars g:hover .habit-bar-planned {
+  fill: #ffffff24;
+}
+.habit-stat-note {
+  margin: auto 0 0;
+  padding-top: 16px;
+  font-size: 10px;
+  color: #8f8f8f;
+  line-height: 1.6;
+}
+.habit-completion-body {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.habit-rate-ring {
+  color: var(--one-accent-mark);
+  width: 105px;
+  height: 105px;
+  flex: 0 0 105px;
+}
+.habit-rate-ring circle {
+  stroke: currentColor;
+}
+.habit-rate-ring .habit-rate-track {
+  stroke: #ffffff0b;
+}
+.habit-rate-ring text {
+  fill: #eee;
+  font-size: 22px;
+  letter-spacing: -0.03em;
+}
+.habit-completion-body p {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0 0 14px;
+}
+.habit-completion-body p:last-child {
+  margin-bottom: 0;
+}
+.habit-completion-body p strong {
+  font-size: 20px;
+  font-weight: 450;
+  color: #d8d8d8;
+}
+.habit-completion-body p span {
+  font-size: 10px;
+  color: #979797;
+}
+.habit-streak-trail {
+  display: flex;
+  gap: 4px;
+  margin: 24px 0 0;
+}
+.streak-day {
+  flex: 1;
+  height: 25px;
+  border-radius: 4px;
+  background: #ffffff04;
+  border: 1px solid #ffffff08;
+}
+.streak-day.level-1 {
+  background: #ffffff0d;
+}
+.streak-day.level-2 {
+  background: #7650dc70;
+}
+.streak-day.level-3 {
+  background: var(--one-accent-mark);
+}
+.streak-day:focus-visible {
+  outline: 1px solid #ddd;
+  outline-offset: 2px;
+}
+.habit-heatmap-grid.is-year {
+  grid-template-columns: minmax(0, 1fr);
+}
+.habit-year-scroll {
+  overflow-x: auto;
+  padding: 4px 4px 8px;
+  scrollbar-width: thin;
+}
+.is-year .habit-heatmap-weekdays {
+  display: none;
+}
+.habit-activity-cells.habit-year-cells {
+  grid-template-columns: none;
+  grid-template-rows: repeat(7, 13px);
+  grid-auto-flow: column;
+  grid-auto-columns: 13px;
+  width: max-content;
+  gap: 4px;
+}
+.habit-year-cells .habit-activity-cell,
+.habit-year-cells .habit-activity-blank {
+  width: 13px;
+  height: 13px;
+  border-radius: 3px;
+  aspect-ratio: auto;
+}
+.habit-year-cells .habit-activity-cell > span,
+.habit-year-cells .habit-activity-cell > small {
+  display: none;
+}
+.habit-year-months {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 13px;
+  gap: 4px;
+  width: max-content;
+  margin-bottom: 10px;
+  color: #999;
+  font-size: 9px;
+  height: 14px;
+  white-space: nowrap;
+}
+.habit-activity-blank.is-loading {
+  background: #ffffff04;
+}
+@media (max-width: 1100px) and (min-width: 701px) {
+  .habit-stat-card {
+    padding: 18px;
+  }
+  .habit-completion-body {
+    gap: 10px;
+  }
+  .habit-rate-ring {
+    width: 80px;
+    height: 80px;
+    flex-basis: 80px;
+  }
+}
+@media (max-width: 700px) {
+  .habit-summary-cards {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .habit-stat-card {
+    padding: 21px;
+  }
+  .habit-completion-bars {
+    height: 58px;
+  }
+  .habit-streak-trail {
+    margin: 18px 0 0;
+  }
+  .habit-year-cells .habit-activity-cell {
+    min-width: 13px;
+  }
+}
+.habit-year-scroll {
+  position: relative;
+}
+.is-year .habit-heatmap-weekdays {
+  display: grid;
+  position: absolute;
+  top: 28px;
+  left: 0;
+  grid-template-columns: 18px;
+  grid-template-rows: repeat(7, 13px);
+  gap: 4px;
+}
+.habit-activity-cells.habit-year-cells,
+.habit-year-months {
+  margin-left: 24px;
+}
+.habit-heatmap-legend .activity-3 {
+  background: var(--one-accent-mark);
+}
+.habit-heatmap-legend .activity-2 {
+  background: #7650dc70;
+}
