@@ -76,31 +76,6 @@ export function useActions() {
         : {}),
     });
   }
-  async function reorder(
-    kind: "task" | "project",
-    id: string,
-    direction: -1 | 1,
-    stageOnly = false,
-  ) {
-    const items = [...(kind === "task" ? data.tasks : data.projects)];
-    const source = items.find((item) => item.id === id);
-    if (!source) return;
-    const stage = (item: Task | Project) =>
-      kind === "task" ? taskStage(item as Task) : projectStage(item as Project);
-    const candidates = stageOnly
-      ? items.filter((item) => stage(item) === stage(source))
-      : items;
-    const at = candidates.findIndex((item) => item.id === id),
-      target = candidates[at + direction];
-    if (!target) return;
-    const next = items.filter((item) => item.id !== id),
-      targetAt = next.findIndex((item) => item.id === target.id);
-    next.splice(targetAt + (direction === 1 ? 1 : 0), 0, source);
-    return execute({
-      type: kind === "task" ? "task.reorder" : "project.reorder",
-      items: next.map(({ id, updatedAt }) => ({ id, updatedAt })),
-    });
-  }
   async function toggleHabit(occurrenceId: string) {
     const execution = data.executions.find(
       (e) => e.occurrenceId === occurrenceId,
@@ -174,7 +149,6 @@ export function useActions() {
     toggleTask,
     moveTask,
     moveProject,
-    reorder,
     toggleHabit,
     rename,
     safely,

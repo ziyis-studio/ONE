@@ -1,25 +1,30 @@
-import { useId, useState, useRef } from "react";
+import type { CardDragBinding } from "../lib/card-drag";
+import { useId, useState } from "react";
 import { AnimatePresence, LayoutGroup, motion } from "motion/react";
-import { ChevronDown, Plus, ArrowUp, ArrowDown } from "lucide-react";
+import { ChevronDown, Plus } from "lucide-react";
 import type { Project } from "../domain/model";
 import { useOne } from "../lib/workspace";
-import { useActions, projectStage } from "../lib/actions";
+import { useActions } from "../lib/actions";
 import { dateLabel, dayKey } from "../domain/time";
 import { useMotionPreference } from "../lib/motion-preference";
 import { CardOpen, openCardBackground } from "./CardOpen";
-import { EntityIcon, CheckButton, IconButton } from "./ui";
+import { EntityIcon, CheckButton } from "./ui";
 import { InlineTitle, useSettle } from "./interactions";
-import { ONE_SEGMENTS, segmentProgress } from "../lib/brand-mark";
+import { PROJECT_PROGRESS_SEGMENTS, segmentProgress } from "../lib/brand-mark";
 
 export default function ProjectCard({
   project,
   row = false,
+  drag,
+  descriptionId,
 }: {
   project: Project;
   row?: boolean;
+  drag?: CardDragBinding;
+  descriptionId?: string;
 }) {
   const { data, edit, busy } = useOne(),
-    { rename, toggleTask, safely, moveProject, reorder } = useActions();
+    { rename, toggleTask, safely } = useActions();
   const [expanded, setExpanded] = useState(false);
   const id = useId(),
     transition = useSettle(),
@@ -32,10 +37,7 @@ export default function ProjectCard({
       ? 100
       : 0;
   const progress = percent / 100;
-  const dragged = useRef(false);
-  const open = () => {
-    if (!dragged.current) edit({ kind: "project", id: project.id });
-  };
+  const open = () => edit({ kind: "project", id: project.id });
   return (
     <motion.article
       layout
@@ -44,60 +46,14 @@ export default function ProjectCard({
       style={{ borderRadius: 14 }}
       className={`project-card one-project-card${row ? " one-project-row" : ""}`}
       onClick={(event) => openCardBackground(event, open)}
-      draggable={!busy}
-      onPointerDown={() => {
-        dragged.current = false;
-      }}
-      onDragStartCapture={(e) => {
-        if ((e.target as HTMLElement).closest(".one-project-task")) return;
-        dragged.current = true;
-        e.dataTransfer.setData("text/one-project", project.id);
-        e.dataTransfer.effectAllowed = "move";
-      }}
-      onDragEnd={() =>
-        requestAnimationFrame(() => {
-          dragged.current = false;
-        })
-      }
-      onDragOver={(e) => {
-        if (e.dataTransfer.types.includes("text/one-project")) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
-      }}
-      onDrop={(e) => {
-        if (!e.dataTransfer.types.includes("text/one-project")) return;
-        e.preventDefault();
-        e.stopPropagation();
-        const source = data.projects.find(
-          (p) => p.id === e.dataTransfer.getData("text/one-project"),
-        );
-        if (source && source.id !== project.id)
-          safely(() => moveProject(source, projectStage(project), project.id));
-      }}
+      {...drag}
     >
-      <CardOpen label={"Open project " + project.title} onOpen={open} />
+      <CardOpen
+        label={"Open project " + project.title}
+        onOpen={open}
+        descriptionId={descriptionId}
+      />
       <div className="project-card-top">
-        <span className="reorder-controls">
-          <IconButton
-            label={"Move " + project.title + " up"}
-            disabled={busy}
-            onClick={() =>
-              safely(() => reorder("project", project.id, -1, !row))
-            }
-          >
-            <ArrowUp size={13} />
-          </IconButton>
-          <IconButton
-            label={"Move " + project.title + " down"}
-            disabled={busy}
-            onClick={() =>
-              safely(() => reorder("project", project.id, 1, !row))
-            }
-          >
-            <ArrowDown size={13} />
-          </IconButton>
-        </span>
         <span className="project-icon">
           <EntityIcon name={project.icon} size={21} />
         </span>
@@ -131,10 +87,10 @@ export default function ProjectCard({
           strokeWidth="8"
           strokeLinecap="round"
         >
-          {ONE_SEGMENTS.map((segment) => (
+          {PROJECT_PROGRESS_SEGMENTS.map((segment) => (
             <path key={segment.letter} d={segment.d} stroke="currentColor" />
           ))}
-          {ONE_SEGMENTS.map((segment) => {
+          {PROJECT_PROGRESS_SEGMENTS.map((segment) => {
             const value = segmentProgress(progress, segment);
             return (
               <motion.path

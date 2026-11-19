@@ -2,7 +2,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   cleanup,
-  fireEvent,
   render,
   screen,
   waitFor,
@@ -174,6 +173,46 @@ describe("workspace motion with real commands", () => {
     ).toBeTruthy();
     expect(screen.queryByRole("dialog")).toBe(null);
   });
+  it("toggles a project task immediately while preserving and saving the project draft", async () => {
+    const state = await demo();
+    await userEvent.click(
+      screen.getAllByRole("button", { name: "Projects" })[0],
+    );
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Open project ONE Workspace" }),
+    );
+    const dialog = await screen.findByRole("dialog", { name: "EDIT PROJECT" });
+    const title = within(dialog).getByRole("textbox", { name: "Title" });
+    await userEvent.clear(title);
+    await userEvent.type(title, "An unfinished project draft");
+    await userEvent.click(
+      within(dialog).getByRole("button", {
+        name: "Complete Explore a new direction",
+      }),
+    );
+    await within(dialog).findByRole("button", {
+      name: "Reopen Explore a new direction",
+    });
+    expect((title as HTMLInputElement).value).toBe(
+      "An unfinished project draft",
+    );
+    expect(screen.getByRole("dialog", { name: "EDIT PROJECT" })).toBe(dialog);
+    const task = state.tasks.find(
+      (t) => t.title === "Explore a new direction",
+    )!;
+    expect(
+      saved().tasks.find((t: { id: string }) => t.id === task.id).completedAt,
+    ).toBeTruthy();
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Save changes" }),
+    );
+    await waitFor(() =>
+      expect(
+        saved().projects.find((p: { id: string }) => p.id === task.projectId)
+          .title,
+      ).toBe("An unfinished project draft"),
+    );
+  });
   it("opens a task by keyboard or background click without stealing checkbox actions or drag completion", async () => {
     const state = await demo();
     await userEvent.click(screen.getAllByRole("button", { name: "Tasks" })[0]);
@@ -201,18 +240,14 @@ describe("workspace motion with real commands", () => {
     card = screen
       .getByRole("button", { name: "Toggle " + task.title, pressed: true })
       .closest("article")!;
-    const transfer = { setData: vi.fn(), effectAllowed: "" };
-    fireEvent.dragStart(card, { dataTransfer: transfer });
-    fireEvent.click(card);
-    expect(screen.queryByRole("dialog")).toBe(null);
-    fireEvent.dragEnd(card);
-    await waitFor(() =>
-      expect(transfer.setData).toHaveBeenCalledWith("text/one-task", task.id),
-    );
-    await new Promise((resolve) => requestAnimationFrame(resolve));
     const open = within(card).getByRole("button", {
       name: "Open task " + task.title,
     });
+    open.focus();
+    await userEvent.keyboard(" ");
+    expect(screen.queryByRole("dialog")).toBeNull();
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).toBeNull();
     open.focus();
     await userEvent.keyboard("{Enter}");
     const dialog = await screen.findByRole("dialog", { name: "EDIT TASK" });

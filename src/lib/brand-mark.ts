@@ -29,9 +29,15 @@ export const ONE_SEGMENTS = [
   },
 ] as const;
 
+export const PROJECT_PROGRESS_SEGMENTS = [
+  { ...ONE_SEGMENTS[2], start: 0 },
+  { ...ONE_SEGMENTS[1], start: 36 },
+  { ...ONE_SEGMENTS[0], start: 108 },
+] as const;
+
 export function segmentProgress(
   ratio: number,
-  segment: (typeof ONE_SEGMENTS)[number],
+  segment: { start: number; degrees: number },
 ) {
   return Math.max(
     0,

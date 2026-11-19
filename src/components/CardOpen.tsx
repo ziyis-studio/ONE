@@ -4,15 +4,18 @@ import "./cards.css";
 export function CardOpen({
   label,
   onOpen,
+  descriptionId,
 }: {
   label: string;
   onOpen: () => void;
+  descriptionId?: string;
 }) {
   return (
     <button
       type="button"
       className="one-card-open"
       aria-label={label}
+      aria-describedby={descriptionId}
       onClick={onOpen}
     />
   );

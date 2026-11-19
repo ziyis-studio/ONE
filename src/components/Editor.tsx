@@ -10,7 +10,6 @@ import ReactMarkdown from "react-markdown";
 import {
   Plus,
   Trash2,
-  Check,
   ArrowUpRight,
   FileText,
   Eye,
@@ -38,7 +37,7 @@ import { habitIconNames } from "../domain/habit-icons";
 import { projectIconNames } from "../domain/project-icons";
 import { databaseFieldTypes } from "../domain/note-databases";
 import type { DatabaseField, DatabaseValue } from "../domain/note-databases";
-import type { NoteTarget } from "../domain/model";
+import type { Task, NoteTarget } from "../domain/model";
 import type { Command } from "../domain/commands";
 import EmotionPicker from "./EmotionPicker";
 import { useEditorDraft } from "../lib/drafts";
@@ -60,6 +59,11 @@ export default function Editor() {
   const { safely, moveTask, moveProject } = useActions();
   const confirm = useConfirm();
   const formId = useId();
+  const [pendingProjectTask, setPendingProjectTask] = useState<{
+    id: string;
+    checked: boolean;
+  } | null>(null);
+  const projectTaskLock = useRef(false);
   const kind = editor!.kind,
     id = editor!.id;
   const task = data.tasks.find((t) => t.id === id),
@@ -300,6 +304,38 @@ export default function Editor() {
         ? projectStage(project)
         : initialStage
     : initialStage;
+  async function toggleProjectTask(target: Task) {
+    if (
+      busy ||
+      attachmentBusy ||
+      saving.current ||
+      statusLock.current ||
+      projectTaskLock.current
+    )
+      return;
+    projectTaskLock.current = true;
+    setPendingProjectTask({ id: target.id, checked: !target.completedAt });
+    setError("");
+    try {
+      const result = await execute({
+        type: target.completedAt ? "task.reopen" : "task.complete",
+        id: target.id,
+        expectedUpdatedAt: target.updatedAt,
+      });
+      if (mounted.current)
+        setRevision(
+          result.snapshot.projects.find((p) => p.id === id)?.updatedAt,
+        );
+    } catch (cause) {
+      if (mounted.current)
+        setError(
+          cause instanceof Error ? cause.message : "Could not update the task.",
+        );
+    } finally {
+      projectTaskLock.current = false;
+      if (mounted.current) setPendingProjectTask(null);
+    }
+  }
   async function changeStage(stage: Stage) {
     if (!id) {
       setInitialStage(stage);
@@ -981,25 +1017,45 @@ export default function Editor() {
                 </div>
                 <div className="project-task-list">
                   {projectTasks.map((t) => (
-                    <button
-                      type="button"
+                    <div
                       key={t.id}
-                      onClick={async () => {
-                        if (!attachmentBusy && flushDrafts())
-                          edit({ kind: "task", id: t.id, returnProjectId: id });
-                      }}
+                      className="project-editor-task"
+                      aria-busy={pendingProjectTask?.id === t.id || undefined}
                     >
-                      <span
-                        className={
-                          "check-placeholder " +
-                          (t.completedAt ? "checked" : "")
+                      <CheckButton
+                        checked={
+                          pendingProjectTask?.id === t.id
+                            ? pendingProjectTask.checked
+                            : !!t.completedAt
                         }
+                        disabled={
+                          busy || attachmentBusy || !!pendingProjectTask
+                        }
+                        label={
+                          (t.completedAt ? "Reopen " : "Complete ") + t.title
+                        }
+                        onClick={() => void toggleProjectTask(t)}
+                      />
+                      <button
+                        type="button"
+                        className="project-editor-task-open"
+                        onClick={() => {
+                          if (
+                            !attachmentBusy &&
+                            !projectTaskLock.current &&
+                            flushDrafts()
+                          )
+                            edit({
+                              kind: "task",
+                              id: t.id,
+                              returnProjectId: id,
+                            });
+                        }}
                       >
-                        {t.completedAt && <Check size={11} />}
-                      </span>
-                      {t.title}
-                      <ArrowUpRight size={13} />
-                    </button>
+                        <span>{t.title}</span>
+                        <ArrowUpRight size={13} />
+                      </button>
+                    </div>
                   ))}
                 </div>
                 <button

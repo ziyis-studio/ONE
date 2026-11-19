@@ -34,26 +34,6 @@
 .task-timing-menu .task-date-trigger:has(svg):not(:has(span))::after {
   content: "Set due date";
 }
-.reorder-controls {
-  display: inline-flex;
-  gap: 1px;
-  margin-left: auto;
-  opacity: 0.45;
-}
-.reorder-controls:focus-within,
-article:hover > div > .reorder-controls {
-  opacity: 1;
-}
-.reorder-controls .icon-button {
-  width: 24px;
-  height: 26px;
-}
-.project-card-top:has(.reorder-controls) {
-  flex-wrap: wrap;
-}
-.project-card-top > .reorder-controls {
-  order: 3;
-}
 .entity-editor-layout > .editor-form {
   min-width: 0;
   grid-column: 1;
@@ -339,4 +319,76 @@ article:hover > div > .reorder-controls {
   .entity-editor-layout .editor-footer {
     grid-row: 3;
   }
+}
+
+/* Keep the complete notes field rounded when editing, rather than outlining its inner rectangle. */
+.markdown-notes {
+  transition:
+    border-color 0.12s,
+    box-shadow 0.12s;
+}
+.markdown-notes:has(> textarea:focus-visible) {
+  border-color: var(--one-accent-mark);
+  box-shadow: 0 0 0 2px var(--one-accent-soft, #7852ee20);
+}
+.markdown-notes > textarea {
+  display: block;
+  margin: 0;
+  border-radius: 0;
+}
+.markdown-notes > textarea:focus-visible {
+  outline: none;
+  box-shadow: none;
+  border: 0;
+}
+.add-condition {
+  border-bottom: 0;
+}
+.add-condition input:focus-visible {
+  border-radius: 6px;
+  outline: 1px solid #ffffff26;
+  outline-offset: 3px;
+}
+.task-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+.task-card-actions > span {
+  display: flex;
+}
+.task-card-actions .one-rename {
+  opacity: 0.6;
+}
+.task-card-actions .one-rename:hover {
+  opacity: 1;
+}
+.project-editor-task {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+}
+.project-editor-task > .check-button {
+  flex: none;
+}
+.project-editor-task-open {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  padding: 9px 0;
+  text-align: left;
+  font-size: 11px;
+  color: #acacac;
+}
+.project-editor-task-open > span {
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+.project-editor-task-open > svg {
+  flex: none;
+  color: #7f7f7f;
 }
