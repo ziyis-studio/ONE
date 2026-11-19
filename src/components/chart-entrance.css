@@ -1,0 +1,13 @@
+.one-progress-fill {
+  transition:
+    stroke-dasharray 260ms ease,
+    opacity 180ms ease;
+}
+[data-chart-motion="static"] .one-progress-fill {
+  transition: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .one-progress-fill {
+    transition: none;
+  }
+}

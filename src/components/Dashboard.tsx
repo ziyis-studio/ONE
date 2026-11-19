@@ -5,6 +5,7 @@ import FocusTaskButton from "./FocusTaskButton";
 import { ContentSwitch, DiscreteTabs } from "./interactions";
 import { Plus, ArrowUpRight, Clock3 } from "lucide-react";
 import { useViewState } from "../lib/view-state";
+import { ChartEntrance } from "../lib/chart-entrance";
 import { useOne } from "../lib/workspace";
 import { useActions } from "../lib/actions";
 import { blocksOnDay, timeBlockTitle } from "../lib/schedule";
@@ -93,10 +94,14 @@ export default function Dashboard() {
                     >
                       {habit.title}
                     </button>
-                    <div className="habit-week-mini" aria-label="This week">
+                    <ChartEntrance
+                      className="habit-week-mini"
+                      aria-label="This week"
+                    >
                       {days.map((d) => (
                         <i
                           key={d}
+                          data-chart-enter="cell"
                           data-chart-title={dateLabel(d)}
                           data-chart-detail={
                             data.occurrences.some(
@@ -126,7 +131,7 @@ export default function Dashboard() {
                           }
                         />
                       ))}
-                    </div>
+                    </ChartEntrance>
                     <CheckButton
                       circle
                       checked={executed.has(o.id)}

@@ -17,6 +17,7 @@ import {
 } from "../lib/pomodoro";
 import { ONE_SEGMENTS, segmentProgress, pomodoroHead } from "../lib/brand-mark";
 import { useMotionPreference } from "../lib/motion-preference";
+import { useChartEntrance } from "../lib/chart-entrance";
 import { Card, IconButton } from "./ui";
 import { DiscreteTabs } from "./interactions";
 import "./pomodoro.css";
@@ -33,6 +34,7 @@ export default function PomodoroCard() {
     selectMode,
   } = usePomodoro();
   const { edit, data } = useOne();
+  const chart = useChartEntrance<SVGSVGElement>();
   const reduced = useMotionPreference(),
     running = state.status === "running",
     complete = state.status === "complete";
@@ -90,6 +92,7 @@ export default function PomodoroCard() {
           transition={{ duration: reduced ? 0 : 0.45 }}
         >
           <svg
+            ref={chart}
             viewBox="0 0 100 100"
             fill="none"
             strokeWidth="8"
@@ -100,6 +103,8 @@ export default function PomodoroCard() {
               <path
                 key={segment.letter}
                 d={segment.d}
+                pathLength="1"
+                data-chart-enter="draw"
                 className={`pomodoro-track pomodoro-${segment.name}`}
               />
             ))}

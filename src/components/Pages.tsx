@@ -5,6 +5,7 @@ import { plannedTaskIds } from "../lib/schedule";
 import EmotionTag from "./EmotionTag";
 import FocusTaskButton from "./FocusTaskButton";
 import { useId, useRef, useState } from "react";
+import { ChartEntrance } from "../lib/chart-entrance";
 import {
   Plus,
   Search,
@@ -441,14 +442,17 @@ function TaskCard({
         )}
       </div>
       {!compact && conditions.length > 0 && (
-        <div className="condition-progress">
+        <ChartEntrance className="condition-progress">
           <span className="progress-track">
-            <i style={{ width: (done / conditions.length) * 100 + "%" }} />
+            <i
+              data-chart-enter="bar-x"
+              style={{ width: (done / conditions.length) * 100 + "%" }}
+            />
           </span>
           <span>
             {done}/{conditions.length}
           </span>
-        </div>
+        </ChartEntrance>
       )}
       <div className="task-card-foot">
         {compact && task.completedAt ? (

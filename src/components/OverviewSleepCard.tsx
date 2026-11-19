@@ -7,6 +7,7 @@ import { addDays, dateLabel, timeKey } from "../domain/time";
 import { sleepByDay, sleepDuration } from "../lib/sleep-history";
 import { Card, Empty } from "./ui";
 import { useSettle } from "./interactions";
+import { useChartEntrance } from "../lib/chart-entrance";
 export default function OverviewSleepCard() {
   const { data, today, zone, edit, navigate } = useOne();
   const transition = useSettle(),
@@ -22,6 +23,7 @@ export default function OverviewSleepCard() {
   const active = hover || focus || recent || today,
     day = history.get(active),
     minutes = day?.minutes;
+  const chart = useChartEntrance<HTMLDivElement>({ ready: !!recent });
   const record = day?.records.length === 1 ? day.records[0] : undefined;
   return (
     <Card title="Sleep" action={() => navigate("sleep")} className="sleep-card">
@@ -65,6 +67,7 @@ export default function OverviewSleepCard() {
           </p>
           <div
             className="sleep-chart"
+            ref={chart}
             role="group"
             aria-label="Your recent sleep durations"
             onPointerLeave={() => setHover(null)}
@@ -102,6 +105,7 @@ export default function OverviewSleepCard() {
                   }
                 >
                   <motion.i
+                    data-chart-enter="bar-y"
                     initial={false}
                     transition={transition}
                     className={date === today ? "latest" : ""}

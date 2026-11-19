@@ -2,6 +2,7 @@ import { Check, Flame, TrendingUp } from "lucide-react";
 import type { HabitInsights } from "../domain/insights";
 import { dateLabel } from "../domain/time";
 import { Card } from "./ui";
+import { useChartEntrance } from "../lib/chart-entrance";
 export default function HabitSummary({
   insights,
   loading,
@@ -9,6 +10,13 @@ export default function HabitSummary({
   insights: HabitInsights | null;
   loading: boolean;
 }) {
+  const entrance = {
+    ready: !!insights && !loading,
+    replayKey: insights ? `${insights.from}:${insights.to}` : "entry",
+  };
+  const bars = useChartEntrance<SVGSVGElement>(entrance);
+  const ring = useChartEntrance<SVGSVGElement>(entrance);
+  const trail = useChartEntrance<HTMLDivElement>(entrance);
   const daily =
     insights?.daily.filter((d) => d.date <= insights.today).slice(-28) || [];
   const max = Math.max(1, ...daily.map((d) => d.planned));
@@ -29,6 +37,7 @@ export default function HabitSummary({
         </div>
         <svg
           className="habit-completion-bars"
+          ref={bars}
           viewBox="0 0 300 60"
           role="group"
           aria-label="Daily habit completions"
@@ -56,6 +65,7 @@ export default function HabitSummary({
                 height={Math.max(2, (d.planned / max) * 48)}
                 rx="2"
                 className="habit-bar-planned"
+                data-chart-enter="bar-y"
               />
               <rect
                 x={(i * 300) / daily.length + 1}
@@ -64,6 +74,7 @@ export default function HabitSummary({
                 height={(d.completed / max) * 48}
                 rx="2"
                 className="habit-bar-complete"
+                data-chart-enter="bar-y"
               />
             </g>
           ))}
@@ -81,6 +92,7 @@ export default function HabitSummary({
           <svg
             viewBox="0 0 100 100"
             className="habit-rate-ring"
+            ref={ring}
             role="img"
             aria-label={`${insights?.percentage ?? 0}% completion`}
           >
@@ -99,6 +111,7 @@ export default function HabitSummary({
               strokeWidth="7"
               fill="none"
               pathLength="100"
+              data-chart-enter="draw"
               strokeDasharray={`${insights?.percentage ?? 0} 100`}
               strokeLinecap="round"
               transform="rotate(-90 50 50)"
@@ -134,12 +147,14 @@ export default function HabitSummary({
         </div>
         <div
           className="habit-streak-trail"
+          ref={trail}
           role="group"
           aria-label="Streak habit activity over the last 14 days"
         >
           {insights?.trail.map((d) => (
             <span
               key={d.date}
+              data-chart-enter="cell"
               className={`streak-day level-${d.level}`}
               tabIndex={0}
               role="img"
