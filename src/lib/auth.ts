@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { SUPABASE_URL, SUPABASE_KEY, API_PROXY } from "./config";
+import { SUPABASE_URL, SUPABASE_KEY, apiUrl } from "./config";
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: {
@@ -18,7 +18,7 @@ export async function signIn(identifier: string, password: string) {
     });
     if (error) throw error;
   } else {
-    const response = await fetch(`${API_PROXY}?path=/username-login`, {
+    const response = await fetch(apiUrl("/v1/auth/username"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

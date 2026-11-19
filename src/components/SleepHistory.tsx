@@ -8,6 +8,11 @@ import {
   ChevronRight,
   ArrowUpRight,
   Moon,
+  Smile,
+  Meh,
+  Frown,
+  Battery,
+  BatteryLow,
 } from "lucide-react";
 import { useOne } from "../lib/workspace";
 import { addDays, addMonths, dateLabel, dayKey, timeKey } from "../domain/time";
@@ -331,6 +336,19 @@ export default function SleepPage() {
               const minutes = sleepByDay([record], zone).get(
                 dayKey(record.endsAt, zone),
               )!.minutes;
+              const feeling = record.note.match(
+                /^\[(Rested|Good|Okay|Tired|Exhausted)\]/,
+              )?.[1];
+              const FeelingIcon =
+                (
+                  {
+                    Rested: Battery,
+                    Good: Smile,
+                    Okay: Meh,
+                    Tired: BatteryLow,
+                    Exhausted: Frown,
+                  } as const
+                )[feeling as "Rested"] || Moon;
               return (
                 <button
                   className="sleep-entry"
@@ -338,7 +356,11 @@ export default function SleepPage() {
                   onClick={() => edit({ kind: "sleep", id: record.id })}
                 >
                   <span className="sleep-entry-icon">
-                    <Moon size={18} strokeWidth={1.4} />
+                    <FeelingIcon
+                      size={18}
+                      strokeWidth={1.4}
+                      aria-label={feeling || "Sleep"}
+                    />
                   </span>
                   <span>
                     <strong>
@@ -349,7 +371,15 @@ export default function SleepPage() {
                       {record.awakeMinutes
                         ? record.awakeMinutes + " min awake"
                         : "No awake time recorded"}
-                      {record.note ? " · " + record.note : ""}
+                      {record.note
+                        ? " · " +
+                          record.note
+                            .replace(
+                              /^\[(Rested|Good|Okay|Tired|Exhausted)\]\n?/,
+                              "$1 · ",
+                            )
+                            .replace(/ · $/, "")
+                        : ""}
                     </small>
                   </span>
                   <span className="sleep-entry-duration">

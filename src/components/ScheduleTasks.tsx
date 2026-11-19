@@ -85,14 +85,16 @@ export default function ScheduleTasks({
                   </small>
                 )}
               </div>
-              <button
-                className="one-task-plan"
-                disabled={busy}
-                aria-label={"Plan " + task.title}
-                onClick={() => onPlan(task.id, selected)}
-              >
-                <Plus size={14} />
-              </button>
+              {planned.has(task.id) && (
+                <button
+                  className="one-task-plan"
+                  disabled={busy}
+                  aria-label={"Plan " + task.title}
+                  onClick={() => onPlan(task.id, selected)}
+                >
+                  <Plus size={14} />
+                </button>
+              )}
             </article>
           );
         })}

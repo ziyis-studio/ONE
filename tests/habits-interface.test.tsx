@@ -9,7 +9,7 @@ import {
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import App from "../src/App";
-import { createDemo, DEMO_KEY } from "../src/lib/demo";
+import { createDemo, DEMO_KEY } from "./support/demo";
 import { habitRange } from "../src/lib/habit-history";
 import { dayKey } from "../src/domain/time";
 vi.mock("../src/lib/auth", () => ({

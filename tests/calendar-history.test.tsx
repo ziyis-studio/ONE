@@ -11,7 +11,7 @@ import {
 import userEvent from "@testing-library/user-event";
 import App from "../src/App";
 import { readDate } from "./date-field-helpers";
-import { createDemo, DEMO_KEY } from "../src/lib/demo";
+import { createDemo, DEMO_KEY } from "./support/demo";
 import { addDays, dayKey, timeKey } from "../src/domain/time";
 vi.mock("../src/lib/auth", () => ({
   signIn: vi.fn(),
@@ -207,8 +207,12 @@ describe("calendar and history interactions", () => {
     fireEvent.pointerMove(track, { pointerId: 1, clientY: 1200 });
     fireEvent.pointerUp(track, { pointerId: 1, clientY: 1200 });
     const dialog = await screen.findByRole("dialog");
-    expect(readDate(dialog, "Starts at", true)).toMatch(/T19:00$/);
-    expect(readDate(dialog, "Ends at", true)).toMatch(/T20:00$/);
+    expect(
+      (within(dialog).getByLabelText("Starts at") as HTMLInputElement).value,
+    ).toBe("19:00");
+    expect(
+      (within(dialog).getByLabelText("Ends at") as HTMLInputElement).value,
+    ).toBe("20:00");
     await userEvent.type(
       within(dialog).getByRole("textbox", { name: "Title" }),
       "New timeline block",
@@ -330,7 +334,7 @@ describe("calendar and history interactions", () => {
       name: "Tasks to schedule",
     });
     await userEvent.click(
-      within(panel).getByRole("button", { name: "Plan " + task.title }),
+      within(panel).getByRole("button", { name: "Schedule " + task.title }),
     );
     const dialog = await screen.findByRole("dialog");
     expect(

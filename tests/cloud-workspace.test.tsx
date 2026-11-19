@@ -12,6 +12,14 @@ const { getSession } = vi.hoisted(() => ({
   })),
 }));
 vi.mock("../src/lib/auth", () => ({ supabase: { auth: { getSession } } }));
+vi.mock("../src/lib/pomodoro-records", () => ({
+  usePomodoroRecords: () => ({
+    records: [],
+    status: "saved",
+    refresh: () => {},
+    linkedBlocks: [],
+  }),
+}));
 const session = {
   access_token: "current-user-token",
   user: { id: "user-id" },

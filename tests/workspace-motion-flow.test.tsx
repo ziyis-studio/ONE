@@ -11,7 +11,7 @@ import {
 import userEvent from "@testing-library/user-event";
 import { MotionConfig } from "motion/react";
 import App from "../src/App";
-import { createDemo, DEMO_KEY } from "../src/lib/demo";
+import { createDemo, DEMO_KEY } from "./support/demo";
 vi.mock("../src/lib/auth", () => ({
   signIn: vi.fn(),
   supabase: {

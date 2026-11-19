@@ -10,7 +10,7 @@ import {
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import App from "../src/App";
-import { createDemo, DEMO_KEY } from "../src/lib/demo";
+import { createDemo, DEMO_KEY } from "./support/demo";
 import { addDays, dayKey, timeKey } from "../src/domain/time";
 import { taskStage } from "../src/lib/actions";
 import { readDate } from "./date-field-helpers";
@@ -383,4 +383,74 @@ describe("approved workspace follow-ups", () => {
     expect(Element.prototype.scrollTo).toHaveBeenCalled();
     expect(saved().sleepRecords).toEqual(state.sleepRecords);
   });
+});
+
+it("returns from task creation to its project and preserves Markdown notes", async () => {
+  const state = await demo();
+  await nav("Projects");
+  const project = state.projects.find((p) => p.title === "ONE Workspace")!;
+  await userEvent.click(
+    screen.getByRole("button", { name: "Open project " + project.title }),
+  );
+  let dialog = await screen.findByRole("dialog");
+  await userEvent.click(
+    within(dialog).getByRole("button", { name: "Add a task" }),
+  );
+  dialog = await screen.findByRole("dialog");
+  await userEvent.type(
+    within(dialog).getByRole("textbox", { name: "Title" }),
+    "Project follow-up",
+  );
+  fireEvent.change(
+    within(dialog).getByRole("textbox", { name: "Description" }),
+    { target: { value: "## Details\n\n- Keep context" } },
+  );
+  await userEvent.click(
+    within(dialog).getByRole("button", { name: "Preview" }),
+  );
+  expect(within(dialog).getByRole("heading", { name: "Details" })).toBeTruthy();
+  await userEvent.click(
+    within(dialog).getByRole("button", { name: "Create task" }),
+  );
+  await waitFor(() =>
+    expect(
+      (screen.getByRole("textbox", { name: "Title" }) as HTMLInputElement)
+        .value,
+    ).toBe(project.title),
+  );
+  const task = saved().tasks.find((t: any) => t.title === "Project follow-up");
+  expect(task.projectId).toBe(project.id);
+  expect(task.description).toContain("## Details");
+});
+it("hides focus on completed tasks and saves sleep feeling presets without losing rest notes", async () => {
+  const state = await demo(),
+    done = state.tasks.find((t) => t.completedAt)!;
+  expect(
+    screen.queryByRole("button", { name: "Focus on " + done.title }),
+  ).toBeNull();
+  await nav("Sleep");
+  const record = state.sleepRecords.at(-1)!,
+    date = dayKey(record.endsAt, zone);
+  await userEvent.click(
+    document.querySelector<HTMLButtonElement>(
+      `.heatmap-cell[data-date="${date}"]`,
+    )!,
+  );
+  await userEvent.click(
+    document.querySelector<HTMLButtonElement>(".sleep-entry")!,
+  );
+  const dialog = await screen.findByRole("dialog");
+  await userEvent.click(within(dialog).getByRole("button", { name: "Rested" }));
+  fireEvent.change(
+    within(dialog).getByRole("textbox", { name: "A note about your rest" }),
+    { target: { value: "Quiet room" } },
+  );
+  await userEvent.click(
+    within(dialog).getByRole("button", { name: "Save changes" }),
+  );
+  await waitFor(() =>
+    expect(
+      saved().sleepRecords.some((r: any) => r.note === "[Rested]\nQuiet room"),
+    ).toBe(true),
+  );
 });

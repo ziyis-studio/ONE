@@ -4,5 +4,6 @@ export const SUPABASE_URL =
 export const SUPABASE_KEY =
   import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
   "sb_publishable_w7OhhWtpsXTEQDBGLL7j-g_D0RzZiur";
-export const API_PROXY = import.meta.env.VITE_API_PROXY_URL || "/api/proxy";
+export const API_BASE = import.meta.env.VITE_API_URL || "/api";
+export const apiUrl = (path: string) => API_BASE.replace(/\/$/, "") + path;
 export const DEFAULT_ZONE = "Asia/Kuala_Lumpur";

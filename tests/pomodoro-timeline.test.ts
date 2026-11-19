@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { pomodoroTimeBlock } from "../src/lib/pomodoro-timeline";
+import { pomodoroTimeBlock } from "./support/pomodoro-timeline";
 import { pomodoroHead, ONE_SEGMENTS } from "../src/lib/brand-mark";
 
 describe("recorded Pomodoro time blocks and head", () => {

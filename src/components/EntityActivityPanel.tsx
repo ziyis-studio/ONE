@@ -154,25 +154,17 @@ export default forwardRef<
     try {
       let row: ActivityLog;
       if (demo) {
-        const existing = readActivities(scope),
-          same = existing.find((r) => r.id === current.entryId);
-        if (
-          same &&
-          (same.body !== body ||
-            same.target_id !== id ||
-            same.target_kind !== kind)
-        )
-          throw new Error(
-            "This log entry already exists with different contents. Your draft was kept.",
-          );
-        row = same || {
-          id: current.entryId,
-          target_kind: kind,
-          target_id: id,
-          body,
-          created_at: new Date().toISOString(),
-        };
-        if (!same) storeActivities(scope, [...existing, row]);
+        const existing = readActivities(scope);
+        row = await api<ActivityLog>("/v1/sample/activity", "", {
+          method: "POST",
+          body: JSON.stringify({
+            workspace: data,
+            items: existing,
+            entry: { id: current.entryId, kind, targetId: id, body },
+          }),
+        });
+        if (!existing.some((item) => item.id === row.id))
+          storeActivities(scope, [...existing, row]);
       } else
         row = await api<ActivityLog>(
           "/v1/activity",

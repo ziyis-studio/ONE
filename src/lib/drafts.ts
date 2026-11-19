@@ -59,6 +59,7 @@ export const editorSchema = z
     ]),
     id: z.uuid().optional(),
     projectId: z.uuid().optional(),
+    returnProjectId: z.uuid().optional(),
     taskId: z.uuid().optional(),
     databaseId: z.uuid().optional(),
     date: z.string().optional(),

@@ -9,7 +9,7 @@ import {
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReactNode } from "react";
-import { createDemo } from "../src/lib/demo";
+import { createDemo } from "./support/demo";
 import { WorkspaceProvider, useOne } from "../src/lib/workspace";
 import type { Session } from "@supabase/supabase-js";
 const api = vi.hoisted(() => ({

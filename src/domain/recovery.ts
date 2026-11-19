@@ -1,7 +1,6 @@
 import { activitySchema } from "./activity.js";
 import type { ActivityLog } from "./activity.js";
 import type { Workspace } from "./model.js";
-import { PlannerError } from "./model.js";
 import { parseWorkspace } from "./validation.js";
 import { z } from "zod";
 export const collections = [
@@ -24,31 +23,6 @@ export const collections = [
   "blockTaskLinks",
   "blockOccurrenceLinks",
 ] as const;
-type Collection = (typeof collections)[number];
-type Row = Record<string, unknown>;
-const rows = (state: Workspace, key: Collection) =>
-  state[key] as unknown as Row[];
-export const rowKey = (row: Row) =>
-  typeof row.id === "string"
-    ? row.id
-    : JSON.stringify(
-        Object.keys(row)
-          .filter((k) => k.endsWith("Id"))
-          .sort()
-          .map((k) => [k, row[k]]),
-      );
-const stable = (v: unknown): string =>
-  JSON.stringify(
-    v && typeof v === "object"
-      ? Array.isArray(v)
-        ? v.map((x) => JSON.parse(stable(x)))
-        : Object.fromEntries(
-            Object.entries(v)
-              .sort(([a], [b]) => a.localeCompare(b))
-              .map(([k, x]) => [k, JSON.parse(stable(x))]),
-          )
-      : (v ?? null),
-  );
 const field = z
   .object({
     key: z
@@ -102,93 +76,6 @@ export type RecoveryEntry = {
   restoredAt: string | null;
   patch?: RecoveryPatch;
 };
-export function recoveryPatch(
-  before: Workspace,
-  after: Workspace,
-): RecoveryPatch {
-  const removed: RecoveryPatch["removed"] = {},
-    changed: RecoveryPatch["changed"] = [];
-  for (const name of collections) {
-    const newer = new Map(rows(after, name).map((r) => [rowKey(r), r]));
-    for (const old of rows(before, name)) {
-      const next = newer.get(rowKey(old));
-      if (!next) {
-        (removed[name] ??= []).push(old);
-        continue;
-      }
-      const fields: (typeof changed)[number]["fields"] = [];
-      for (const key of new Set([...Object.keys(old), ...Object.keys(next)])) {
-        if (["id", "createdAt", "updatedAt"].includes(key)) continue;
-        if (
-          stable(old[key]) !== stable(next[key]) ||
-          Object.hasOwn(old, key) !== Object.hasOwn(next, key)
-        )
-          fields.push({
-            key,
-            hadBefore: Object.hasOwn(old, key),
-            hadAfter: Object.hasOwn(next, key),
-            before: old[key] ?? null,
-            after: next[key] ?? null,
-          });
-      }
-      if (fields.length)
-        changed.push({ collection: name, key: rowKey(old), fields });
-    }
-  }
-  return { removed, changed };
-}
-export function restorePatch(current: Workspace, raw: unknown): Workspace {
-  const patch = recoveryPatchSchema.parse(raw),
-    next = structuredClone(current);
-  for (const [name, items] of Object.entries(patch.removed)) {
-    const target = rows(next, name as Collection);
-    for (const row of items) {
-      if (target.some((r) => rowKey(r) === rowKey(row)))
-        throw new PlannerError(
-          "conflict",
-          "An item with this identity already exists. Current data was kept.",
-        );
-      target.push(row);
-    }
-  }
-  for (const edit of patch.changed) {
-    const row = rows(next, edit.collection).find((r) => rowKey(r) === edit.key);
-    if (!row)
-      throw new PlannerError(
-        "conflict",
-        "A related item is missing. Restore its parent first.",
-      );
-    for (const f of edit.fields) {
-      if (
-        Object.hasOwn(row, f.key) !== f.hadAfter ||
-        stable(row[f.key]) !== stable(f.after)
-      )
-        throw new PlannerError(
-          "conflict",
-          "Related data changed after deletion. Restore was cancelled to keep your edits.",
-        );
-      if (f.hadBefore) row[f.key] = f.before;
-      else delete row[f.key];
-    }
-  }
-  return parseWorkspace(next);
-}
-export function mergeWorkspace(
-  current: Workspace,
-  incoming: Workspace,
-): Workspace {
-  const next = structuredClone(current);
-  for (const name of collections) {
-    const target = rows(next, name),
-      known = new Set(target.map(rowKey));
-    for (const row of rows(incoming, name))
-      if (!known.has(rowKey(row))) {
-        target.push(row);
-        known.add(rowKey(row));
-      }
-  }
-  return parseWorkspace(next);
-}
 export const sessionSchema = z
   .object({
     id: z.uuid(),
@@ -279,107 +166,4 @@ export async function backupCopyId(
     .map((v) => v.toString(16).padStart(2, "0"))
     .join("");
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
-}
-export async function copyBackup(
-  source: Backup,
-  owner: string,
-  copy: boolean,
-): Promise<{ backup: Backup; idMap: Record<string, string> }> {
-  if (!copy && (!source.ownerId || source.ownerId === owner))
-    return { backup: source, idMap: {} };
-  const ids = new Set<string>();
-  const references = new Set([
-    "id",
-    "projectId",
-    "taskId",
-    "habitId",
-    "occurrenceId",
-    "noteId",
-    "targetNoteId",
-    "thoughtId",
-    "databaseId",
-    "timeBlockId",
-    "sourceSessionId",
-    "target_id",
-    "task_id",
-    "task_snapshot_id",
-    "time_block_id",
-  ]);
-  function collect(v: unknown) {
-    if (Array.isArray(v)) {
-      v.forEach(collect);
-      return;
-    }
-    if (v && typeof v === "object")
-      for (const [key, x] of Object.entries(v)) {
-        if (
-          references.has(key) &&
-          typeof x === "string" &&
-          /^[0-9a-f-]{36}$/i.test(x)
-        )
-          ids.add(x);
-        else if (key !== "values") collect(x);
-      }
-  }
-  collect(source);
-  ids.delete(source.id);
-  const map: Record<string, string> = {};
-  for (const id of ids) {
-    map[id] = await backupCopyId(owner, source.id, id);
-  }
-  function remap(v: unknown): unknown {
-    if (Array.isArray(v)) return v.map(remap);
-    if (v && typeof v === "object")
-      return Object.fromEntries(
-        Object.entries(v).map(([k, x]) => [
-          k,
-          references.has(k) && typeof x === "string"
-            ? (map[x] ?? x)
-            : k === "values" && x && typeof x === "object"
-              ? Object.fromEntries(
-                  Object.entries(x).map(([id, value]) => [
-                    map[id] ?? id,
-                    value,
-                  ]),
-                )
-              : remap(x),
-        ]),
-      );
-    return v;
-  }
-  const backup = remap(source) as Backup;
-  backup.id = source.id;
-  backup.ownerId = owner;
-  // Recovery identities are recomputed from their restored row when copied.
-  for (let i = 0; i < backup.trash.length; i++)
-    for (let j = 0; j < (backup.trash[i].patch?.changed.length ?? 0); j++) {
-      const e = backup.trash[i].patch!.changed[j];
-      for (const f of e.fields) {
-        if (f.key === "values") {
-          for (const side of ["before", "after"] as const) {
-            const v = f[side];
-            if (v && typeof v === "object" && !Array.isArray(v))
-              f[side] = Object.fromEntries(
-                Object.entries(v).map(([id, value]) => [map[id] ?? id, value]),
-              );
-          }
-        }
-        if (references.has(f.key)) {
-          if (typeof f.before === "string")
-            f.before = map[f.before] ?? f.before;
-          if (typeof f.after === "string") f.after = map[f.after] ?? f.after;
-        }
-      }
-      try {
-        const identity = JSON.parse(e.key);
-        if (Array.isArray(identity))
-          e.key = JSON.stringify(
-            identity.map(([k, v]: [string, string]) => [k, map[v] ?? v]),
-          );
-        else e.key = map[e.key] ?? e.key;
-      } catch {
-        e.key = map[e.key] ?? e.key;
-      }
-    }
-  return { backup, idMap: map };
 }

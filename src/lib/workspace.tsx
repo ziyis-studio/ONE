@@ -11,7 +11,6 @@ import type { ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import type { Workspace } from "../domain/model";
 import { emptyWorkspace } from "../domain/model";
-import { applyCommand } from "../domain/commands";
 import type { Command } from "../domain/commands";
 import { addDays, dayKey } from "../domain/time";
 import { api, loadWorkspace, sendCommand } from "./api";
@@ -21,14 +20,6 @@ import { supabase } from "./auth";
 import { ViewStateProvider } from "./view-state";
 import { PomodoroProvider } from "./pomodoro-context";
 import type { PomodoroRecord } from "./pomodoro";
-import { pomodoroTimeBlock } from "./pomodoro-timeline";
-import {
-  recoveryPatch,
-  restorePatch,
-  parseBackup,
-  copyBackup,
-  mergeWorkspace,
-} from "../domain/recovery";
 import type { Backup, RecoveryEntry } from "../domain/recovery";
 import { readTrash, writeTrash } from "./recovery-store";
 
@@ -53,6 +44,7 @@ export type EditorKind =
   | "database"
   | "record";
 export type Editor = {
+  returnProjectId?: string;
   kind: EditorKind;
   id?: string;
   projectId?: string;
@@ -177,7 +169,9 @@ export function WorkspaceProvider({
     setLoading(true);
     setError(null);
     try {
-      const state = demo ? readDemo(zone) : await loadWorkspace(await token());
+      const state = demo
+        ? await readDemo(zone)
+        : await loadWorkspace(await token());
       if (alive.current) replace(state);
     } catch (cause) {
       if (alive.current)
@@ -241,44 +235,41 @@ export function WorkspaceProvider({
     };
   }, [demo, blockRefresh, busy, loading, error, token, replace]);
   const saveDemoPomodoro = useCallback(
-    (records: PomodoroRecord[]) => {
+    async (records: PomodoroRecord[]) => {
       if (!demo || lock.current) return false;
-      const additions = records
-        .filter(
-          (record) =>
-            !dataRef.current.timeBlocks.some((block) => block.id === record.id),
-        )
-        .map((record) => pomodoroTimeBlock(record, zone));
-      if (additions.length) {
-        const snapshot = {
-          ...dataRef.current,
-          timeBlocks: [...dataRef.current.timeBlocks, ...additions],
-          blockTaskLinks: [
-            ...dataRef.current.blockTaskLinks,
-            ...records
-              .filter(
-                (r) =>
-                  r.mode === "focus" &&
-                  r.taskId &&
-                  dataRef.current.tasks.some((t) => t.id === r.taskId) &&
-                  !dataRef.current.blockTaskLinks.some(
-                    (l) => l.timeBlockId === r.id && l.taskId === r.taskId,
-                  ),
-              )
-              .map((r) => ({ timeBlockId: r.id, taskId: r.taskId! })),
-          ],
-        };
-        replace(snapshot);
-        try {
+      lock.current = true;
+      try {
+        const { snapshot } = await api<{ snapshot: Workspace }>(
+          "/v1/sample/sessions",
+          "",
+          {
+            method: "POST",
+            body: JSON.stringify({
+              workspace: dataRef.current,
+              timezone: zone,
+              records: records.map((r) => ({
+                id: r.id,
+                mode: r.mode,
+                startedAt: r.startedAt,
+                completedAt: r.completedAt,
+                durationSeconds: r.durationSeconds,
+                taskId: r.taskId || null,
+                taskTitle: r.taskTitle || "",
+              })),
+            }),
+          },
+        );
+        if (alive.current) {
+          replace(snapshot);
           localStorage.setItem(DEMO_KEY, JSON.stringify(snapshot));
-        } catch {
-          notify(
-            "Schedule saved for this visit. Browser storage is full.",
-            true,
-          );
         }
+        return true;
+      } catch {
+        notify("Could not record this sample focus. Reconnect to retry.", true);
+        return false;
+      } finally {
+        lock.current = false;
       }
-      return true;
     },
     [demo, zone, replace, notify],
   );
@@ -321,7 +312,17 @@ export function WorkspaceProvider({
             entry = entries.find((e) => e.id === id);
           if (!entry) throw new Error("This item is no longer in Trash.");
           if (!entry.restoredAt) {
-            const snapshot = restorePatch(dataRef.current, entry.patch);
+            const { snapshot } = await api<{ snapshot: Workspace }>(
+              "/v1/sample/restore",
+              "",
+              {
+                method: "POST",
+                body: JSON.stringify({
+                  workspace: dataRef.current,
+                  patch: entry.patch,
+                }),
+              },
+            );
             persist(snapshot);
             writeTrash(
               scope,
@@ -375,37 +376,18 @@ export function WorkspaceProvider({
     async (raw: unknown, asCopy = false) =>
       withRecoveryLock(async () => {
         if (demo) {
-          const { backup, idMap } = await copyBackup(
-            parseBackup(raw),
-            scope,
-            asCopy,
-          );
-          const snapshot = mergeWorkspace(dataRef.current, backup.workspace);
-          for (const r of backup.sessions) {
-            if (
-              !r.time_block_id ||
-              snapshot.timeBlocks.some((b) => b.id === r.time_block_id)
-            )
-              continue;
-            const block = pomodoroTimeBlock(
-              {
-                id: r.id,
-                mode: r.mode,
-                startedAt: Date.parse(r.started_at),
-                completedAt: Date.parse(r.completed_at),
-                durationSeconds: r.duration_seconds,
-                taskId: r.task_id,
-                taskTitle: r.task_title,
-              },
-              r.timezone,
-            );
-            snapshot.timeBlocks.push({ ...block, id: r.time_block_id });
-            if (r.task_id && snapshot.tasks.some((t) => t.id === r.task_id))
-              snapshot.blockTaskLinks.push({
-                timeBlockId: r.time_block_id,
-                taskId: r.task_id,
-              });
-          }
+          const { snapshot, backup, idMap } = await api<{
+            snapshot: Workspace;
+            backup: Backup;
+            idMap: Record<string, string>;
+          }>("/v1/sample/import", "", {
+            method: "POST",
+            body: JSON.stringify({
+              workspace: dataRef.current,
+              backup: raw,
+              asCopy,
+            }),
+          });
           const entries = readTrash(scope);
           const known = new Set(entries.map((e) => e.id));
           persist(snapshot);
@@ -440,15 +422,25 @@ export function WorkspaceProvider({
       try {
         const before = dataRef.current;
         const result = demo
-          ? applyCommand(dataRef.current, command)
+          ? await api<{
+              snapshot: Workspace;
+              id?: string;
+              patch?: RecoveryEntry["patch"];
+            }>("/v1/sample", "", {
+              method: "POST",
+              body: JSON.stringify({ workspace: before, command }),
+            })
           : await sendCommand(await token(), command);
         let recoveryId =
           "recoveryId" in result
             ? (result.recoveryId as string | undefined)
             : undefined;
         if (demo && command.type.endsWith(".delete")) {
-          const patch = recoveryPatch(before, result.snapshot);
-          if (Object.keys(patch.removed).length || patch.changed.length) {
+          const patch = "patch" in result ? result.patch : null;
+          if (
+            patch &&
+            (Object.keys(patch.removed).length || patch.changed.length)
+          ) {
             recoveryId = crypto.randomUUID();
             const id = "id" in command ? command.id : undefined;
             const root = Object.values(before)

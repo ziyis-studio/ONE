@@ -87,39 +87,7 @@ export default function TaskDeadline({ task }: { task: Task }) {
               aria-label={"Due date for " + task.title}
             >
               <PopoverExit kind="date" />
-              <Calendar
-                className="one-calendar"
-                aria-label="Due date"
-                firstDayOfWeek="mon"
-                value={task.deadline ? parseDate(task.deadline) : null}
-                defaultFocusedValue={parseDate(task.deadline || today)}
-                onChange={(date) => void update(date.toString())}
-              >
-                <header className="one-calendar-heading">
-                  <Heading />
-                  <div>
-                    <Button slot="previous" aria-label="Previous month">
-                      <ChevronLeft size={16} />
-                    </Button>
-                    <Button slot="next" aria-label="Next month">
-                      <ChevronRight size={16} />
-                    </Button>
-                  </div>
-                </header>
-                <CalendarGrid
-                  className="one-calendar-grid"
-                  weekdayStyle="short"
-                >
-                  <CalendarGridHeader>
-                    {(day) => <CalendarHeaderCell>{day}</CalendarHeaderCell>}
-                  </CalendarGridHeader>
-                  <CalendarGridBody>
-                    {(date) => (
-                      <CalendarCell date={date} className="one-calendar-day" />
-                    )}
-                  </CalendarGridBody>
-                </CalendarGrid>
-              </Calendar>
+              <TaskDeadlineCalendar task={task} onSelect={update} />
               <div className="one-picker-footer">
                 <Button onPress={() => void update(today)}>Today</Button>
                 {task.deadline && (
@@ -137,5 +105,50 @@ export default function TaskDeadline({ task }: { task: Task }) {
         </DialogTrigger>
       </I18nProvider>
     </span>
+  );
+}
+
+export function TaskDeadlineCalendar({
+  task,
+  onSelect,
+}: {
+  task: Task;
+  onSelect: (day: string) => void | Promise<void>;
+}) {
+  const { today } = useOne();
+  return (
+    <I18nProvider locale="en-GB">
+      {" "}
+      <Calendar
+        className="one-calendar"
+        aria-label="Due date"
+        firstDayOfWeek="mon"
+        value={task.deadline ? parseDate(task.deadline) : null}
+        defaultFocusedValue={parseDate(task.deadline || today)}
+        onChange={(date) => void onSelect(date.toString())}
+      >
+        <header className="one-calendar-heading">
+          <Heading />
+          <div>
+            <Button slot="previous" aria-label="Previous month">
+              <ChevronLeft size={16} />
+            </Button>
+            <Button slot="next" aria-label="Next month">
+              <ChevronRight size={16} />
+            </Button>
+          </div>
+        </header>
+        <CalendarGrid className="one-calendar-grid" weekdayStyle="short">
+          <CalendarGridHeader>
+            {(day) => <CalendarHeaderCell>{day}</CalendarHeaderCell>}
+          </CalendarGridHeader>
+          <CalendarGridBody>
+            {(date) => (
+              <CalendarCell date={date} className="one-calendar-day" />
+            )}
+          </CalendarGridBody>
+        </CalendarGrid>
+      </Calendar>
+    </I18nProvider>
   );
 }

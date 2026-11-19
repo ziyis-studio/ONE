@@ -11,7 +11,7 @@ npm ci
 npm run dev
 ```
 
-Open http://localhost:3000. Choose **Explore ONE** for an explicit local sample, or sign in to the existing Supabase workspace. The checked-in environment defaults contain only a Supabase URL and publishable key. Override them in ignored .env.local when using another backend. Never put a service-role or secret key in a VITE\_ variable.
+Open http://localhost:3000. Choose **Explore ONE** for an explicit sample (its commands run in Planner API), or sign in to the existing Supabase workspace. The checked-in environment defaults contain only a Supabase URL and publishable key. Override them in ignored .env.local when using another backend. Never put a service-role or secret key in a VITE\_ variable.
 
 ```sh
 npm run typecheck
@@ -39,19 +39,23 @@ npm run build
 
 ## Data path
 
-Browser → /api/proxy?path=/v1/… → the existing https://planner-api-ziyis-studio.vercel.app → Supabase, using the current user's bearer token.
+Browser → `/api/v1/…` → Planner API → Supabase, using the current user's bearer token.
 
-The same-origin proxy is a small Vercel Node function. It forwards only supported API routes and selected headers, bounds request bodies, rejects foreign origins, and does not retry writes. Planner API continues to own validation, transactions, revision checks, ownership, and RLS. Username login goes through the existing username-login Edge Function. Email login and session refresh use Supabase Auth directly.
+ONE is a static frontend. Vercel declaratively rewrites `/api/:path*` to the independently deployed Planner API; Vite's development proxy does the same. There are no frontend API functions or business mutation engines. State transitions, ordering, completion gates, persistence, private file access, Pomodoro records, backup imports and username login all execute in `planner-api`. Email authentication/session refresh remains in Supabase Auth. Weather is fetched and cached by the API.
 
-The domain files in src/domain are carried from Planner API for type compatibility and correct sample-mode behavior; workspace mutations execute on the server. Pomodoro completion records use the existing Supabase client and owner-only RLS directly, with SELECT/INSERT privileges and idempotent session IDs. The invoker-security insert trigger creates their Schedule blocks in the same transaction, with an owner-scoped foreign key; the UI quietly refreshes new blocks without replacing concurrent edits. Planner API's canonical migrations `20261117084448_pomodoro_sessions.sql`, `20261117101047_pomodoro_timeline.sql` and `20261117102518_pomodoro_timeline_index.sql` are applied to planner-core. Existing completion rows are backfilled once. No elevated credentials are shipped to the browser. Completed-session history is cloud-backed; active countdown state remains browser-local. A browser retains the latest 128 completion records for retry; pre-existing timer-only history stays local.
+The explicit sample keeps its snapshot on this device and sends stateless sample commands to the API, which never reads or writes an account's database. It requires connectivity for mutations and is never a fallback for cloud failures. Browser-only code handles presentation, navigation, drafts, timer display, preferences and early input feedback. `src/domain/commands.ts` contains wire types only; historical command fixtures under `tests/support` are excluded from the application build.
 
-Server-only overrides: PLANNER_API_URL, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY. Public overrides: VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY, VITE_API_PROXY_URL.
+Public configuration: `VITE_API_URL` (defaults to `/api`), `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`. Local Vite proxy target: `PLANNER_API_URL`. When using a separate browser API origin, configure its exact frontend origin in backend `API_ALLOWED_ORIGINS`.
+
+Private task/project notes support Markdown previews, raster images and downloadable PDF/text/CSV/ZIP/Office attachments. Files use immutable owner-scoped references. Backups include both images and files; restoring an existing identity verifies matching contents on the API before accepting it. Image uploads are limited to 5 MiB and documents to 3 MiB.
+
+Projects drag across statuses with completion gates, and task/project order persists across reloads. Arrow controls offer keyboard ordering. Tasks combine deadline and planned-time actions in one Dates and schedule control. Creating a task from a project returns to its project dialog. Schedule editors show both times together with duration presets. Sleep logs include one-tap feeling presets; the expanded sleep chart uses smooth curves with labelled dates and durations.
 
 ## Hosting
 
-Import this repository into Vercel with the Vite framework preset. vercel.json configures the frontend build and /api/proxy function. Use npm ci; the lockfile pins dependencies.
+Import this repository into Vercel with the Vite framework preset. vercel.json configures the static frontend build and external API rewrite. Use npm ci; the lockfile pins dependencies.
 
-For signup and password reset on a new production domain, add that exact origin to Supabase Auth's redirect URL allowlist. Existing password login does not depend on a redirect URL. No changes to Planner API's browser CORS allowlist are needed because ONE uses the same-origin transport.
+For signup and password reset on a new production domain, add that exact origin to Supabase Auth's redirect URL allowlist. Existing password login does not depend on a redirect URL. Ensure Planner API's `API_ALLOWED_ORIGINS` includes the exact frontend origin before enabling the rewrite in production. Deploy backend changes before the frontend.
 
 ## Verification and limits
 
@@ -63,4 +67,6 @@ Notes use Markdown rather than a collaborative block editor. Database formulas, 
 
 ## Weather
 
-The first dashboard card reads current conditions from Open-Meteo for the city shown. The city follows supported workspace time zones (Kuala Lumpur by default); this does not infer the device’s precise location. No account credentials or workspace records are sent to Open-Meteo. Requests time out after 10 seconds, failures show an unavailable state, and the card includes manual refresh.
+The first dashboard card requests current conditions through Planner API, which calls Open-Meteo for a supported workspace time zone and caches results for five minutes. No account credentials or workspace records are sent to Open-Meteo. Failures show an unavailable state, and the card includes manual refresh.
+
+Enhance ONE task mapping and verification: [docs/enhance-one.md](docs/enhance-one.md).

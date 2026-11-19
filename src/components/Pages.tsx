@@ -1,6 +1,5 @@
-import TaskScheduleHint from "./TaskScheduleHint";
+import TaskTiming from "./TaskTiming";
 import { plannedTaskIds } from "../lib/schedule";
-import TaskDeadline from "./TaskDeadline";
 import EmotionTag from "./EmotionTag";
 import FocusTaskButton from "./FocusTaskButton";
 import { useId, useRef, useState } from "react";
@@ -15,6 +14,8 @@ import {
   ArrowRight,
   Check,
   MoreHorizontal,
+  ArrowUp,
+  ArrowDown,
   Table2,
   FileText,
 } from "lucide-react";
@@ -110,8 +111,8 @@ function Tabs({
 const matches = (query: string, ...values: (string | undefined)[]) =>
   values.join(" ").toLowerCase().includes(query.toLowerCase());
 export function TasksPage() {
-  const { data, edit, busy, today, now } = useOne();
-  const { toggleTask, moveTask, rename, safely } = useActions();
+  const { data, edit, busy, now } = useOne();
+  const { toggleTask, moveTask, rename, safely, reorder } = useActions();
   const [view, setView] = useViewState<string>("tasks.view", "board"),
     [query, setQuery] = useViewState<string>("tasks.query", ""),
     [project, setProject] = useViewState<string>("tasks.project", "all");
@@ -187,7 +188,7 @@ export function TasksPage() {
                       const task = data.tasks.find(
                         (t) => t.id === e.dataTransfer.getData("text/one-task"),
                       );
-                      if (task) safely(() => moveTask(task, stage.id));
+                      if (task) safely(() => moveTask(task, stage.id, null));
                     }}
                   >
                     <header>
@@ -254,6 +255,24 @@ export function TasksPage() {
                       layoutId={`task-${task.id}`}
                       transition={collectionTransition}
                       key={task.id}
+                      draggable={!busy}
+                      onDragStartCapture={(e) => {
+                        e.dataTransfer.setData("text/one-task", task.id);
+                        e.dataTransfer.effectAllowed = "move";
+                      }}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const source = data.tasks.find(
+                          (t) =>
+                            t.id === e.dataTransfer.getData("text/one-task"),
+                        );
+                        if (source && source.id !== task.id)
+                          safely(() =>
+                            moveTask(source, taskStage(task), task.id),
+                          );
+                      }}
                     >
                       <td>
                         <div className="table-task-title">
@@ -295,25 +314,33 @@ export function TasksPage() {
                       </td>
                       <td>
                         <div className="table-task-deadline">
-                          <TaskDeadline task={task} />
-                          <TaskScheduleHint
+                          <TaskTiming
                             task={task}
                             planned={planned.has(task.id)}
-                            disabled={busy}
-                            onPlan={() =>
-                              edit({
-                                kind: "block",
-                                taskId: task.id,
-                                date:
-                                  task.deadline && task.deadline >= today
-                                    ? task.deadline
-                                    : today,
-                              })
-                            }
                           />
                         </div>
                       </td>
                       <td>
+                        <span className="reorder-controls">
+                          <IconButton
+                            label={"Move " + task.title + " up"}
+                            disabled={busy}
+                            onClick={() =>
+                              safely(() => reorder("task", task.id, -1))
+                            }
+                          >
+                            <ArrowUp size={13} />
+                          </IconButton>
+                          <IconButton
+                            label={"Move " + task.title + " down"}
+                            disabled={busy}
+                            onClick={() =>
+                              safely(() => reorder("task", task.id, 1))
+                            }
+                          >
+                            <ArrowDown size={13} />
+                          </IconButton>
+                        </span>
                         <IconButton
                           label={"Edit " + task.title}
                           onClick={() => edit({ kind: "task", id: task.id })}
@@ -345,8 +372,8 @@ export function TasksPage() {
   );
 }
 function TaskCard({ task, planned }: { task: Task; planned: boolean }) {
-  const { data, edit, busy, today } = useOne();
-  const { toggleTask, rename, safely } = useActions();
+  const { data, edit, busy } = useOne();
+  const { toggleTask, rename, safely, moveTask, reorder } = useActions();
   const transition = useSettle();
   const [renaming, setRenaming] = useState(false);
   const dragged = useRef(false);
@@ -367,6 +394,21 @@ function TaskCard({ task, planned }: { task: Task; planned: boolean }) {
       onClick={(event) => openCardBackground(event, open)}
       onPointerDown={() => {
         dragged.current = false;
+      }}
+      onDragOver={(e) => {
+        if (e.dataTransfer.types.includes("text/one-task")) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const source = data.tasks.find(
+          (t) => t.id === e.dataTransfer.getData("text/one-task"),
+        );
+        if (source && source.id !== task.id)
+          safely(() => moveTask(source, taskStage(task), task.id));
       }}
       onDragEnd={() => {
         requestAnimationFrame(() => {
@@ -415,26 +457,31 @@ function TaskCard({ task, planned }: { task: Task; planned: boolean }) {
         </div>
       )}
       <div className="task-card-foot">
-        <TaskDeadline task={task} />
-        <TaskScheduleHint
-          task={task}
-          planned={planned}
-          disabled={busy}
-          onPlan={() =>
-            edit({
-              kind: "block",
-              taskId: task.id,
-              date:
-                task.deadline && task.deadline >= today ? task.deadline : today,
-            })
-          }
-        />
+        <TaskTiming task={task} planned={planned} />
+        <span className="reorder-controls">
+          <IconButton
+            label={"Move " + task.title + " up"}
+            disabled={busy}
+            onClick={() => safely(() => reorder("task", task.id, -1, true))}
+          >
+            <ArrowUp size={13} />
+          </IconButton>
+          <IconButton
+            label={"Move " + task.title + " down"}
+            disabled={busy}
+            onClick={() => safely(() => reorder("task", task.id, 1, true))}
+          >
+            <ArrowDown size={13} />
+          </IconButton>
+        </span>
       </div>
     </motion.article>
   );
 }
 export function ProjectsPage() {
-  const { data, edit } = useOne();
+  const { data, edit, busy } = useOne();
+  const { moveProject, safely } = useActions();
+  const [dragOver, setDragOver] = useState("");
   const [query, setQuery] = useViewState<string>("projects.query", ""),
     [view, setView] = useViewState<string>("projects.view", "board"),
     [stageFilter, setStageFilter] = useViewState<string>(
@@ -492,7 +539,32 @@ export function ProjectsPage() {
               {stages
                 .filter((s) => s.id !== "todo")
                 .map((stage) => (
-                  <section className="board-lane" key={stage.id}>
+                  <section
+                    className={
+                      "board-lane " + (dragOver === stage.id ? "drag-over" : "")
+                    }
+                    key={stage.id}
+                    onDragOver={(e) => {
+                      if (
+                        !busy &&
+                        e.dataTransfer.types.includes("text/one-project")
+                      ) {
+                        e.preventDefault();
+                        setDragOver(stage.id);
+                      }
+                    }}
+                    onDragLeave={() => setDragOver("")}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setDragOver("");
+                      const source = data.projects.find(
+                        (p) =>
+                          p.id === e.dataTransfer.getData("text/one-project"),
+                      );
+                      if (source)
+                        safely(() => moveProject(source, stage.id, null));
+                    }}
+                  >
                     <header>
                       <span>
                         <i className={"status-dot " + stage.color} />

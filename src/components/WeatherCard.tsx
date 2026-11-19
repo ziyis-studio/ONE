@@ -1,3 +1,4 @@
+import { api } from "../lib/api";
 import { useEffect, useState } from "react";
 import { Sun, Cloud, CloudRain, RefreshCw } from "lucide-react";
 import { useOne } from "../lib/workspace";
@@ -24,30 +25,15 @@ export default function WeatherCard() {
     setFailed(false);
     setWeather(null);
     const timeout = setTimeout(() => controller.abort(), 10_000);
-    const query = new URLSearchParams({
-      latitude: String(location.latitude),
-      longitude: String(location.longitude),
-      current: "temperature_2m,weather_code",
-      timezone: zone,
-    });
-    void fetch("https://api.open-meteo.com/v1/forecast?" + query, {
-      signal: controller.signal,
-    })
-      .then(async (response) => {
-        if (!response.ok) throw new Error("Weather unavailable");
-        const result = await response.json();
-        if (
-          !Number.isFinite(result.current?.temperature_2m) ||
-          !Number.isFinite(result.current?.weather_code)
-        )
-          throw new Error("Weather unavailable");
-        if (active)
-          setWeather({
-            temperature: result.current.temperature_2m,
-            code: result.current.weather_code,
-            updatedAt: result.current.time,
-          });
+    void api<CurrentWeather>(
+      "/v1/weather?" + new URLSearchParams({ zone }),
+      "",
+      { signal: controller.signal },
+    )
+      .then((result) => {
+        if (active) setWeather(result);
       })
+
       .catch(() => {
         if (active) setFailed(true);
       })

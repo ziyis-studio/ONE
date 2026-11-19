@@ -6,8 +6,12 @@ import type { Backup } from "../domain/recovery";
 import { draftSchema, readDrafts, saveDraft, draftKey } from "./drafts";
 import type { EditorDraft } from "./drafts";
 import { parsePomodoro } from "./pomodoro";
-import { imageReferences, imageKey, validateStoredImage } from "./image-store";
-import { supabase } from "./auth";
+import {
+  attachmentReferences,
+  attachmentKey,
+  validateStoredAttachment,
+} from "./attachments";
+import { downloadAttachment, uploadAttachment } from "./api";
 export type DeviceData = {
   drafts: EditorDraft[];
   logDrafts?: LogDraft[];
@@ -38,7 +42,7 @@ export function parsePortableBackup(raw: unknown): PortableBackup {
         .array(
           z
             .object({
-              ref: z.string().refine((r) => !!imageKey(r)),
+              ref: z.string().refine((r) => !!attachmentKey(r)),
               type: z.string().max(40),
               base64: z.string().max(7_000_000),
             })
@@ -52,7 +56,7 @@ export function parsePortableBackup(raw: unknown): PortableBackup {
   if (new Set(extra.images.map((i) => i.ref)).size !== extra.images.length)
     throw new Error("The backup contains duplicate image identities.");
   const wanted = new Set(
-    imageReferences(
+    attachmentReferences(
       JSON.stringify([
         core.workspace,
         core.trash,
@@ -125,7 +129,7 @@ export async function completeBackup(
     },
     images: [],
   };
-  for (const ref of imageReferences(
+  for (const ref of attachmentReferences(
     JSON.stringify([
       core.workspace,
       core.trash,
@@ -138,14 +142,8 @@ export async function completeBackup(
       throw new Error(
         "Attached cloud images cannot be exported from the sample workspace.",
       );
-    const { data, error } = await supabase.storage
-      .from("planner-images")
-      .download(scope + "/" + imageKey(ref));
-    if (error || !data)
-      throw new Error(
-        "An attached image could not be downloaded. Your backup was not created; retry when connected.",
-      );
-    await validateStoredImage(ref, data);
+    const data = await downloadAttachment(ref);
+    await validateStoredAttachment(ref, data);
     result.images.push({
       ref,
       type: data.type,
@@ -163,55 +161,25 @@ export async function restoreImages(backup: PortableBackup, scope: string) {
   const files = await Promise.all(
     backup.images.map(async (i) => {
       const blob = new Blob([decode(i.base64)], { type: i.type });
-      await validateStoredImage(i.ref, blob);
+      await validateStoredAttachment(i.ref, blob);
       return { ...i, blob };
     }),
   );
-  const hash = async (b: Blob) =>
-    encode(
-      new Uint8Array(
-        await crypto.subtle.digest("SHA-256", await b.arrayBuffer()),
-      ),
-    );
-  for (const file of files) {
-    const path = scope + "/" + imageKey(file.ref);
-    const { data, error } = await supabase.storage
-      .from("planner-images")
-      .download(path);
-    if (data) {
-      if ((await hash(data)) !== (await hash(file.blob)))
-        throw new Error(
-          "An image with this identity has different contents. Your current image was kept.",
-        );
-      continue;
-    }
-    if (
-      error &&
-      !["404", "400"].includes(
-        String((error as any).statusCode ?? (error as any).status),
-      )
-    )
-      throw new Error("Could not check attached images. Retry when connected.");
-    const { error: upload } = await supabase.storage
-      .from("planner-images")
-      .upload(path, file.blob, { upsert: false, contentType: file.type });
-    if (upload) {
-      const { data: other } = await supabase.storage
-        .from("planner-images")
-        .download(path);
-      if (!other || (await hash(other)) !== (await hash(file.blob)))
-        throw new Error(
-          "Could not restore an attached image. Retry the import.",
-        );
-    }
-  }
+  for (const file of files) await uploadAttachment(file.blob, file.ref);
 }
 export async function restoreDrafts(
   backup: PortableBackup,
   scope: string,
   map: Record<string, string>,
 ) {
-  const refs = new Set(["id", "projectId", "taskId", "databaseId", "noteId"]);
+  const refs = new Set([
+    "id",
+    "projectId",
+    "taskId",
+    "databaseId",
+    "noteId",
+    "returnProjectId",
+  ]);
   const remap = (v: any, key = ""): any =>
     Array.isArray(v)
       ? v.map((x) => remap(x, key === "taskIds" ? "taskId" : ""))

@@ -15,6 +15,7 @@ export default function FocusTaskButton({
   const { state, focusTask } = usePomodoro();
   const { navigate, busy } = useOne();
   const confirm = useConfirm();
+  if (task.completedAt) return null;
   return (
     <button
       type="button"

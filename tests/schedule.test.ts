@@ -7,7 +7,7 @@ import {
   snapMinute,
   timeBlockTitle,
 } from "../src/lib/schedule";
-import { createDemo } from "../src/lib/demo";
+import { createDemo } from "./support/demo";
 import type { TimeBlock } from "../src/domain/model";
 function block(id: string, startsAt: string, endsAt: string): TimeBlock {
   return {
