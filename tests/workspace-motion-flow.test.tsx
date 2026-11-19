@@ -140,7 +140,7 @@ describe("workspace motion with real commands", () => {
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     await userEvent.click(
-      within(dialog).getByRole("button", { name: "Close" }),
+      within(dialog).getByRole("button", { name: "Close dialog" }),
     );
     expect(document.querySelector(".project-board .lane-add")).toBe(null);
     expect(
@@ -158,7 +158,7 @@ describe("workspace motion with real commands", () => {
       ).value,
     ).toBe("");
     await userEvent.click(
-      within(creation).getByRole("button", { name: "Close" }),
+      within(creation).getByRole("button", { name: "Close dialog" }),
     );
     await userEvent.click(
       within(card).getByRole("button", { name: "View tasks" }),

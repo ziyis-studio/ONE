@@ -1,5 +1,7 @@
+import { logDraftSchema, readLogDrafts, saveLogDraft } from "./activity";
+import type { LogDraft } from "./activity";
 import { z } from "zod";
-import { parseBackup } from "../domain/recovery";
+import { parseBackup, backupCopyId } from "../domain/recovery";
 import type { Backup } from "../domain/recovery";
 import { draftSchema, readDrafts, saveDraft, draftKey } from "./drafts";
 import type { EditorDraft } from "./drafts";
@@ -8,6 +10,7 @@ import { imageReferences, imageKey, validateStoredImage } from "./image-store";
 import { supabase } from "./auth";
 export type DeviceData = {
   drafts: EditorDraft[];
+  logDrafts?: LogDraft[];
   preferences: { primaryColor?: string; timeZone?: string };
 };
 export type PortableBackup = Backup & {
@@ -22,6 +25,7 @@ export function parsePortableBackup(raw: unknown): PortableBackup {
       device: z
         .object({
           drafts: z.array(draftSchema).max(1000).default([]),
+          logDrafts: z.array(logDraftSchema).max(1000).default([]),
           preferences: z
             .object({
               primaryColor: z.string().max(10).optional(),
@@ -29,7 +33,7 @@ export function parsePortableBackup(raw: unknown): PortableBackup {
             })
             .default({}),
         })
-        .default({ drafts: [], preferences: {} }),
+        .default({ drafts: [], logDrafts: [], preferences: {} }),
       images: z
         .array(
           z
@@ -49,7 +53,13 @@ export function parsePortableBackup(raw: unknown): PortableBackup {
     throw new Error("The backup contains duplicate image identities.");
   const wanted = new Set(
     imageReferences(
-      JSON.stringify([core.workspace, core.trash, extra.device.drafts]),
+      JSON.stringify([
+        core.workspace,
+        core.trash,
+        core.activity,
+        extra.device.drafts,
+        extra.device.logDrafts,
+      ]),
     ),
   );
   if (extra.images.some((i) => !wanted.has(i.ref)))
@@ -108,11 +118,21 @@ export async function completeBackup(
   const result: PortableBackup = {
     ...core,
     sessions,
-    device: { drafts: readDrafts(scope), preferences },
+    device: {
+      drafts: readDrafts(scope),
+      logDrafts: readLogDrafts(scope),
+      preferences,
+    },
     images: [],
   };
   for (const ref of imageReferences(
-    JSON.stringify([core.workspace, core.trash, result.device.drafts]),
+    JSON.stringify([
+      core.workspace,
+      core.trash,
+      core.activity,
+      result.device.drafts,
+      result.device.logDrafts,
+    ]),
   )) {
     if (scope === "demo")
       throw new Error(
@@ -186,7 +206,7 @@ export async function restoreImages(backup: PortableBackup, scope: string) {
     }
   }
 }
-export function restoreDrafts(
+export async function restoreDrafts(
   backup: PortableBackup,
   scope: string,
   map: Record<string, string>,
@@ -214,6 +234,27 @@ export function restoreDrafts(
     if (!known.has(draft.key)) {
       saveDraft(scope, draft);
       known.add(draft.key);
+      restored++;
+    }
+  }
+  const current = readLogDrafts(scope);
+  for (const source of backup.device.logDrafts || []) {
+    const draft = {
+      ...source,
+      targetId: map[source.targetId] ?? source.targetId,
+      entryId:
+        map[source.entryId] ??
+        (Object.keys(map).length
+          ? await backupCopyId(scope, backup.id, source.entryId)
+          : source.entryId),
+    };
+    if (
+      !current.some(
+        (d) => d.kind === draft.kind && d.targetId === draft.targetId,
+      )
+    ) {
+      saveLogDraft(scope, draft);
+      current.push(draft);
       restored++;
     }
   }

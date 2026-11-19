@@ -242,6 +242,8 @@ export default function Settings({ onExit }: { onExit: () => void }) {
                     localStorage.removeItem(DEMO_KEY);
                     localStorage.removeItem("one-drafts-v1:demo");
                     localStorage.removeItem("one-trash-v1:demo");
+                    localStorage.removeItem("one-activity-v1:demo");
+                    localStorage.removeItem("one-log-drafts-v1:demo");
                     localStorage.removeItem("one-pomodoro-v1:demo");
                     window.dispatchEvent(
                       new StorageEvent("storage", {

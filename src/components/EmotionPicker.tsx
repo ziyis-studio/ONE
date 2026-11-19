@@ -1,29 +1,7 @@
 import { useId } from "react";
-import {
-  MessageCircle,
-  CircleHelp,
-  Lightbulb,
-  Heart,
-  Waves,
-  Smile,
-  Cloud,
-  CloudRain,
-  BookOpen,
-  Wind,
-} from "lucide-react";
+import { emotions } from "../lib/emotions";
+import { MessageCircle } from "lucide-react";
 import "./emotion-picker.css";
-const emotions = [
-  { value: "", label: "Just a thought", icon: MessageCircle },
-  { value: "Curious", label: "Curious", icon: CircleHelp },
-  { value: "Inspired", label: "Inspired", icon: Lightbulb },
-  { value: "Grateful", label: "Grateful", icon: Heart },
-  { value: "Calm", label: "Calm", icon: Waves },
-  { value: "Excited", label: "Excited", icon: Smile },
-  { value: "Unsure", label: "Unsure", icon: Cloud },
-  { value: "Overwhelmed", label: "Overwhelmed", icon: CloudRain },
-  { value: "Reflective", label: "Reflective", icon: BookOpen },
-  { value: "Anxious", label: "Anxious", icon: Wind },
-];
 export default function EmotionPicker({
   value,
   onChange,

@@ -1,3 +1,4 @@
+import SleepSummary from "./SleepSummary";
 import { PageDate } from "./PageDate";
 import { useLayoutEffect, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
@@ -36,19 +37,6 @@ export default function SleepPage() {
       : range === "month"
         ? dateLabel(anchor, { month: "long", year: "numeric" })
         : dateLabel(start) + " – " + dateLabel(end);
-  const loggedDays = [...history.entries()].filter(
-    ([date]) => date >= start && date <= end && date <= today,
-  );
-  const average = loggedDays.length
-    ? Math.round(
-        loggedDays.reduce((sum, [, day]) => sum + day.minutes, 0) /
-          loggedDays.length,
-      )
-    : 0;
-  const recent = loggedDays
-    .map(([date]) => date)
-    .sort()
-    .at(-1);
   const records =
     history
       .get(selected)
@@ -127,29 +115,13 @@ export default function SleepPage() {
           Log sleep
         </button>
       </div>
-      <div className="sleep-summary">
-        <div>
-          <span>AVERAGE PER LOGGED DAY</span>
-          <strong>{sleepDuration(average)}</strong>
-          <small>{label}</small>
-        </div>
-        <div>
-          <span>DAYS LOGGED</span>
-          <strong>{loggedDays.length}</strong>
-          <small>in this range</small>
-        </div>
-        <div>
-          <span>MOST RECENT</span>
-          <strong>
-            {recent ? sleepDuration(history.get(recent)!.minutes) : "—"}
-          </strong>
-          <small>
-            {recent
-              ? dateLabel(recent, { month: "short", day: "numeric" })
-              : "No entries yet"}
-          </small>
-        </div>
-      </div>
+      <SleepSummary
+        history={history}
+        start={start}
+        end={end}
+        today={today}
+        label={label}
+      />
       <section
         className="sleep-history-panel"
         aria-label="Sleep history heatmap"
@@ -157,7 +129,7 @@ export default function SleepPage() {
         <header>
           <div>
             <h2>Sleep history</h2>
-            <p>Select a day to see its entries.</p>
+            <p>Select a day to see its entries or log sleep.</p>
           </div>
           <div className="date-navigation">
             <IconButton
@@ -278,7 +250,10 @@ export default function SleepPage() {
                       }
                       onFocus={() => setFocusDay(date)}
                       onKeyDown={(event) => keyboard(event, date)}
-                      onClick={() => setSelected(date)}
+                      onClick={() => {
+                        setSelected(date);
+                        if (!current) edit({ kind: "sleep", date });
+                      }}
                     >
                       {range !== "year" && (
                         <>

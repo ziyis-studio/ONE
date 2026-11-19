@@ -1,3 +1,7 @@
+import TaskScheduleHint from "./TaskScheduleHint";
+import { plannedTaskIds } from "../lib/schedule";
+import TaskDeadline from "./TaskDeadline";
+import EmotionTag from "./EmotionTag";
 import FocusTaskButton from "./FocusTaskButton";
 import { useId, useRef, useState } from "react";
 import {
@@ -5,7 +9,6 @@ import {
   Search,
   Columns3,
   List,
-  CalendarDays,
   ChevronLeft,
   ChevronRight,
   ArrowUpRight,
@@ -107,7 +110,7 @@ function Tabs({
 const matches = (query: string, ...values: (string | undefined)[]) =>
   values.join(" ").toLowerCase().includes(query.toLowerCase());
 export function TasksPage() {
-  const { data, edit, busy, today } = useOne();
+  const { data, edit, busy, today, now } = useOne();
   const { toggleTask, moveTask, rename, safely } = useActions();
   const [view, setView] = useViewState<string>("tasks.view", "board"),
     [query, setQuery] = useViewState<string>("tasks.query", ""),
@@ -124,6 +127,7 @@ export function TasksPage() {
       matches(query, t.title, t.description, t.tags?.join(" ")) &&
       (activeProject === "all" || t.projectId === activeProject),
   );
+  const planned = plannedTaskIds(data, now);
   const open = data.tasks.filter((t) => !t.completedAt).length;
   return (
     <>
@@ -219,7 +223,10 @@ export function TasksPage() {
                               animate={{ opacity: 1 }}
                               exit={{ opacity: 0 }}
                             >
-                              <TaskCard task={task} />
+                              <TaskCard
+                                task={task}
+                                planned={planned.has(task.id)}
+                              />
                             </motion.div>
                           ))}
                       </AnimatePresence>
@@ -286,16 +293,25 @@ export function TasksPage() {
                         {data.projects.find((p) => p.id === task.projectId)
                           ?.title || "—"}
                       </td>
-                      <td
-                        className={
-                          task.deadline &&
-                          task.deadline < today &&
-                          !task.completedAt
-                            ? "overdue"
-                            : ""
-                        }
-                      >
-                        {task.deadline ? dateLabel(task.deadline) : "No date"}
+                      <td>
+                        <div className="table-task-deadline">
+                          <TaskDeadline task={task} />
+                          <TaskScheduleHint
+                            task={task}
+                            planned={planned.has(task.id)}
+                            disabled={busy}
+                            onPlan={() =>
+                              edit({
+                                kind: "block",
+                                taskId: task.id,
+                                date:
+                                  task.deadline && task.deadline >= today
+                                    ? task.deadline
+                                    : today,
+                              })
+                            }
+                          />
+                        </div>
                       </td>
                       <td>
                         <IconButton
@@ -328,7 +344,7 @@ export function TasksPage() {
     </>
   );
 }
-function TaskCard({ task }: { task: Task }) {
+function TaskCard({ task, planned }: { task: Task; planned: boolean }) {
   const { data, edit, busy, today } = useOne();
   const { toggleTask, rename, safely } = useActions();
   const transition = useSettle();
@@ -346,6 +362,7 @@ function TaskCard({ task }: { task: Task }) {
       layoutId={`task-${task.id}`}
       transition={transition}
       className={"task-card " + (task.completedAt ? "is-complete" : "")}
+      data-unscheduled={(!task.completedAt && !planned) || undefined}
       draggable={!busy && !renaming}
       onClick={(event) => openCardBackground(event, open)}
       onPointerDown={() => {
@@ -364,10 +381,15 @@ function TaskCard({ task }: { task: Task }) {
     >
       <CardOpen label={"Open task " + task.title} onOpen={open} />
       <div className="task-card-top">
-        <FocusTaskButton task={task} />
         <span className="tag">
           {task.tags?.[0] || project?.title || "Personal"}
         </span>
+        <CheckButton
+          checked={!!task.completedAt}
+          disabled={busy}
+          label={"Toggle " + task.title}
+          onClick={() => safely(() => toggleTask(task))}
+        />
       </div>
       <div className="task-card-main">
         <InlineTitle
@@ -393,25 +415,19 @@ function TaskCard({ task }: { task: Task }) {
         </div>
       )}
       <div className="task-card-foot">
-        <span
-          className={
-            task.deadline && task.deadline < today && !task.completedAt
-              ? "overdue"
-              : ""
-          }
-        >
-          <CalendarDays size={12} />
-          {task.deadline
-            ? task.deadline === today
-              ? "Today"
-              : dateLabel(task.deadline)
-            : "Whenever you’re ready"}
-        </span>
-        <CheckButton
-          checked={!!task.completedAt}
+        <TaskDeadline task={task} />
+        <TaskScheduleHint
+          task={task}
+          planned={planned}
           disabled={busy}
-          label={"Toggle " + task.title}
-          onClick={() => safely(() => toggleTask(task))}
+          onPlan={() =>
+            edit({
+              kind: "block",
+              taskId: task.id,
+              date:
+                task.deadline && task.deadline >= today ? task.deadline : today,
+            })
+          }
         />
       </div>
     </motion.article>
@@ -642,7 +658,7 @@ export function ThoughtsPage() {
                       </button>
                       <footer>
                         {thought.emotion && (
-                          <span className="tag">{thought.emotion}</span>
+                          <EmotionTag value={thought.emotion} className="tag" />
                         )}
                         <button
                           disabled={busy}

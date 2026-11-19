@@ -285,3 +285,26 @@
     transform-origin: bottom center;
   }
 }
+.task-date-trigger {
+  width: auto;
+  min-width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 6px;
+  font-size: 11px;
+  white-space: nowrap;
+  color: inherit;
+}
+.task-deadline {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  color: #999;
+}
+.task-card-top > .check-button {
+  order: 2;
+  margin-left: auto;
+  flex-shrink: 0;
+}

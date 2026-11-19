@@ -446,3 +446,41 @@ layout refinement, TypeScript/production build, and Chromium at 1087/390/320px.
 The browser checks top-only status, task/project transitions, preserved project
 metadata, task-linked focus and footer bounds. No browser errors or page overflow.
 Artifacts: ignored `test-results/editor-status/`.
+
+# November 19 task, sleep and activity follow-ups
+
+- Task cards keep completion at the top right, direct due-date editing at the
+  bottom and an Unscheduled action when no current/future planned block exists.
+  The planner uses the same definition; expired plans and actual recordings do
+  not count. Overview task focus moves to the row end, with no Done/all-done copy.
+- Shared editors retain the header X and remove the duplicate footer Close.
+  Project tags align to the card's content edge. Sidebar navigation uses an
+  accessible custom tooltip with keyboard/Escape and reduced-motion support.
+- The current Schedule dot breathes in the exact primary color. Historical
+  overview sleep bars hover in a dim primary and update the animated readout
+  above the chart without a popup. Empty sleep-history cells open a dated log;
+  range statistics are three cards. Thought emotion labels include their icons.
+- Saved tasks/projects have a Log and linked Notes sidebar. Entries are private,
+  append-only and timestamped. Projects roll up their currently assigned tasks;
+  source labels open those tasks. Existing Notes can be linked/unlinked/opened
+  without replacing their text, tags or other targets. Phone layouts stack the
+  sidebar below the form. New items must be saved before posting logs.
+- Log drafts flush on close/navigation, keep one retry identity on failure and
+  join complete backups. Copy imports remap log targets and draft identities;
+  current local drafts and current cloud records are preserved.
+
+Verification: the 134-test frontend regression suite passed, followed by four
+new activity/backup checks and relevant follow-up tests; TypeScript and the
+production build passed. Backend: 60 tests, plus focused recovery checks after
+factoring the shared deterministic identity helper. Real Chromium covered
+1087px desktop and 390/320px dialogs, date editing, planning hints, checkbox/focus
+placement, project alignment, task/parent logs, draft reopening, Note linking and
+navigation, sleep readout/summary and emotion icons. The current timeline dot
+computed to the exact primary RGB. No page runtime errors were observed.
+
+Migration `20261119075257_task_project_activity.sql` is applied to planner-core.
+A production SQL transaction verified rollup, retry deduplication, owner RLS,
+delete/restore and backup import, then rolled back all synthetic records. Advisors
+reported no new security or missing-index findings. Captures/logs are under
+ignored `test-results/nov19-polish/`. Browser checks used local sample records;
+credentialed production-user browser writes and physical phones were not used.

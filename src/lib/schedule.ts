@@ -120,3 +120,20 @@ export function timeBlockTitle(
     .filter(Boolean);
   return names.join(" · ") || "Untitled block";
 }
+
+/** A deadline is not a plan; completed focus history is not an upcoming plan. */
+export function plannedTaskIds(
+  workspace: Pick<Workspace, "timeBlocks" | "blockTaskLinks">,
+  now: Date | number = Date.now(),
+) {
+  const future = new Set(
+    workspace.timeBlocks
+      .filter((b) => !b.recordedType && Date.parse(b.endsAt) > +now)
+      .map((b) => b.id),
+  );
+  return new Set(
+    workspace.blockTaskLinks
+      .filter((l) => future.has(l.timeBlockId))
+      .map((l) => l.taskId),
+  );
+}

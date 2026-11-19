@@ -109,3 +109,33 @@ button.one-card-open:focus-visible {
     max-width: 110px;
   }
 }
+
+.one-project-card .project-card-top {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px 12px;
+}
+.one-project-card .project-icon {
+  grid-column: 1;
+  grid-row: 1;
+  align-self: start;
+}
+.one-project-card .one-project-heading {
+  display: contents;
+}
+.one-project-heading > .one-inline-title {
+  grid-column: 2;
+  grid-row: 1;
+}
+.one-project-heading > .tag {
+  grid-column: 1/-1;
+  grid-row: 2;
+  justify-self: start;
+  max-width: calc(100% - 70px);
+}
+.one-project-heading > time {
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: end;
+}

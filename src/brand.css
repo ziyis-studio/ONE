@@ -100,8 +100,11 @@
 .one-shell .sleep-chart i.latest {
   background: var(--one-accent);
 }
-.one-shell .sleep-chart > button:hover i,
-.one-shell .sleep-chart > button:focus-visible i {
+.one-shell .sleep-chart > button:not([data-today]):hover i,
+.one-shell .sleep-chart > button:not([data-today]):focus-visible i {
+  background: color-mix(in srgb, var(--one-accent) 42%, #303030);
+}
+.one-shell .sleep-chart > button[data-today] i {
   background: var(--one-accent);
 }
 .one-shell .habit-week-mini i.filled {
@@ -213,4 +216,24 @@
   border-radius: 8px;
   background: var(--one-accent);
   color: #fff;
+}
+.one-shell .timeline-row.is-now .timeline-axis > i {
+  background: var(--one-accent);
+  animation: one-now-breathe 1.9s ease-in-out infinite;
+}
+@keyframes one-now-breathe {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--one-accent) 18%, transparent);
+  }
+  50% {
+    opacity: 0.65;
+    box-shadow: 0 0 0 7px color-mix(in srgb, var(--one-accent) 0%, transparent);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .one-shell .timeline-row.is-now .timeline-axis > i {
+    animation: none;
+  }
 }

@@ -6,7 +6,7 @@ const defaultApi = "https://planner-api-ziyis-studio.vercel.app";
 const supabaseUrl = "https://dwzwlqzsdozcsrrauggi.supabase.co";
 const publishableKey = "sb_publishable_w7OhhWtpsXTEQDBGLL7j-g_D0RzZiur";
 const resource =
-  /^\/v1\/(health|workspace|commands|profile|tasks|projects|conditions|thoughts|habits|occurrences|executions|schedule|sleep|tags|notes|databases|records|images|recovery|backup)(\/[a-zA-Z0-9._/-]+)?$/;
+  /^\/v1\/(health|workspace|commands|profile|tasks|projects|conditions|thoughts|habits|occurrences|executions|schedule|sleep|tags|notes|databases|records|images|recovery|backup|activity)(\/[a-zA-Z0-9._/-]+)?$/;
 
 export async function handleProxy(
   request: Request,

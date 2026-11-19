@@ -1,3 +1,5 @@
+import TaskScheduleHint from "./TaskScheduleHint";
+import { plannedTaskIds } from "../lib/schedule";
 import { useViewState } from "../lib/view-state";
 import { GripVertical, Plus, Search } from "lucide-react";
 import { useOne } from "../lib/workspace";
@@ -9,8 +11,9 @@ export default function ScheduleTasks({
   selected: string;
   onPlan: (taskId: string, day: string, minute?: number) => void;
 }) {
-  const { data, edit, busy } = useOne();
+  const { data, edit, busy, now } = useOne();
   const [query, setQuery] = useViewState<string>("schedule.query", "");
+  const planned = plannedTaskIds(data, now);
   const tasks = data.tasks.filter(
     (task) =>
       !task.completedAt &&
@@ -47,6 +50,7 @@ export default function ScheduleTasks({
             <article
               key={task.id}
               className="one-planning-task"
+              data-unscheduled={!planned.has(task.id) || undefined}
               draggable={!busy}
               aria-label={task.title}
               onDragStart={(event) => {
@@ -67,9 +71,16 @@ export default function ScheduleTasks({
                     (project) => project.id === task.projectId,
                   )?.title || "Personal"}
                 </span>
+                <TaskScheduleHint
+                  task={task}
+                  planned={planned.has(task.id)}
+                  disabled={busy}
+                  onPlan={() => onPlan(task.id, selected)}
+                />
                 {links.length > 0 && (
                   <small>
-                    {links.length} linked{" "}
+                    {links.length}{" "}
+                    {planned.has(task.id) ? "linked" : "previous"}{" "}
                     {links.length === 1 ? "block" : "blocks"}
                   </small>
                 )}

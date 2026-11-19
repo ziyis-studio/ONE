@@ -1,0 +1,8 @@
+.emotion-tag {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 5px;
+}
+.emotion-tag svg {
+  flex-shrink: 0;
+}

@@ -288,8 +288,8 @@ export default function RecoverySettings() {
           <div>
             <h2 id="backup-heading">Backup & restore</h2>
             <p>
-              Keep a complete copy of your workspace, focus history, Trash,
-              drafts and attached images.
+              Keep a complete copy of your workspace, logs, focus history,
+              Trash, drafts and attached images.
             </p>
           </div>
         </header>
@@ -383,7 +383,8 @@ export default function RecoverySettings() {
               {pending.workspace.notes.length} notes · {pending.sessions.length}{" "}
               sessions · {pending.trash.filter((e) => !e.restoredAt).length}{" "}
               items in Trash · {pending.device.drafts.length} drafts ·{" "}
-              {pending.images.length} images
+              {pending.images.length} images · {pending.activity?.length || 0}{" "}
+              log entries
             </p>
             <small>Exported {stamp(pending.exportedAt, zone)}</small>
             <label>
@@ -425,7 +426,7 @@ export default function RecoverySettings() {
                     const map = await importBackup(core, asCopy);
                     try {
                       restoreLocalHistory(core, scope, map);
-                      restoreDrafts(pending, scope, map);
+                      await restoreDrafts(pending, scope, map);
                       if (preferences) {
                         if (pending.device.preferences.primaryColor)
                           setPrimaryColor(

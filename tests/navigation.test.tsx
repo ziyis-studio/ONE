@@ -62,6 +62,18 @@ function Example() {
   );
 }
 describe("ONE navigation", () => {
+  it("uses a designed tooltip for collapsed icons and dismisses it with Escape", async () => {
+    render(<Example />);
+    const nav = screen.getByRole("navigation", { name: "Your workspace" }),
+      home = within(nav).getByRole("button", { name: "Home" });
+    expect(home.hasAttribute("title")).toBe(false);
+    for (let i = 0; i < 5 && document.activeElement !== home; i++)
+      await userEvent.tab();
+    expect(document.activeElement).toBe(home);
+    expect((await screen.findByRole("tooltip")).textContent).toBe("Home");
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("tooltip")).toBeNull());
+  });
   it("persists explicit expansion, switches pages, and keeps keyboard shortcuts out of editors", async () => {
     const { unmount } = render(<Example />);
     await userEvent.click(

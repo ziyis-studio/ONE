@@ -1,3 +1,4 @@
+import { readActivities, storeActivities, mergeLogs } from "./activity";
 import {
   createContext,
   useContext,
@@ -366,6 +367,7 @@ export function WorkspaceProvider({
       exportedAt: new Date().toISOString(),
       workspace: dataRef.current,
       sessions: [],
+      activity: readActivities(scope),
       trash: readTrash(scope),
     };
   }, [demo, scope, token]);
@@ -411,6 +413,10 @@ export function WorkspaceProvider({
             ...entries,
             ...backup.trash.filter((e) => !known.has(e.id)),
           ]);
+          storeActivities(
+            scope,
+            mergeLogs(readActivities(scope), backup.activity || []),
+          );
           return idMap;
         }
         const result = await api<{

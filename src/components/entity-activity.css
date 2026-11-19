@@ -1,0 +1,222 @@
+.dialog:has(.entity-editor-layout) {
+  width: min(1000px, calc(100vw - 40px));
+}
+.entity-editor-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(280px, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+.entity-editor-layout > .editor-form {
+  min-width: 0;
+}
+.entity-activity-panel {
+  position: sticky;
+  top: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  border-left: 1px solid #ffffff10;
+  padding-left: 24px;
+  max-height: calc(100dvh - 150px);
+}
+.entity-activity-panel section > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.entity-activity-panel h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #ddd;
+  margin: 0;
+}
+.entity-activity-panel h3 > span {
+  font-size: 10px;
+  color: #888;
+}
+.entity-log-section {
+  display: flex;
+  flex-direction: column;
+  min-height: 300px;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+}
+.entity-log-description {
+  font-size: 10px;
+  line-height: 1.5;
+  color: #888;
+  margin: 8px 0 16px;
+}
+.entity-log-feed {
+  min-height: 80px;
+  overflow-y: auto;
+  flex: 1;
+  max-height: 300px;
+  scrollbar-width: thin;
+  padding-right: 6px;
+  overscroll-behavior: contain;
+}
+.entity-log-entry {
+  padding: 14px 0;
+  border-bottom: 1px solid #ffffff0b;
+}
+.entity-log-entry > header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.entity-log-author {
+  font-size: 11px;
+  color: #ddd;
+}
+.entity-log-entry time {
+  font-size: 9px;
+  color: #777;
+  white-space: nowrap;
+}
+.entity-log-entry > p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  line-height: 1.7;
+  margin: 9px 0 0;
+  color: #c5c5c5;
+}
+.entity-log-source {
+  display: block;
+  font-size: 10px;
+  color: var(--one-accent-mark);
+  text-align: left;
+  overflow-wrap: anywhere;
+  margin-top: 8px;
+}
+.entity-log-empty {
+  font-size: 11px;
+  line-height: 1.6;
+  color: #777;
+  margin: 12px 0;
+}
+.entity-log-composer {
+  margin-top: 15px;
+  flex-shrink: 0;
+}
+.entity-log-composer textarea {
+  width: 100%;
+  min-height: 76px;
+  max-height: 160px;
+  resize: vertical;
+  background: #191919;
+  border: 1px solid #ffffff16;
+  border-radius: 10px;
+  color: #ddd;
+  padding: 12px;
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.6;
+  outline: none;
+}
+.entity-log-composer textarea:focus {
+  border-color: var(--one-accent-mark);
+}
+.entity-log-composer > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+}
+.entity-log-composer small {
+  font-size: 9px;
+  color: #777;
+}
+.entity-log-composer .secondary-button {
+  min-height: 30px;
+  font-size: 10px;
+  padding: 0 9px;
+}
+.entity-linked-notes {
+  flex-shrink: 0;
+  min-width: 0;
+  border-top: 1px solid #ffffff10;
+  padding-top: 18px;
+}
+.entity-note-list {
+  max-height: 130px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  margin: 12px 0;
+}
+.entity-note-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 9px 0;
+  border-bottom: 1px solid #ffffff09;
+}
+.entity-note-open {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+.entity-note-open strong {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  font-weight: 450;
+  color: #ccc;
+}
+.entity-note-open small {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 10px;
+  color: #777;
+  margin-top: 5px;
+}
+.entity-log-error {
+  font-size: 11px;
+  line-height: 1.6;
+  color: #bbb;
+  border: 1px solid #ffffff20;
+  border-radius: 8px;
+  padding: 9px;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 800px) {
+  .dialog:has(.entity-editor-layout) {
+    width: min(600px, calc(100vw - 28px));
+  }
+  .entity-editor-layout {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .entity-activity-panel {
+    position: static;
+    max-height: none;
+    border-left: 0;
+    padding-left: 0;
+    border-top: 1px solid #ffffff12;
+    padding-top: 24px;
+  }
+  .entity-log-section {
+    min-height: 280px;
+  }
+  .entity-log-feed {
+    max-height: 280px;
+  }
+  .entity-linked-notes {
+    padding-bottom: 6px;
+  }
+}

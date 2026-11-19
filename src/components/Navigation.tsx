@@ -1,3 +1,8 @@
+import {
+  TooltipTrigger,
+  Tooltip,
+  Button as TooltipButton,
+} from "react-aria-components";
 // Motion patterns adapted from useLayouts (MIT), see docs/licenses/uselayouts.txt.
 import { useEffect, useId, useRef, useState } from "react";
 import { AnimatePresence, LayoutGroup, motion } from "motion/react";
@@ -190,29 +195,37 @@ export default function Navigation({
   function link(item: (typeof destinations)[number]) {
     const Icon = item.icon;
     return (
-      <button
+      <TooltipTrigger
         key={item.id}
-        type="button"
-        className="one-side-link"
-        aria-label={item.label}
-        title={expanded ? undefined : item.label}
-        aria-current={page === item.id ? "page" : undefined}
-        onClick={() => navigate(item.id)}
+        isDisabled={expanded}
+        delay={300}
+        closeDelay={70}
       >
-        {page === item.id && (
-          <motion.span
-            className="one-nav-selection"
-            layoutId="active"
-            transition={transition}
-          />
-        )}
-        <span className="one-side-icon">
-          <Icon size={19} strokeWidth={1.6} />
-        </span>
-        <span className="one-side-label" aria-hidden="true">
+        <TooltipButton
+          type="button"
+          className="one-side-link"
+          aria-label={item.label}
+          aria-current={page === item.id ? "page" : undefined}
+          onPress={() => navigate(item.id)}
+        >
+          {page === item.id && (
+            <motion.span
+              className="one-nav-selection"
+              layoutId="active"
+              transition={transition}
+            />
+          )}
+          <span className="one-side-icon">
+            <Icon size={19} strokeWidth={1.6} />
+          </span>
+          <span className="one-side-label" aria-hidden="true">
+            {item.label}
+          </span>
+        </TooltipButton>
+        <Tooltip placement="right" offset={12} className="one-nav-tooltip">
           {item.label}
-        </span>
-      </button>
+        </Tooltip>
+      </TooltipTrigger>
     );
   }
   return (

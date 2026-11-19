@@ -59,14 +59,8 @@
   }
   .editor-footer:has(.focus-task-button) > .delete-button {
     grid-row: 1;
-    grid-column: 1;
+    grid-column: 1 / -1;
     justify-self: start;
-  }
-  .editor-footer:has(.focus-task-button)
-    > .secondary-button:not(.focus-task-button) {
-    grid-row: 1;
-    grid-column: 2;
-    justify-self: end;
   }
   .editor-footer:has(.focus-task-button) > .focus-task-button {
     grid-row: 2;

@@ -396,7 +396,7 @@ describe("calendar and history interactions", () => {
       dayKey(record.startsAt, zone) + "T" + timeKey(record.startsAt, zone),
     );
     await userEvent.click(
-      within(dialog).getByRole("button", { name: "Close" }),
+      within(dialog).getByRole("button", { name: "Close dialog" }),
     );
     await userEvent.click(screen.getByRole("button", { name: "Add entry" }));
     expect(readDate(await screen.findByRole("dialog"), "Woke up", true)).toBe(

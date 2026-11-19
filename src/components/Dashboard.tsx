@@ -1,19 +1,14 @@
+import OverviewSleepCard from "./OverviewSleepCard";
+import EmotionTag from "./EmotionTag";
 import ScheduleKind from "./ScheduleKind";
 import FocusTaskButton from "./FocusTaskButton";
-import { motion } from "motion/react";
-import { ContentSwitch, DiscreteTabs, useSettle } from "./interactions";
-import { Plus, ArrowUpRight, Moon, ArrowRight, Clock3 } from "lucide-react";
+import { ContentSwitch, DiscreteTabs } from "./interactions";
+import { Plus, ArrowUpRight, ArrowRight, Clock3 } from "lucide-react";
 import { useViewState } from "../lib/view-state";
 import { useOne } from "../lib/workspace";
 import { useActions } from "../lib/actions";
 import { blocksOnDay, timeBlockTitle } from "../lib/schedule";
-import {
-  dateLabel,
-  dayKey,
-  timeKey,
-  weekDays,
-  minutesBetween,
-} from "../domain/time";
+import { dateLabel, dayKey, timeKey, weekDays } from "../domain/time";
 import { Card, CheckButton, Empty, EntityIcon } from "./ui";
 import WeatherCard from "./WeatherCard";
 import { PageDate } from "./PageDate";
@@ -25,7 +20,6 @@ export default function Dashboard() {
     "home.thoughts",
     "recent",
   );
-  const transition = useSettle();
   const linkedThoughts = new Set([
     ...data.thoughtTaskLinks.map((link) => link.thoughtId),
     ...data.thoughtProjectLinks.map((link) => link.thoughtId),
@@ -43,14 +37,6 @@ export default function Dashboard() {
     (o) => o.plannedOn === today && data.habits.some((h) => h.id === o.habitId),
   );
   const executed = new Set(data.executions.map((e) => e.occurrenceId));
-  const sleep = data.sleepRecords
-    .toSorted((a, b) => a.endsAt.localeCompare(b.endsAt))
-    .slice(-7);
-  const lastSleep = sleep.at(-1);
-  const netMinutes = lastSleep
-    ? minutesBetween(lastSleep.startsAt, lastSleep.endsAt) -
-      lastSleep.awakeMinutes
-    : 0;
   const thoughts = data.thoughts
     .filter(
       (thought) => thoughtView === "recent" || linkedThoughts.has(thought.id),
@@ -80,77 +66,7 @@ export default function Dashboard() {
       <div className="dashboard-grid">
         <WeatherCard />
         <PomodoroCard />
-        <Card
-          title="Sleep"
-          action={() => navigate("sleep")}
-          className="sleep-card"
-        >
-          {lastSleep ? (
-            <>
-              <div className="sleep-readout">
-                <Moon size={17} />
-                <strong>
-                  {Math.floor(netMinutes / 60)}
-                  <small>h</small> {netMinutes % 60}
-                  <small>m</small>
-                </strong>
-              </div>
-              <p className="sleep-caption">
-                {timeKey(lastSleep.startsAt, zone)} –{" "}
-                {timeKey(lastSleep.endsAt, zone)}
-                <span> · net sleep</span>
-              </p>
-              <div
-                className="sleep-chart"
-                role="group"
-                aria-label="Your recent sleep durations"
-              >
-                {sleep.map((record, index) => {
-                  const minutes =
-                    minutesBetween(record.startsAt, record.endsAt) -
-                    record.awakeMinutes;
-                  const date = dateLabel(dayKey(record.endsAt, zone), {
-                    weekday: "long",
-                    month: "short",
-                    day: "numeric",
-                  });
-                  const duration = `${Math.floor(minutes / 60)}h ${minutes % 60}m net sleep`;
-                  return (
-                    <button
-                      key={record.id}
-                      type="button"
-                      aria-label={`${date} · ${duration}`}
-                      data-chart-title={date}
-                      data-chart-detail={duration}
-                      onClick={() => edit({ kind: "sleep", id: record.id })}
-                    >
-                      <motion.i
-                        initial={false}
-                        transition={transition}
-                        className={index === sleep.length - 1 ? "latest" : ""}
-                        animate={{
-                          height: Math.max(10, Math.min(76, minutes / 7.5)),
-                        }}
-                      />
-                      <span>
-                        {dateLabel(dayKey(record.endsAt, zone), {
-                          weekday: "narrow",
-                        })}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </>
-          ) : (
-            <Empty
-              title="No sleep logged"
-              detail="Log your rest to see it here."
-              action={() => edit({ kind: "sleep" })}
-              label="Log sleep"
-            />
-          )}
-        </Card>
+        <OverviewSleepCard />
         <Card
           title="Habits"
           action={() => navigate("habits")}
@@ -276,7 +192,6 @@ export default function Dashboard() {
                     }
                     key={task.id}
                   >
-                    <FocusTaskButton task={task} />
                     <CheckButton
                       checked={!!task.completedAt}
                       label={
@@ -296,12 +211,7 @@ export default function Dashboard() {
                           ?.title || "Personal task"}
                       </span>
                     </button>
-                    {task.startedAt && !task.completedAt && (
-                      <span className="status-dot purple" />
-                    )}
-                    {task.completedAt && (
-                      <span className="done-label">Done</span>
-                    )}
+                    <FocusTaskButton task={task} />
                   </div>
                 ))}
               </div>
@@ -315,9 +225,9 @@ export default function Dashboard() {
                   Add a task
                 </button>
                 <span className="fine">
-                  {done === tasks.length
-                    ? "A good day’s work."
-                    : done + " little win" + (done === 1 ? "" : "s") + " today"}
+                  {done < tasks.length
+                    ? done + " little win" + (done === 1 ? "" : "s") + " today"
+                    : null}
                 </span>
               </div>
             </>
@@ -429,9 +339,10 @@ export default function Dashboard() {
                       </span>
                       <span className="thought-preview-foot">
                         {thought.emotion && (
-                          <span className="thought-emotion">
-                            {thought.emotion}
-                          </span>
+                          <EmotionTag
+                            value={thought.emotion}
+                            className="thought-emotion"
+                          />
                         )}
                         <time dateTime={thought.createdAt}>
                           {dayKey(thought.createdAt, zone) !== today &&
