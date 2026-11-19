@@ -1,5 +1,6 @@
 import { PageDate } from "./PageDate";
 import HabitSummary from "./HabitSummary";
+import { ChartEntrance } from "../lib/chart-entrance";
 import { useInsights } from "../lib/insights";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
@@ -227,7 +228,11 @@ export default function HabitsPage() {
                       <ArrowUpRight size={15} />
                     </IconButton>
                   </header>
-                  <div className={preset === "year" ? "habit-year-scroll" : ""}>
+                  <ChartEntrance
+                    className={preset === "year" ? "habit-year-scroll" : ""}
+                    ready={!!summary.insights && !summary.loading}
+                    replayKey={`${range.from}:${range.to}`}
+                  >
                     {preset === "year" && (
                       <div className="habit-year-months" aria-hidden="true">
                         {Array.from(
@@ -298,6 +303,7 @@ export default function HabitsPage() {
                           <button
                             key={date}
                             data-date={date}
+                            data-chart-enter="cell"
                             tabIndex={
                               preset === "year"
                                 ? date === focusDate
@@ -356,7 +362,7 @@ export default function HabitsPage() {
                         );
                       })}
                     </div>
-                  </div>
+                  </ChartEntrance>
                   <footer>
                     <span>
                       {done} / {due} completed

@@ -7,6 +7,7 @@ import { useOne } from "../lib/workspace";
 import { useActions } from "../lib/actions";
 import { dateLabel, dayKey } from "../domain/time";
 import { useMotionPreference } from "../lib/motion-preference";
+import { useChartEntrance } from "../lib/chart-entrance";
 import { CardOpen, openCardBackground } from "./CardOpen";
 import { EntityIcon, CheckButton } from "./ui";
 import { InlineTitle, useSettle } from "./interactions";
@@ -37,6 +38,7 @@ export default function ProjectCard({
       ? 100
       : 0;
   const progress = percent / 100;
+  const chart = useChartEntrance<SVGSVGElement>();
   const open = () => edit({ kind: "project", id: project.id });
   return (
     <motion.article
@@ -77,6 +79,7 @@ export default function ProjectCard({
       <motion.div layout="position" className="one-project-overview">
         <svg
           className="one-progress-ring"
+          ref={chart}
           viewBox="0 0 100 100"
           fill="none"
           role="img"
@@ -93,14 +96,22 @@ export default function ProjectCard({
           {PROJECT_PROGRESS_SEGMENTS.map((segment) => {
             const value = segmentProgress(progress, segment);
             return (
-              <motion.path
+              <path
                 key={segment.letter}
                 className="one-progress-fill"
                 d={segment.d}
                 stroke="currentColor"
-                initial={false}
-                animate={{ pathLength: value, opacity: value > 0 ? 1 : 0 }}
-                transition={transition}
+                pathLength="1"
+                data-chart-enter="draw"
+                data-chart-delay={(segment.start / 288) * 660}
+                data-chart-duration={Math.max(
+                  1,
+                  (segment.degrees / 288) * value * 660,
+                )}
+                style={{
+                  strokeDasharray: `${value} 1`,
+                  opacity: value > 0 ? 1 : 0,
+                }}
               />
             );
           })}

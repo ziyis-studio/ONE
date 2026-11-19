@@ -1,7 +1,8 @@
 import SleepSummary from "./SleepSummary";
 import { useInsights } from "../lib/insights";
 import { PageDate } from "./PageDate";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useState } from "react";
+import { useChartEntrance } from "../lib/chart-entrance";
 import type { KeyboardEvent } from "react";
 import {
   Plus,
@@ -34,9 +35,11 @@ export default function SleepPage() {
   const [anchor, setAnchor] = useViewState<string>("sleep.anchor", today);
   const [selected, setSelected] = useViewState<string>("sleep.selected", today);
   const [focusDay, setFocusDay] = useState(today);
-  const scroll = useRef<HTMLDivElement>(null);
   const history = sleepByDay(data.sleepRecords, zone);
   const { start, end, days } = sleepPeriod(range, anchor);
+  const scroll = useChartEntrance<HTMLDivElement>({
+    replayKey: `${range}:${start}:${end}`,
+  });
   const summary = useInsights("sleep", start, end);
   const label =
     range === "year"
@@ -232,6 +235,7 @@ export default function SleepPage() {
                     <button
                       key={date}
                       data-date={date}
+                      data-chart-enter="cell"
                       data-level={sleepLevel(current?.minutes)}
                       className={
                         "heatmap-cell level-" +

@@ -4,6 +4,7 @@ import type { SleepInsights } from "../domain/insights";
 import { dateLabel, timeKey } from "../domain/time";
 import { sleepDuration } from "../lib/sleep-history";
 import { Card } from "./ui";
+import { useChartEntrance } from "../lib/chart-entrance";
 
 const clockMinutes = (time: string) => {
   const [h, m] = time.split(":").map(Number);
@@ -25,6 +26,13 @@ export default function SleepSummary({
   zone: string;
 }) {
   const fillId = useId();
+  const entrance = {
+    ready: !!insights && !loading,
+    replayKey: insights ? `${insights.from}:${insights.to}` : label,
+  };
+  const lineRef = useChartEntrance<SVGSVGElement>(entrance);
+  const rhythmRef = useChartEntrance<SVGSVGElement>(entrance);
+  const compositionRef = useChartEntrance<HTMLDivElement>(entrance);
   const [active, setActive] = useState<string | null>(null);
   const entries = insights?.days || [];
   const first = entries[0]?.date,
@@ -92,6 +100,7 @@ export default function SleepSummary({
             aria-label="Sleep duration by logged day"
           >
             <svg
+              ref={lineRef}
               viewBox="0 0 560 170"
               className="sleep-duration-chart"
               role="group"
@@ -134,10 +143,13 @@ export default function SleepSummary({
               <path
                 d={path + ` L${values.at(-1)!.x},146 L${values[0].x},146 Z`}
                 fill={`url(#${fillId})`}
+                data-chart-enter="area"
                 pointerEvents="none"
               />
               <path
                 d={path}
+                pathLength="1"
+                data-chart-enter="draw"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2.5"
@@ -197,6 +209,7 @@ export default function SleepSummary({
                       </>
                     )}
                     <circle
+                      data-chart-enter="fade"
                       cx={point.x}
                       cy={point.y}
                       r={
@@ -239,6 +252,7 @@ export default function SleepSummary({
       >
         <div className="sleep-rhythm-main">
           <svg
+            ref={rhythmRef}
             viewBox="0 0 100 100"
             className="sleep-clock-chart"
             role="img"
@@ -266,6 +280,7 @@ export default function SleepSummary({
                 stroke="currentColor"
                 strokeWidth="7"
                 pathLength="1"
+                data-chart-enter="draw"
                 strokeDasharray={`${band} 1`}
                 strokeLinecap="round"
                 transform={`rotate(${clockMinutes(rhythm.bedtime) / 4 - 90} 50 50)`}
@@ -357,10 +372,12 @@ export default function SleepSummary({
           <>
             <div
               className="sleep-composition"
+              ref={compositionRef}
               role="img"
               aria-label={`${sleepDuration(recent.minutes)} asleep, ${recent.awake} minutes awake, ${sleepDuration(recent.inBed)} in bed`}
             >
               <span
+                data-chart-enter="bar-x"
                 style={{
                   width: `${recent.inBed ? (recent.minutes / recent.inBed) * 100 : 0}%`,
                 }}

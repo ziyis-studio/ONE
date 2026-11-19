@@ -35,6 +35,7 @@ npm run build
 - Views, searches, filters and calendar/history selection survive module navigation during a workspace visit. Signing out drops that temporary view state.
 - Eight primary-color presets and custom HEX values, with readable white labels, browser-local persistence, tab synchronization and a matching white/primary three-part logo and favicon.
 - Short closing animations for editors, confirmations, dropdowns and date pickers, with immediate keyboard/focus release, safe reopening and reduced-motion support.
+- Shared chart entrances throughout the workspace: line drawing, growing bars, clockwise project progress and small heatmap reveals. Charts wait for data and visibility, replay on range changes, settle on interaction and follow live reduced-motion preferences. Dense yearly maps use one fade per map.
 - Explicit sample data stored under one-demo-v1; cloud failures never switch to the sample or save business data locally.
 
 ## Data path
