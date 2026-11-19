@@ -47,8 +47,9 @@ afterEach(() => {
 function saved() {
   return JSON.parse(localStorage.getItem(DEMO_KEY)!);
 }
-async function demo() {
+async function demo(prepare?: (state: ReturnType<typeof createDemo>) => void) {
   const state = createDemo("Asia/Kuala_Lumpur");
+  prepare?.(state);
   localStorage.setItem(DEMO_KEY, JSON.stringify(state));
   render(
     <MotionConfig reducedMotion="always">
@@ -62,6 +63,103 @@ async function demo() {
   return state;
 }
 describe("workspace motion with real commands", () => {
+  it("returns to the project after changing a task status and preserves the project draft", async () => {
+    await demo();
+    await userEvent.click(
+      screen.getAllByRole("button", { name: "Projects" })[0],
+    );
+    await screen.findByRole(
+      "heading",
+      { name: "Projects." },
+      { timeout: 5000 },
+    );
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Open project ONE Workspace" }),
+    );
+    let dialog = await screen.findByRole("dialog", { name: "EDIT PROJECT" });
+    const title = within(dialog).getByRole("textbox", { name: "Title" });
+    await userEvent.clear(title);
+    await userEvent.type(title, "Project draft stays here");
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Explore a new direction" }),
+    );
+    dialog = await screen.findByRole("dialog", { name: "EDIT TASK" });
+    await userEvent.click(
+      within(within(dialog).getByRole("group", { name: "Status" })).getByRole(
+        "button",
+        { name: "Done" },
+      ),
+    );
+    dialog = await screen.findByRole("dialog", { name: "EDIT PROJECT" });
+    expect(
+      (
+        within(dialog).getByRole("textbox", {
+          name: "Title",
+        }) as HTMLInputElement
+      ).value,
+    ).toBe("Project draft stays here");
+    expect(
+      within(dialog).getByRole("button", {
+        name: "Reopen Explore a new direction",
+      }),
+    ).toBeTruthy();
+  });
+  it("keeps five recent completions on the board, reveals older history, and searches and reopens hidden tasks", async () => {
+    const state = await demo((state) => {
+      const original = state.tasks[0];
+      for (let i = 1; i <= 8; i++)
+        state.tasks.push({
+          ...original,
+          id: crypto.randomUUID(),
+          title: `Older completed ${i}`,
+          completedAt: `2026-11-${String(i).padStart(2, "0")}T00:00:00.000Z`,
+        });
+    });
+    await userEvent.click(screen.getAllByRole("button", { name: "Tasks" })[0]);
+    await screen.findByRole("heading", { name: "Tasks." });
+    const lane = document.querySelector(
+      '[data-sort-lane="done"]',
+    )! as HTMLElement;
+    expect(
+      within(lane).getAllByRole("button", { name: /^Open task / }),
+    ).toHaveLength(5);
+    expect(
+      screen.queryByRole("button", { name: "Open task Older completed 1" }),
+    ).toBeNull();
+    await userEvent.click(
+      within(lane).getByRole("button", {
+        name: "Show 4 older completed tasks",
+      }),
+    );
+    expect(
+      within(lane).getAllByRole("button", { name: /^Open task / }),
+    ).toHaveLength(9);
+    await userEvent.click(
+      within(lane).getByRole("button", { name: "Show recent 5" }),
+    );
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "Find a task…" }),
+      "Older completed 1",
+    );
+    expect(
+      screen.getByRole("button", { name: "Open task Older completed 1" }),
+    ).toBeTruthy();
+    await userEvent.click(
+      screen.getByRole("button", {
+        name: "Toggle Older completed 1",
+        pressed: true,
+      }),
+    );
+    await waitFor(() =>
+      expect(
+        saved().tasks.find(
+          (t: { title: string }) => t.title === "Older completed 1",
+        ).completedAt,
+      ).toBeNull(),
+    );
+    expect(saved().tasks).toHaveLength(state.tasks.length);
+    expect(document.querySelectorAll(".is-compact-complete")).toHaveLength(0);
+  });
   it("expands actual project tasks and updates the logo progress ring after completion", async () => {
     const state = await demo();
     await userEvent.click(
@@ -298,6 +396,27 @@ describe("workspace motion with real commands", () => {
       await screen.findByRole("button", {
         name: "Explore one clear direction",
       }),
+    ).toBeTruthy();
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "Find a task…" }),
+      "no-such-task",
+    );
+    expect(screen.getByText("No tasks match these filters.")).toBeTruthy();
+    await userEvent.click(
+      screen.getByRole("button", { name: "Clear filters" }),
+    );
+    expect(
+      (
+        screen.getByRole("textbox", {
+          name: "Find a task…",
+        }) as HTMLInputElement
+      ).value,
+    ).toBe("");
+    expect(document.activeElement).toBe(
+      screen.getByRole("textbox", { name: "Find a task…" }),
+    );
+    expect(
+      screen.getByRole("button", { name: "Make a little room to think" }),
     ).toBeTruthy();
   });
   it("switches Home thought previews without writing records and opens the correct creation editor", async () => {

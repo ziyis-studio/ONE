@@ -314,8 +314,10 @@ export default function SleepSummary({
         </div>
         <p className="sleep-stat-note">
           {rhythm
-            ? `Based on the longest sleep period on each of ${rhythm.samples} logged days.`
-            : "Your usual sleep window will appear as you log your rest."}
+            ? `24-hour averages · longest sleep period on each of ${rhythm.samples} logged days.`
+            : insights?.loggedDays
+              ? "Sleep times vary too widely for one usual window."
+              : "Your usual sleep window will appear as you log your rest."}
         </p>
       </Card>
       <Card

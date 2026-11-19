@@ -357,7 +357,7 @@ export default function Editor() {
       if (kind === "task" && task) await moveTask(task, stage);
       else if (kind === "project" && project && stage !== "todo")
         await moveProject(project, stage);
-      edit(null);
+      returnEditor();
     } catch (cause) {
       if (mounted.current)
         setError(

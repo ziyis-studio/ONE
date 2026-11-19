@@ -116,6 +116,7 @@ test("task entries persist, roll up to the parent with their source, and unsent 
   await waitFor(() =>
     expect(screen.getAllByText("Finished the first draft")).toHaveLength(1),
   );
+  await userEvent.click(screen.getByRole("tab", { name: /Notes/ }));
   expect(screen.getByRole("button", { name: /^Research/ })).toBeTruthy();
   view.unmount();
   render(<EntityActivityPanel kind="task" id={task} onOpen={open} />);
@@ -131,6 +132,7 @@ test("linking an existing note preserves its contents, tags and other targets", 
   const { container } = render(
     <EntityActivityPanel kind="task" id={task} onOpen={vi.fn()} />,
   );
+  await userEvent.click(screen.getByRole("tab", { name: /Notes/ }));
   await chooseOption(container, "Link a note", "Research");
   expect(mock.context.execute).toHaveBeenCalledWith({
     type: "note.save",
@@ -146,6 +148,36 @@ test("linking an existing note preserves its contents, tags and other targets", 
       ],
     },
   });
+});
+
+test("switching Log and Notes preserves the unpublished draft and supports keyboard tabs", async () => {
+  const view = render(
+    <EntityActivityPanel kind="project" id={project} onOpen={vi.fn()} />,
+  );
+  await screen.findByText("No entries yet.");
+  fireEvent.change(screen.getByRole("textbox", { name: "Write a log entry" }), {
+    target: { value: "Keep this while browsing notes" },
+  });
+  await userEvent.click(screen.getByRole("tab", { name: /Notes/ }));
+  expect(
+    screen.queryByRole("textbox", { name: "Write a log entry" }),
+  ).toBeNull();
+  expect(screen.getByRole("button", { name: /^Research/ })).toBeTruthy();
+  await userEvent.keyboard("{ArrowLeft}");
+  expect(
+    screen.getByRole("tab", { name: "Log" }).getAttribute("aria-selected"),
+  ).toBe("true");
+  expect(
+    (
+      screen.getByRole("textbox", {
+        name: "Write a log entry",
+      }) as HTMLTextAreaElement
+    ).value,
+  ).toBe("Keep this while browsing notes");
+  view.unmount();
+  expect(readLogDrafts("demo").find((d) => d.targetId === project)?.body).toBe(
+    "Keep this while browsing notes",
+  );
 });
 test("a failed cloud post keeps the draft and retries with the same identity", async () => {
   mock.context = {
