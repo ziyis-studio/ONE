@@ -1,0 +1,58 @@
+[data-sort-id] {
+  touch-action: pan-y;
+}
+body.one-card-drag-active,
+body.one-card-drag-active * {
+  cursor: grabbing !important;
+  user-select: none !important;
+}
+[data-sort-id][data-sorting] {
+  opacity: 0.2 !important;
+  border-style: dashed;
+}
+[data-sort-over] {
+  background: #222024 !important;
+  border-color: var(--one-accent-mark) !important;
+}
+.one-card-drag-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 10000;
+  pointer-events: none;
+  overflow: hidden;
+  isolation: isolate;
+  background: #252525;
+  box-shadow:
+    0 16px 42px #0006,
+    0 0 0 1px #ffffff1c;
+  will-change: transform;
+}
+.one-card-drag-overlay > article {
+  border-radius: inherit !important;
+  border-color: transparent;
+  cursor: grabbing;
+}
+.one-card-drag-overlay .one-card-open {
+  display: none;
+}
+.one-card-drag-overlay .data-table {
+  width: 100%;
+  margin: 0;
+}
+
+[data-keyboard-sorting] {
+  outline: 2px solid var(--one-accent-mark);
+  outline-offset: 3px;
+}
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}

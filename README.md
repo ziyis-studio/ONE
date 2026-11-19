@@ -49,7 +49,7 @@ Public configuration: `VITE_API_URL` (defaults to `/api`), `VITE_SUPABASE_URL`, 
 
 Private task/project notes support Markdown previews, raster images and downloadable PDF/text/CSV/ZIP/Office attachments. Files use immutable owner-scoped references. Backups include both images and files; restoring an existing identity verifies matching contents on the API before accepting it. Image uploads are limited to 5 MiB and documents to 3 MiB.
 
-Projects drag across statuses with completion gates, and task/project order persists across reloads. Arrow controls offer keyboard ordering. Tasks combine deadline and planned-time actions in one Dates and schedule control. Creating a task from a project returns to its project dialog. Schedule editors show both times together with duration presets. Sleep logs include one-tap feeling presets; the expanded sleep chart uses smooth curves with labelled dates and durations.
+Projects drag across statuses with completion gates, and task/project order persists across reloads. Task and project cards use pointer dragging with an immediate insertion preview and a rounded page overlay. Focus a card and press Space, use arrow keys, then Enter to drop or Escape to cancel. Moves save once on release; rejected moves restore the saved position. Tasks combine deadline and planned-time actions in one Dates and schedule control. Creating a task from a project returns to its project dialog. Schedule editors show both times together with duration presets. Sleep logs include one-tap feeling presets; the expanded sleep chart uses smooth curves with labelled dates and durations.
 
 ## Hosting
 
@@ -61,7 +61,7 @@ For signup and password reset on a new production domain, add that exact origin 
 
 Automated checks exercise login steps, all workspace modules, task creation and conditions, Markdown preview, typed records, sample isolation, schedule overlaps and drag interactions, sleep history aggregation, the neutral palette, and authenticated proxy behavior. They use synthetic data and mocked cloud responses, never production-user writes.
 
-Local Chromium checks cover desktop and phone viewports, real native drag/drop, keyboard/focus behavior and reduced motion. Detailed rehearsals and limits are in `src/components/REHEARSAL.md`. Credentialed production-user writes and physical mobile devices were not used for these checks.
+Local Chromium checks cover desktop and phone viewports, pointer drag/drop, keyboard/focus behavior and reduced motion. Detailed rehearsals and limits are in `src/components/REHEARSAL.md`. Credentialed production-user writes and physical mobile devices were not used for these checks.
 
 Notes use Markdown rather than a collaborative block editor. Database formulas, relations, rollups, and collaborative editing are outside the existing API contract.
 

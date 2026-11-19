@@ -1,9 +1,14 @@
 /*! Motion patterns adapted from useLayouts. Copyright (c) 2025 Urvish Mali. MIT license: /licenses/uselayouts.txt */
 // See docs/uselayouts-motion.md and docs/licenses/uselayouts.txt.
 import { useEffect, useLayoutEffect, useId, useRef, useState } from "react";
-import type { ReactNode, KeyboardEvent } from "react";
+import type { ReactNode, KeyboardEvent, Ref } from "react";
 import { createPortal } from "react-dom";
-import { AnimatePresence, LayoutGroup, motion } from "motion/react";
+import {
+  AnimatePresence,
+  LayoutGroup,
+  motion,
+  useIsPresent,
+} from "motion/react";
 import {
   Check,
   ChevronDown,
@@ -92,6 +97,8 @@ export function ContentSwitch({
 }) {
   const reduced = useMotionPreference(),
     transition = useSettle();
+  if (reduced)
+    return <div className={`one-content-switch ${className}`}>{children}</div>;
   return (
     <motion.div
       layout="size"
@@ -99,17 +106,31 @@ export function ContentSwitch({
       className={`one-content-switch ${className}`}
     >
       <AnimatePresence initial={false} mode="popLayout">
-        <motion.div
-          key={value}
-          layout="position"
-          initial={{ opacity: 0, y: reduced ? 0 : 5 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: reduced ? 0 : -4 }}
-          transition={{ duration: reduced ? 0 : 0.18 }}
-        >
-          {children}
-        </motion.div>
+        <SwitchPanel key={value}>{children}</SwitchPanel>
       </AnimatePresence>
+    </motion.div>
+  );
+}
+function SwitchPanel({
+  children,
+  ref,
+}: {
+  children: ReactNode;
+  ref?: Ref<HTMLDivElement>;
+}) {
+  const present = useIsPresent();
+  return (
+    <motion.div
+      ref={ref}
+      layout="position"
+      initial={{ opacity: 0, y: 5 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -4 }}
+      transition={{ duration: 0.18 }}
+      aria-hidden={!present || undefined}
+      inert={!present}
+    >
+      {children}
     </motion.div>
   );
 }
@@ -425,6 +446,7 @@ export function SaveButton({
   );
 }
 export function InlineTitle({
+  renameContainer,
   value,
   onSave,
   onOpen,
@@ -432,6 +454,7 @@ export function InlineTitle({
   disabled = false,
   onEditingChange,
 }: {
+  renameContainer?: HTMLElement | null;
   value: string;
   onSave: (value: string) => Promise<unknown>;
   onOpen: () => void;
@@ -506,6 +529,24 @@ export function InlineTitle({
     }
   }
   const errorId = useId();
+  const renameAction = (
+    <motion.button
+      layoutId={`${errorId}-action`}
+      transition={transition}
+      type="button"
+      ref={pencil}
+      className="one-rename"
+      aria-label={`Rename ${kind}: ${value}`}
+      disabled={disabled}
+      onClick={() => {
+        saveAction.current = onSave;
+        setDraft(value);
+        setEditing(true);
+      }}
+    >
+      <PencilLine size={13} />
+    </motion.button>
+  );
   return (
     <motion.div
       layout="position"
@@ -581,22 +622,11 @@ export function InlineTitle({
           <button type="button" className="one-inline-open" onClick={onOpen}>
             <h3>{value}</h3>
           </button>
-          <motion.button
-            layoutId={`${errorId}-action`}
-            transition={transition}
-            type="button"
-            ref={pencil}
-            className="one-rename"
-            aria-label={`Rename ${kind}: ${value}`}
-            disabled={disabled}
-            onClick={() => {
-              saveAction.current = onSave;
-              setDraft(value);
-              setEditing(true);
-            }}
-          >
-            <PencilLine size={13} />
-          </motion.button>
+          {renameContainer === undefined
+            ? renameAction
+            : renameContainer
+              ? createPortal(renameAction, renameContainer)
+              : null}
         </>
       )}
     </motion.div>

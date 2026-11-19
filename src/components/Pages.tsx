@@ -1,8 +1,10 @@
+import { useCardDrag } from "../lib/card-drag";
+import type { CardDragBinding } from "../lib/card-drag";
 import TaskTiming from "./TaskTiming";
 import { plannedTaskIds } from "../lib/schedule";
 import EmotionTag from "./EmotionTag";
 import FocusTaskButton from "./FocusTaskButton";
-import { useId, useRef, useState } from "react";
+import { useId, useState } from "react";
 import {
   Plus,
   Search,
@@ -14,16 +16,14 @@ import {
   ArrowRight,
   Check,
   MoreHorizontal,
-  ArrowUp,
-  ArrowDown,
   Table2,
   FileText,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import type { Task, Project, Note } from "../domain/model";
+import type { Task, Note } from "../domain/model";
 import { useViewState } from "../lib/view-state";
 import { useOne } from "../lib/workspace";
-import { useActions, stages, taskStage } from "../lib/actions";
+import { useActions, stages, taskStage, projectStage } from "../lib/actions";
 import type { Stage } from "../lib/actions";
 import {
   addMonths,
@@ -112,22 +112,30 @@ const matches = (query: string, ...values: (string | undefined)[]) =>
   values.join(" ").toLowerCase().includes(query.toLowerCase());
 export function TasksPage() {
   const { data, edit, busy, now } = useOne();
-  const { toggleTask, moveTask, rename, safely, reorder } = useActions();
+  const { toggleTask, moveTask, rename, safely } = useActions();
   const [view, setView] = useViewState<string>("tasks.view", "board"),
     [query, setQuery] = useViewState<string>("tasks.query", ""),
     [project, setProject] = useViewState<string>("tasks.project", "all");
-  const [dragOver, setDragOver] = useState("");
   const collectionId = useId(),
     collectionTransition = useSettle();
   const activeProject =
     project === "all" || data.projects.some((item) => item.id === project)
       ? project
       : "all";
-  const tasks = data.tasks.filter(
+  const filteredTasks = data.tasks.filter(
     (t) =>
       matches(query, t.title, t.description, t.tags?.join(" ")) &&
       (activeProject === "all" || t.projectId === activeProject),
   );
+  const sort = useCardDrag({
+    items: filteredTasks,
+    stageOf: taskStage,
+    lanes: stages.map((s) => s.id),
+    board: view === "board",
+    disabled: busy,
+    onMove: moveTask,
+  });
+  const tasks = sort.items;
   const planned = plannedTaskIds(data, now);
   const open = data.tasks.filter((t) => !t.completedAt).length;
   return (
@@ -166,6 +174,7 @@ export function TasksPage() {
         />
         <span className="fine toolbar-count">{tasks.length} tasks</span>
       </div>
+      {sort.feedback}
       <LayoutGroup id={collectionId}>
         <ContentSwitch value={view} className="one-collection">
           {view === "board" ? (
@@ -174,22 +183,8 @@ export function TasksPage() {
                 {stages.map((stage) => (
                   <section
                     key={stage.id}
-                    className={
-                      "board-lane " + (dragOver === stage.id ? "drag-over" : "")
-                    }
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      setDragOver(stage.id);
-                    }}
-                    onDragLeave={() => setDragOver("")}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      setDragOver("");
-                      const task = data.tasks.find(
-                        (t) => t.id === e.dataTransfer.getData("text/one-task"),
-                      );
-                      if (task) safely(() => moveTask(task, stage.id, null));
-                    }}
+                    className="board-lane"
+                    {...sort.lane(stage.id)}
                   >
                     <header>
                       <span>
@@ -197,7 +192,7 @@ export function TasksPage() {
                         {stage.title}
                         <small>
                           {
-                            tasks.filter((t) => taskStage(t) === stage.id)
+                            tasks.filter((t) => sort.stageOf(t) === stage.id)
                               .length
                           }
                         </small>
@@ -212,25 +207,17 @@ export function TasksPage() {
                       </IconButton>
                     </header>
                     <div className="lane-stack">
-                      <AnimatePresence initial={false}>
-                        {tasks
-                          .filter((t) => taskStage(t) === stage.id)
-                          .map((task) => (
-                            <motion.div
-                              layout="position"
-                              transition={collectionTransition}
-                              key={task.id}
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              exit={{ opacity: 0 }}
-                            >
-                              <TaskCard
-                                task={task}
-                                planned={planned.has(task.id)}
-                              />
-                            </motion.div>
-                          ))}
-                      </AnimatePresence>
+                      {tasks
+                        .filter((t) => sort.stageOf(t) === stage.id)
+                        .map((task) => (
+                          <TaskCard
+                            key={task.id}
+                            task={task}
+                            planned={planned.has(task.id)}
+                            drag={sort.card(task)}
+                            descriptionId={sort.descriptionId}
+                          />
+                        ))}
                     </div>
                   </section>
                 ))}
@@ -248,31 +235,14 @@ export function TasksPage() {
                     <th />
                   </tr>
                 </thead>
-                <tbody>
+                <tbody {...sort.lane("list")}>
                   {tasks.map((task) => (
                     <motion.tr
                       layout="position"
                       layoutId={`task-${task.id}`}
                       transition={collectionTransition}
                       key={task.id}
-                      draggable={!busy}
-                      onDragStartCapture={(e) => {
-                        e.dataTransfer.setData("text/one-task", task.id);
-                        e.dataTransfer.effectAllowed = "move";
-                      }}
-                      onDragOver={(e) => e.preventDefault()}
-                      onDrop={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        const source = data.tasks.find(
-                          (t) =>
-                            t.id === e.dataTransfer.getData("text/one-task"),
-                        );
-                        if (source && source.id !== task.id)
-                          safely(() =>
-                            moveTask(source, taskStage(task), task.id),
-                          );
-                      }}
+                      {...sort.card(task)}
                     >
                       <td>
                         <div className="table-task-title">
@@ -321,26 +291,6 @@ export function TasksPage() {
                         </div>
                       </td>
                       <td>
-                        <span className="reorder-controls">
-                          <IconButton
-                            label={"Move " + task.title + " up"}
-                            disabled={busy}
-                            onClick={() =>
-                              safely(() => reorder("task", task.id, -1))
-                            }
-                          >
-                            <ArrowUp size={13} />
-                          </IconButton>
-                          <IconButton
-                            label={"Move " + task.title + " down"}
-                            disabled={busy}
-                            onClick={() =>
-                              safely(() => reorder("task", task.id, 1))
-                            }
-                          >
-                            <ArrowDown size={13} />
-                          </IconButton>
-                        </span>
                         <IconButton
                           label={"Edit " + task.title}
                           onClick={() => edit({ kind: "task", id: task.id })}
@@ -371,15 +321,24 @@ export function TasksPage() {
     </>
   );
 }
-function TaskCard({ task, planned }: { task: Task; planned: boolean }) {
+function TaskCard({
+  task,
+  planned,
+  drag,
+  descriptionId,
+}: {
+  task: Task;
+  planned: boolean;
+  drag: CardDragBinding;
+  descriptionId: string;
+}) {
   const { data, edit, busy } = useOne();
-  const { toggleTask, rename, safely, moveTask, reorder } = useActions();
+  const { toggleTask, rename, safely } = useActions();
   const transition = useSettle();
-  const [renaming, setRenaming] = useState(false);
-  const dragged = useRef(false);
-  const open = () => {
-    if (!dragged.current) edit({ kind: "task", id: task.id });
-  };
+  const [renameContainer, setRenameContainer] = useState<HTMLElement | null>(
+    null,
+  );
+  const open = () => edit({ kind: "task", id: task.id });
   const project = data.projects.find((p) => p.id === task.projectId);
   const conditions = data.conditions.filter((c) => c.taskId === task.id);
   const done = conditions.filter((c) => c.isMet).length;
@@ -390,53 +349,32 @@ function TaskCard({ task, planned }: { task: Task; planned: boolean }) {
       transition={transition}
       className={"task-card " + (task.completedAt ? "is-complete" : "")}
       data-unscheduled={(!task.completedAt && !planned) || undefined}
-      draggable={!busy && !renaming}
+      {...drag}
       onClick={(event) => openCardBackground(event, open)}
-      onPointerDown={() => {
-        dragged.current = false;
-      }}
-      onDragOver={(e) => {
-        if (e.dataTransfer.types.includes("text/one-task")) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
-      }}
-      onDrop={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const source = data.tasks.find(
-          (t) => t.id === e.dataTransfer.getData("text/one-task"),
-        );
-        if (source && source.id !== task.id)
-          safely(() => moveTask(source, taskStage(task), task.id));
-      }}
-      onDragEnd={() => {
-        requestAnimationFrame(() => {
-          dragged.current = false;
-        });
-      }}
-      onDragStartCapture={(e) => {
-        dragged.current = true;
-        e.dataTransfer.setData("text/one-task", task.id);
-        e.dataTransfer.effectAllowed = "move";
-      }}
     >
-      <CardOpen label={"Open task " + task.title} onOpen={open} />
+      <CardOpen
+        label={"Open task " + task.title}
+        onOpen={open}
+        descriptionId={descriptionId}
+      />
       <div className="task-card-top">
         <span className="tag">
           {task.tags?.[0] || project?.title || "Personal"}
         </span>
-        <CheckButton
-          checked={!!task.completedAt}
-          disabled={busy}
-          label={"Toggle " + task.title}
-          onClick={() => safely(() => toggleTask(task))}
-        />
+        <span className="task-card-actions">
+          <span ref={setRenameContainer} />
+          <CheckButton
+            checked={!!task.completedAt}
+            disabled={busy}
+            label={"Toggle " + task.title}
+            onClick={() => safely(() => toggleTask(task))}
+          />
+        </span>
       </div>
       <div className="task-card-main">
         <InlineTitle
           kind="task"
-          onEditingChange={setRenaming}
+          renameContainer={renameContainer}
           value={task.title}
           onOpen={open}
           onSave={(title) => rename("task", task, title)}
@@ -458,45 +396,36 @@ function TaskCard({ task, planned }: { task: Task; planned: boolean }) {
       )}
       <div className="task-card-foot">
         <TaskTiming task={task} planned={planned} />
-        <span className="reorder-controls">
-          <IconButton
-            label={"Move " + task.title + " up"}
-            disabled={busy}
-            onClick={() => safely(() => reorder("task", task.id, -1, true))}
-          >
-            <ArrowUp size={13} />
-          </IconButton>
-          <IconButton
-            label={"Move " + task.title + " down"}
-            disabled={busy}
-            onClick={() => safely(() => reorder("task", task.id, 1, true))}
-          >
-            <ArrowDown size={13} />
-          </IconButton>
-        </span>
       </div>
     </motion.article>
   );
 }
 export function ProjectsPage() {
   const { data, edit, busy } = useOne();
-  const { moveProject, safely } = useActions();
-  const [dragOver, setDragOver] = useState("");
+  const { moveProject } = useActions();
   const [query, setQuery] = useViewState<string>("projects.query", ""),
     [view, setView] = useViewState<string>("projects.view", "board"),
     [stageFilter, setStageFilter] = useViewState<string>(
       "projects.status",
       "all",
     );
-  const status = (p: Project) =>
-    p.completedAt ? "done" : p.workStatus === "on_hold" ? "hold" : "progress";
-  const projects = data.projects.filter(
+  const status = projectStage;
+  const filteredProjects = data.projects.filter(
     (p) =>
       matches(query, p.title, p.description, p.tags?.join(" ")) &&
       (stageFilter === "all" || status(p) === stageFilter),
   );
-  const collectionId = useId(),
-    collectionTransition = useSettle();
+  const sort = useCardDrag({
+    items: filteredProjects,
+    stageOf: projectStage,
+    lanes: ["progress", "hold", "done"],
+    board: view === "board",
+    disabled: busy,
+    onMove: (item, stage, beforeId) =>
+      moveProject(item, stage as Exclude<Stage, "todo">, beforeId),
+  });
+  const projects = sort.items;
+  const collectionId = useId();
   return (
     <>
       <PageIntro
@@ -532,6 +461,7 @@ export function ProjectsPage() {
         />
         <span className="fine toolbar-count">{projects.length} projects</span>
       </div>
+      {sort.feedback}
       <LayoutGroup id={collectionId}>
         <ContentSwitch value={view} className="one-collection">
           {view === "board" ? (
@@ -540,30 +470,9 @@ export function ProjectsPage() {
                 .filter((s) => s.id !== "todo")
                 .map((stage) => (
                   <section
-                    className={
-                      "board-lane " + (dragOver === stage.id ? "drag-over" : "")
-                    }
                     key={stage.id}
-                    onDragOver={(e) => {
-                      if (
-                        !busy &&
-                        e.dataTransfer.types.includes("text/one-project")
-                      ) {
-                        e.preventDefault();
-                        setDragOver(stage.id);
-                      }
-                    }}
-                    onDragLeave={() => setDragOver("")}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      setDragOver("");
-                      const source = data.projects.find(
-                        (p) =>
-                          p.id === e.dataTransfer.getData("text/one-project"),
-                      );
-                      if (source)
-                        safely(() => moveProject(source, stage.id, null));
-                    }}
+                    className="board-lane"
+                    {...sort.lane(stage.id)}
                   >
                     <header>
                       <span>
@@ -571,7 +480,7 @@ export function ProjectsPage() {
                         {stage.id === "progress" ? "In motion" : stage.title}
                         <small>
                           {
-                            projects.filter((p) => status(p) === stage.id)
+                            projects.filter((p) => sort.stageOf(p) === stage.id)
                               .length
                           }
                         </small>
@@ -589,42 +498,31 @@ export function ProjectsPage() {
                       </IconButton>
                     </header>
                     <div className="lane-stack">
-                      <AnimatePresence initial={false}>
-                        {projects
-                          .filter((p) => status(p) === stage.id)
-                          .map((p) => (
-                            <motion.div
-                              layout="position"
-                              transition={collectionTransition}
-                              key={p.id}
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              exit={{ opacity: 0 }}
-                            >
-                              <ProjectCard project={p} />
-                            </motion.div>
-                          ))}
-                      </AnimatePresence>
+                      {projects
+                        .filter((p) => sort.stageOf(p) === stage.id)
+                        .map((project) => (
+                          <ProjectCard
+                            key={project.id}
+                            project={project}
+                            drag={sort.card(project)}
+                            descriptionId={sort.descriptionId}
+                          />
+                        ))}
                     </div>
                   </section>
                 ))}
             </div>
           ) : (
-            <div className="project-list">
-              <AnimatePresence initial={false}>
-                {projects.map((p) => (
-                  <motion.div
-                    layout="position"
-                    transition={collectionTransition}
-                    key={p.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                  >
-                    <ProjectCard project={p} row />
-                  </motion.div>
-                ))}
-              </AnimatePresence>
+            <div className="project-list" {...sort.lane("list")}>
+              {projects.map((project) => (
+                <ProjectCard
+                  key={project.id}
+                  project={project}
+                  row
+                  drag={sort.card(project)}
+                  descriptionId={sort.descriptionId}
+                />
+              ))}
             </div>
           )}
         </ContentSwitch>
