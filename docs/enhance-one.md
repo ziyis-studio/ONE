@@ -1,6 +1,6 @@
 # Enhance ONE — implementation and verification
 
-Source: ONE Database → Project **Enhance ONE**, all 10 open task titles and descriptions/notes read on November 19, 2026. No linked Notes were present. Task completion remains manual; these records were not marked done.
+Source: ONE Database → Project **Enhance ONE**, all 10 open task titles and descriptions/notes read on November 19, 2026. No linked Notes were present. The nine concrete fixes are included in this release. The Rednote reference task is On hold per user instruction and is excluded from release acceptance. Task completion remains manual.
 
 | Task                                                      | Result                                                                                                                                                                                                         |
 | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -11,7 +11,7 @@ Source: ONE Database → Project **Enhance ONE**, all 10 open task titles and de
 | Merge Calendar and Unscheduled                            | One Dates and schedule trigger opens an inline due-date calendar and Plan time action. The Schedule sidebar also has a single planning action for unplanned tasks.                                             |
 | Attach files/images and Markdown task/project notes       | Markdown edit/preview, private raster images, PDF/text/CSV/ZIP/Office files. Downloads and immutable backup restores go through authenticated API routes and owner Storage RLS.                                |
 | Improve task/project dialog layout                        | Actions span the dialog's full width, with Create/Save at the bottom right and a responsive Log/linked Notes section. Uploads block saving/closing until their reference is ready.                             |
-| Improve overall UI/UX                                     | Consolidated controls, keyboard ordering, responsive chart/editor layouts and fewer scheduling steps. The supplied Rednote item returns a login page; its visual content could not be inspected or reproduced. |
+| Improve overall UI/UX (Rednote) | **On hold.** Excluded from this release per user instruction; no redesign based on the inaccessible reference was attempted. |
 | Return to project after adding a task                     | Creating or cancelling a task from a project returns to that same project's dialog; Markdown/context and project association are preserved.                                                                    |
 | Reduce schedule time setup steps                          | Direct start/end time fields, one shared date, an optional separate end date and 30/60/90/120 minute presets. No per-time picker Save step.                                                                    |
 
@@ -32,7 +32,7 @@ The new owner-scoped RPCs include order fields; legacy workspace/backup RPC shap
 
 A hosted synthetic transaction verified the write allowlist, ordered reads, backup order, old response compatibility and cross-owner isolation, then rolled back. A follow-up query confirmed the test account was absent. Security advisors introduced no new findings.
 
-Deploy Planner API before ONE, and include the exact frontend origin in backend `API_ALLOWED_ORIGINS`. Code in these branches has not been promoted to production.
+Deploy Planner API before ONE, and include the exact frontend origin in backend `API_ALLOWED_ORIGINS`. Release the backend first, then the frontend, and verify the production routes.
 
 ## Verification
 
