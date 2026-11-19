@@ -392,3 +392,17 @@
   flex: none;
   color: #7f7f7f;
 }
+
+.thought-calendar .calendar-grid button.has-record:not(.selected) {
+  color: #c6b4ff;
+  background: var(--one-accent-soft, #7852ee24);
+  box-shadow: inset 0 0 0 1px #a17cfa42;
+}
+.thought-calendar .calendar-grid button.has-record i {
+  width: 4px;
+  height: 4px;
+  background: var(--one-accent-mark);
+}
+.thought-calendar .calendar-grid button.selected.has-record i {
+  background: white;
+}

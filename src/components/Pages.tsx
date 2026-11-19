@@ -15,7 +15,6 @@ import {
   ArrowUpRight,
   ArrowRight,
   Check,
-  MoreHorizontal,
   Table2,
   FileText,
 } from "lucide-react";
@@ -539,6 +538,9 @@ export function ThoughtsPage() {
     [filter, setFilter] = useViewState<string>("thoughts.filter", "all"),
     [day, setDay] = useViewState<string>("thoughts.day", ""),
     [month, setMonth] = useViewState<string>("thoughts.month", today);
+  const recordedDates = new Set(
+    data.thoughts.map((t) => dayKey(t.createdAt, zone)),
+  );
   const thoughts = data.thoughts
     .filter(
       (t) =>
@@ -639,14 +641,6 @@ export function ThoughtsPage() {
                           <ArrowRight size={12} />
                           Turn into a task
                         </button>
-                        <IconButton
-                          label="Edit thought"
-                          onClick={() =>
-                            edit({ kind: "thought", id: thought.id })
-                          }
-                        >
-                          <MoreHorizontal size={16} />
-                        </IconButton>
                       </footer>
                     </div>
                   </article>
@@ -697,14 +691,13 @@ export function ThoughtsPage() {
                 onClick={() => setDay(day === date ? "" : date)}
                 className={
                   (day === date ? "selected " : "") +
+                  (recordedDates.has(date) ? "has-record " : "") +
                   (date === today ? "is-today " : "") +
                   (date.slice(0, 7) !== month.slice(0, 7) ? "outside" : "")
                 }
               >
                 {Number(date.slice(-2))}
-                {data.thoughts.some(
-                  (t) => dayKey(t.createdAt, zone) === date,
-                ) && <i />}
+                {recordedDates.has(date) && <i />}
               </button>
             ))}
           </div>

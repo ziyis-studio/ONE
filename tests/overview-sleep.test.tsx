@@ -11,7 +11,7 @@ import userEvent from "@testing-library/user-event";
 import OverviewSleepCard from "../src/components/OverviewSleepCard";
 import SleepSummary from "../src/components/SleepSummary";
 import { ChartTooltipScope } from "../src/components/ChartTooltip";
-import { sleepByDay } from "../src/lib/sleep-history";
+import { sleepInsights } from "./support/insights";
 import { emptyWorkspace } from "../src/domain/model";
 const mock = vi.hoisted(() => ({ context: null as unknown, edit: vi.fn() }));
 vi.mock("../src/lib/workspace", () => ({ useOne: () => mock.context }));
@@ -90,13 +90,17 @@ test("missing overview days open a sleep log with the selected wake-up date", as
   );
   expect(mock.edit).toHaveBeenCalledWith({ kind: "sleep", date: "2026-11-17" });
 });
-test("three summary cards use logged-day averages and calendar coverage without inventing missing sleep", () => {
+test("three summary cards show observed sleep, midnight-safe rhythm and recent timing without inventing missing sleep", async () => {
   const { container } = render(
     <SleepSummary
-      history={sleepByDay(records, zone)}
-      start="2026-10-21"
-      end="2026-11-19"
-      today="2026-11-19"
+      insights={sleepInsights(
+        { ...emptyWorkspace(), sleepRecords: records },
+        "2026-10-21",
+        "2026-11-19",
+        "2026-11-19",
+        zone,
+      )}
+      zone={zone}
       label="Oct 21 – Nov 19"
     />,
   );
@@ -104,9 +108,10 @@ test("three summary cards use logged-day averages and calendar coverage without 
   expect(container.querySelector(".sleep-stat-body strong")?.textContent).toBe(
     "7h 30m",
   );
-  expect((screen.getByRole("progressbar") as HTMLProgressElement).value).toBe(
-    2,
-  );
-  expect((screen.getByRole("progressbar") as HTMLProgressElement).max).toBe(30);
+  expect(screen.getByText("Sleep rhythm")).toBeTruthy();
+  expect(container.textContent).toContain("2 of 30 days logged");
+  expect(
+    screen.getByRole("img", { name: "Usual sleep window 23:00 to 06:30" }),
+  ).toBeTruthy();
   expect(screen.getByRole("heading", { name: "Most recent" })).toBeTruthy();
 });

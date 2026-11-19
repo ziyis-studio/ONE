@@ -75,13 +75,21 @@ describe("habit heatmap interaction", () => {
         name: "Read a few pages completion history",
       });
     const before = saved().occurrences.length;
-    expect(within(history()).getAllByRole("button")).toHaveLength(7);
+    expect(await within(history()).findAllByRole("button")).toHaveLength(7);
     await userEvent.click(screen.getByRole("button", { name: "This month" }));
-    expect(within(history()).getAllByRole("button")).toHaveLength(
+    expect(await within(history()).findAllByRole("button")).toHaveLength(
       habitRange("month", today).days.length,
     );
     await userEvent.click(screen.getByRole("button", { name: "Last 30 days" }));
-    expect(within(history()).getAllByRole("button")).toHaveLength(30);
+    expect(await within(history()).findAllByRole("button")).toHaveLength(30);
+    await userEvent.click(
+      screen.getByRole("button", { name: "Year" }),
+    );
+    expect(await within(history()).findAllByRole("button")).toHaveLength(
+      habitRange("year", today).days.length,
+    );
+    expect(document.querySelectorAll(".habit-stat-card")).toHaveLength(3);
+    expect(screen.getByRole("heading", { name: "Streak" })).toBeTruthy();
     expect(saved().occurrences).toHaveLength(before);
     expect(screen.queryByRole("table")).toBe(null);
   });

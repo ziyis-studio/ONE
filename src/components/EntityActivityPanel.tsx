@@ -46,6 +46,8 @@ export default forwardRef<
     [loading, setLoading] = useState(!!id),
     [posting, setPosting] = useState(false),
     [error, setError] = useState("");
+  const [notesError, setNotesError] = useState("");
+  const [loadFailed, setLoadFailed] = useState(false);
   const [draft, setDraft] = useState(() => {
     const old = id
       ? readLogDrafts(scope).find((d) => d.kind === kind && d.targetId === id)
@@ -113,6 +115,7 @@ export default forwardRef<
     const current = ++request.current;
     setLoading(true);
     setError("");
+    setLoadFailed(false);
     try {
       const cursor = older ? next : null;
       const query = new URLSearchParams({ kind, id, ...(cursor || {}) });
@@ -127,7 +130,10 @@ export default forwardRef<
         setNext(page.next);
       }
     } catch (e) {
-      if (alive.current && current === request.current) setError(message(e));
+      if (alive.current && current === request.current) {
+        setError(message(e, "load the log"));
+        setLoadFailed(true);
+      }
     } finally {
       if (alive.current && current === request.current) setLoading(false);
     }
@@ -189,7 +195,7 @@ export default forwardRef<
       }
     } catch (e) {
       if (alive.current) {
-        setError(message(e));
+        setError(message(e, "save the log"));
         flushRef.current();
       }
     } finally {
@@ -200,6 +206,7 @@ export default forwardRef<
   async function linkNote(noteId: string, remove = false) {
     const note = data.notes.find((n) => n.id === noteId);
     if (!id || !note || busy) return;
+    setNotesError("");
     const targets: NoteTarget[] = data.noteLinks
       .filter((l) => l.noteId === noteId || l.targetNoteId === noteId)
       .map((l) =>
@@ -228,7 +235,7 @@ export default forwardRef<
         },
       });
     } catch (e) {
-      setError(message(e));
+      setNotesError(message(e, "link the note"));
     }
   }
   return (
@@ -279,9 +286,11 @@ export default forwardRef<
             <Spinner />
           ) : !items.length ? (
             <p className="entity-log-empty">
-              {id
-                ? "No entries yet."
-                : "Save this " + kind + " to start its log."}
+              {loadFailed
+                ? "Entries could not be loaded."
+                : id
+                  ? "No entries yet."
+                  : "Save this " + kind + " to start its log."}
             </p>
           ) : (
             items.map((row) => (
@@ -342,6 +351,26 @@ export default forwardRef<
             </button>
           </div>
         </div>
+        {error && (
+          <div className="entity-log-error" role="alert">
+            <span>{error}</span>
+            {loadFailed && (
+              <button
+                type="button"
+                onClick={() => void load()}
+                disabled={loading}
+              >
+                Retry loading log
+              </button>
+            )}
+            <IconButton
+              label="Dismiss log message"
+              onClick={() => setError("")}
+            >
+              <X size={12} />
+            </IconButton>
+          </div>
+        )}
       </section>
       <section
         className="entity-linked-notes"
@@ -400,16 +429,18 @@ export default forwardRef<
               ]}
             />
           )}
+        {notesError && (
+          <p className="entity-log-error" role="alert">
+            {notesError}
+          </p>
+        )}
       </section>
-      {error && (
-        <p className="entity-log-error" role="status">
-          {error}
-        </p>
-      )}
     </aside>
   );
 });
-const message = (e: unknown) =>
-  e instanceof Error
-    ? e.message
-    : "Could not update the log. Your draft was kept.";
+const message = (e: unknown, operation = "update the log") =>
+  e instanceof Error && "code" in e && e.code === "invalid"
+    ? `Could not ${operation}. Please retry; your draft is kept.`
+    : e instanceof Error
+      ? e.message
+      : "Could not update the log. Your draft was kept.";

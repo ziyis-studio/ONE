@@ -6,20 +6,24 @@ import type {
 } from "../domain/model";
 import { addDays, addMonths, isoWeekday, weekDays } from "../domain/time";
 
-export type HabitRangePreset = "week" | "month" | "30days";
+export type HabitRangePreset = "week" | "month" | "30days" | "year";
 export function habitRange(preset: HabitRangePreset, today: string) {
   const from =
     preset === "week"
       ? weekDays(today)[0]
-      : preset === "month"
-        ? today.slice(0, 7) + "-01"
-        : addDays(today, -29);
+      : preset === "year"
+        ? today.slice(0, 4) + "-01-01"
+        : preset === "month"
+          ? today.slice(0, 7) + "-01"
+          : addDays(today, -29);
   const to =
     preset === "week"
       ? weekDays(today)[6]
-      : preset === "month"
-        ? addDays(addMonths(from, 1), -1)
-        : today;
+      : preset === "year"
+        ? today.slice(0, 4) + "-12-31"
+        : preset === "month"
+          ? addDays(addMonths(from, 1), -1)
+          : today;
   const count = Math.round((Date.parse(to) - Date.parse(from)) / 86400000) + 1;
   const days = Array.from({ length: count }, (_, index) =>
     addDays(from, index),

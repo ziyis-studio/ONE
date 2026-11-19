@@ -194,7 +194,7 @@ describe("ONE interface flows", () => {
     );
     expect(saved.emotion).toBe("Calm");
     await userEvent.click(
-      screen.getAllByRole("button", { name: "Edit thought" })[0],
+      screen.getByRole("button", { name: "One calm thought" }),
     );
     dialog = await screen.findByRole("dialog");
     expect(
@@ -222,7 +222,7 @@ describe("ONE interface flows", () => {
     const before = JSON.parse(localStorage.getItem(DEMO_KEY)!);
     const thought = before.thoughts[0];
     await userEvent.click(
-      screen.getAllByRole("button", { name: "Edit thought" })[0],
+      screen.getByRole("button", { name: thought.content }),
     );
     const dialog = await screen.findByRole("dialog");
     expect(within(dialog).getByText("How does it feel?")).toBeTruthy();

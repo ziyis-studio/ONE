@@ -329,7 +329,11 @@ describe("calendar and history interactions", () => {
   });
   it("plans a task from the side panel and keeps the task incomplete", async () => {
     const { state } = await openSchedule();
-    const task = state.tasks.find((item) => !item.completedAt)!;
+    const task = state.tasks.find(
+      (item) =>
+        !item.completedAt &&
+        !state.blockTaskLinks.some((link) => link.taskId === item.id),
+    )!;
     const panel = screen.getByRole("complementary", {
       name: "Tasks to schedule",
     });

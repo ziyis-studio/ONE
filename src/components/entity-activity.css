@@ -220,3 +220,21 @@
     padding-bottom: 6px;
   }
 }
+.entity-log-section > .entity-log-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  border: 0;
+  padding: 8px 0 0;
+  background: transparent;
+}
+.entity-log-error > span {
+  flex: 1;
+  min-width: 140px;
+}
+.entity-log-error > button:not(.icon-button) {
+  color: var(--one-accent-mark);
+  font-size: 10px;
+  text-decoration: underline;
+}

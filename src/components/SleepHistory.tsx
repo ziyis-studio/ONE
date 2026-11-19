@@ -1,4 +1,5 @@
 import SleepSummary from "./SleepSummary";
+import { useInsights } from "../lib/insights";
 import { PageDate } from "./PageDate";
 import { useLayoutEffect, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
@@ -36,6 +37,7 @@ export default function SleepPage() {
   const scroll = useRef<HTMLDivElement>(null);
   const history = sleepByDay(data.sleepRecords, zone);
   const { start, end, days } = sleepPeriod(range, anchor);
+  const summary = useInsights("sleep", start, end);
   const label =
     range === "year"
       ? anchor.slice(0, 4)
@@ -121,10 +123,11 @@ export default function SleepPage() {
         </button>
       </div>
       <SleepSummary
-        history={history}
-        start={start}
-        end={end}
-        today={today}
+        insights={summary.insights}
+        loading={summary.loading}
+        error={summary.error}
+        onRetry={summary.reload}
+        zone={zone}
         label={label}
       />
       <section
