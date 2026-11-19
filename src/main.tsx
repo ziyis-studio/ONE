@@ -15,3 +15,5 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     </MotionConfig>
   </React.StrictMode>,
 );
+
+import "./components/enhance-one.css";

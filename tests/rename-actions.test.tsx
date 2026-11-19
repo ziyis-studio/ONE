@@ -2,9 +2,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, renderHook } from "@testing-library/react";
 import { useActions } from "../src/lib/actions";
-import { createDemo } from "../src/lib/demo";
-import { applyCommand } from "../src/domain/commands";
-import type { Command } from "../src/domain/commands";
+import { createDemo } from "./support/demo";
+import { applyCommand } from "./support/domain/commands";
+import type { Command } from "./support/domain/commands";
 import type { Workspace } from "../src/domain/model";
 const context = vi.hoisted(() => ({ value: null as unknown }));
 vi.mock("../src/lib/workspace", () => ({ useOne: () => context.value }));

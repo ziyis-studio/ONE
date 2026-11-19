@@ -13,7 +13,7 @@ import { MotionConfig } from "motion/react";
 import App from "../src/App";
 import { chooseOption } from "./select-field-helpers";
 import { addDays, dayKey, timeKey } from "../src/domain/time";
-import { DEMO_KEY } from "../src/lib/demo";
+import { DEMO_KEY } from "./support/demo";
 import { dateField, enterDate, readDate } from "./date-field-helpers";
 const { signIn } = vi.hoisted(() => ({ signIn: vi.fn() }));
 vi.mock("../src/lib/auth", () => ({

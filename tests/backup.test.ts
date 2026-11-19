@@ -1,8 +1,9 @@
 import { beforeEach, test, expect, vi } from "vitest";
 import { emptyWorkspace } from "../src/domain/model";
 const mock = vi.hoisted(() => ({ download: vi.fn(), upload: vi.fn() }));
-vi.mock("../src/lib/auth", () => ({
-  supabase: { storage: { from: () => mock } },
+vi.mock("../src/lib/api", () => ({
+  downloadAttachment: mock.download,
+  uploadAttachment: mock.upload,
 }));
 import { parsePortableBackup, restoreImages } from "../src/lib/backup";
 const ref = "planner-image://10000000-0000-4000-8000-000000000001.png";
@@ -32,23 +33,15 @@ beforeEach(() => {
 });
 test("complete backup validates owned attachment references before restoring and never overwrites a conflicting image", async () => {
   const backup = parsePortableBackup(fixture());
-  mock.download.mockResolvedValue({
-    data: new Blob([bytes], { type: "image/png" }),
-    error: null,
-  });
+  mock.upload.mockResolvedValue(ref);
   await restoreImages(backup, "target");
-  expect(mock.upload).not.toHaveBeenCalled();
-  expect(mock.download).toHaveBeenCalledWith(
-    "target/" + ref.slice("planner-image://".length),
+  expect(mock.upload).toHaveBeenCalledWith(expect.any(Blob), ref);
+  mock.upload.mockRejectedValue(
+    new Error("This attachment identity has different contents."),
   );
-  mock.download.mockResolvedValue({
-    data: new Blob([new Uint8Array([...bytes, 1])], { type: "image/png" }),
-    error: null,
-  });
   await expect(restoreImages(backup, "target")).rejects.toThrow(
     /different contents/,
   );
-  expect(mock.upload).not.toHaveBeenCalled();
 });
 test("missing and malformed images fail before any upload", async () => {
   const raw = fixture();

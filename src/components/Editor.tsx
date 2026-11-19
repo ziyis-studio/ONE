@@ -1,7 +1,10 @@
+import MarkdownNotes from "./MarkdownNotes";
+import TimeRangeField from "./TimeRangeField";
+import { Smile, Meh, Frown, Battery, BatteryLow } from "lucide-react";
 import EntityActivityPanel from "./EntityActivityPanel";
 import type { ActivityHandle } from "./EntityActivityPanel";
 import "./editor-status.css";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useId } from "react";
 import type { FormEvent, ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import {
@@ -56,6 +59,7 @@ export default function Editor() {
   } = useOne();
   const { safely, moveTask, moveProject } = useActions();
   const confirm = useConfirm();
+  const formId = useId();
   const kind = editor!.kind,
     id = editor!.id;
   const task = data.tasks.find((t) => t.id === id),
@@ -170,6 +174,7 @@ export default function Editor() {
   const [newConditions, setNewConditions] = useState<string[]>([]);
   const [error, setError] = useState("");
   const [preview, setPreview] = useState(false);
+  const [attachmentBusy, setAttachmentBusy] = useState(false);
   const [changingStatus, setChangingStatus] = useState(false);
   const statusLock = useRef(false);
   const [saveState, setSaveState] = useState<SaveState>("idle");
@@ -271,9 +276,22 @@ export default function Editor() {
       .split(",")
       .map((v) => v.trim())
       .filter(Boolean);
+  const returnEditor = () =>
+    edit(
+      editor?.returnProjectId &&
+        data.projects.some((p) => p.id === editor.returnProjectId)
+        ? { kind: "project", id: editor.returnProjectId }
+        : null,
+    );
   const close = () => {
-    if (!busy && !saving.current && !statusLock.current && flushDrafts())
-      edit(null);
+    if (
+      !attachmentBusy &&
+      !busy &&
+      !saving.current &&
+      !statusLock.current &&
+      flushDrafts()
+    )
+      returnEditor();
   };
   const currentStage = id
     ? kind === "task" && task
@@ -287,7 +305,14 @@ export default function Editor() {
       setInitialStage(stage);
       return;
     }
-    if (busy || dirty || saving.current || statusLock.current || !flushDrafts())
+    if (
+      attachmentBusy ||
+      busy ||
+      dirty ||
+      saving.current ||
+      statusLock.current ||
+      !flushDrafts()
+    )
       return;
     statusLock.current = true;
     setChangingStatus(true);
@@ -318,7 +343,13 @@ export default function Editor() {
   }
   async function save(event: FormEvent) {
     event.preventDefault();
-    if (busy || saving.current || statusLock.current || saveState === "saved")
+    if (
+      attachmentBusy ||
+      busy ||
+      saving.current ||
+      statusLock.current ||
+      saveState === "saved"
+    )
       return;
     setError("");
     const missing = Array.from(
@@ -529,7 +560,7 @@ export default function Editor() {
       notify(id ? "Changes saved." : "A little space, made.");
       saveTimer.current = setTimeout(
         () => {
-          if (activityDraft.current?.flush() !== false) edit(null);
+          if (activityDraft.current?.flush() !== false) returnEditor();
         },
         reduced ? 120 : 480,
       );
@@ -665,7 +696,7 @@ export default function Editor() {
             : undefined
         }
       >
-        <form className="editor-form" onSubmit={save} noValidate>
+        <form id={formId} className="editor-form" onSubmit={save} noValidate>
           {draft.stored && (
             <div className="draft-banner" role="status">
               <span>A draft from an earlier version is available.</span>
@@ -701,6 +732,11 @@ export default function Editor() {
                 </button>
               )}
             </div>
+          )}
+          {editor?.returnProjectId && (
+            <button type="button" className="text-button" onClick={close}>
+              ← Back to project
+            </button>
           )}
           <fieldset
             className="editor-fields"
@@ -757,6 +793,7 @@ export default function Editor() {
                           disabled={
                             busy ||
                             changingStatus ||
+                            attachmentBusy ||
                             (!!id && dirty) ||
                             currentStage === stage.id
                           }
@@ -780,11 +817,17 @@ export default function Editor() {
                 </Field>
               </div>
             )}
-            {(kind === "task" ||
-              kind === "project" ||
-              kind === "habit" ||
-              kind === "block" ||
-              kind === "database") && (
+            {(kind === "task" || kind === "project") && (
+              <MarkdownNotes
+                onBusyChange={setAttachmentBusy}
+                value={description}
+                onChange={setDescription}
+                disabled={
+                  busy || saveState === "saving" || saveState === "saved"
+                }
+              />
+            )}
+            {(kind === "habit" || kind === "block" || kind === "database") && (
               <textarea
                 className="description-input"
                 aria-label="Description"
@@ -942,7 +985,8 @@ export default function Editor() {
                       type="button"
                       key={t.id}
                       onClick={async () => {
-                        if (flushDrafts()) edit({ kind: "task", id: t.id });
+                        if (!attachmentBusy && flushDrafts())
+                          edit({ kind: "task", id: t.id, returnProjectId: id });
                       }}
                     >
                       <span
@@ -961,8 +1005,10 @@ export default function Editor() {
                 <button
                   type="button"
                   className="text-button"
-                  disabled={dirty}
-                  onClick={() => edit({ kind: "task", projectId: id })}
+                  disabled={dirty || attachmentBusy}
+                  onClick={() =>
+                    edit({ kind: "task", projectId: id, returnProjectId: id })
+                  }
                 >
                   <Plus size={13} />
                   Add a task
@@ -1017,30 +1063,44 @@ export default function Editor() {
             )}
             {(kind === "block" || kind === "sleep") && (
               <>
-                <div className="form-grid time-fields">
-                  <DateTimeField
-                    label={kind === "sleep" ? "Fell asleep" : "Starts at"}
-                    value={start}
-                    onChange={setStart}
-                    withTime
-                    required
+                {kind === "block" ? (
+                  <TimeRangeField
+                    start={start}
+                    end={end}
+                    onStart={setStart}
+                    onEnd={setEnd}
                     today={today}
                     disabled={
                       busy || saveState === "saving" || saveState === "saved"
                     }
                   />
-                  <DateTimeField
-                    label={kind === "sleep" ? "Woke up" : "Ends at"}
-                    value={end}
-                    onChange={setEnd}
-                    withTime
-                    required
-                    today={today}
-                    disabled={
-                      busy || saveState === "saving" || saveState === "saved"
-                    }
-                  />
-                </div>
+                ) : (
+                  <div className="form-grid time-fields">
+                    <DateTimeField
+                      label={kind === "sleep" ? "Fell asleep" : "Starts at"}
+                      value={start}
+                      onChange={setStart}
+                      withTime
+                      required
+                      today={today}
+                      disabled={
+                        busy || saveState === "saving" || saveState === "saved"
+                      }
+                    />
+                    <DateTimeField
+                      label={kind === "sleep" ? "Woke up" : "Ends at"}
+                      value={end}
+                      onChange={setEnd}
+                      withTime
+                      required
+                      today={today}
+                      disabled={
+                        busy || saveState === "saving" || saveState === "saved"
+                      }
+                    />
+                  </div>
+                )}
+
                 <p className="field-help">Times are shown in {zone}.</p>
                 {kind === "sleep" ? (
                   <>
@@ -1055,11 +1115,54 @@ export default function Editor() {
                         required
                       />
                     </Field>
+                    <fieldset className="sleep-feeling-picker">
+                      <legend>How do you feel?</legend>
+                      <div>
+                        {[
+                          { name: "Rested", Icon: Battery },
+                          { name: "Good", Icon: Smile },
+                          { name: "Okay", Icon: Meh },
+                          { name: "Tired", Icon: BatteryLow },
+                          { name: "Exhausted", Icon: Frown },
+                        ].map(({ name, Icon }) => (
+                          <button
+                            type="button"
+                            key={name}
+                            aria-pressed={sleepNote.startsWith(
+                              "[" + name + "]",
+                            )}
+                            onClick={() => {
+                              const rest = sleepNote.replace(
+                                /^\[(Rested|Good|Okay|Tired|Exhausted)\]\n?/,
+                                "",
+                              );
+                              setSleepNote(
+                                sleepNote.startsWith("[" + name + "]")
+                                  ? rest
+                                  : "[" + name + "]\n" + rest,
+                              );
+                            }}
+                          >
+                            <Icon size={21} />
+                            <span>{name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </fieldset>
                     <Field label="A note about your rest">
                       <textarea
                         rows={3}
-                        value={sleepNote}
-                        onChange={(e) => setSleepNote(e.target.value)}
+                        value={sleepNote.replace(
+                          /^\[(Rested|Good|Okay|Tired|Exhausted)\]\n?/,
+                          "",
+                        )}
+                        onChange={(e) =>
+                          setSleepNote(
+                            (sleepNote.match(
+                              /^\[(Rested|Good|Okay|Tired|Exhausted)\]\n?/,
+                            )?.[0] || "") + e.target.value,
+                          )
+                        }
                         placeholder="How did it feel?"
                         maxLength={10000}
                       />
@@ -1361,37 +1464,6 @@ export default function Editor() {
                 </button>
               </div>
             )}
-            <footer className="editor-footer">
-              {id && (
-                <button
-                  type="button"
-                  className="delete-button"
-                  onClick={() => void remove()}
-                  disabled={busy}
-                >
-                  <Trash2 size={14} />
-                  Delete
-                </button>
-              )}
-              <span />
-              {task && kind === "task" && (
-                <FocusTaskButton
-                  task={task}
-                  labelled
-                  onStarted={() => flushDrafts()}
-                />
-              )}
-
-              <SaveButton
-                state={saveState}
-                disabled={busy || (kind === "habit" && !weekdays.length)}
-                label={
-                  id
-                    ? "Save changes"
-                    : "Create " + (kind === "block" ? "time block" : kind)
-                }
-              />
-            </footer>
           </fieldset>
         </form>
         {(kind === "task" || kind === "project") && (
@@ -1400,10 +1472,44 @@ export default function Editor() {
             kind={kind}
             id={id}
             onOpen={(target) => {
-              if (flushDrafts()) edit(target);
+              if (!attachmentBusy && flushDrafts()) edit(target);
             }}
           />
         )}
+        <footer className="editor-footer">
+          {id && (
+            <button
+              type="button"
+              className="delete-button"
+              onClick={() => void remove()}
+              disabled={busy || attachmentBusy}
+            >
+              <Trash2 size={14} />
+              Delete
+            </button>
+          )}
+          <span />
+          {task && kind === "task" && (
+            <FocusTaskButton
+              task={task}
+              labelled
+              onStarted={() => !attachmentBusy && flushDrafts()}
+            />
+          )}
+
+          <SaveButton
+            form={formId}
+            state={saveState}
+            disabled={
+              attachmentBusy || busy || (kind === "habit" && !weekdays.length)
+            }
+            label={
+              id
+                ? "Save changes"
+                : "Create " + (kind === "block" ? "time block" : kind)
+            }
+          />
+        </footer>
       </div>
     </Dialog>
   );

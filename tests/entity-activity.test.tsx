@@ -21,6 +21,16 @@ const task = "10000000-0000-4000-8000-000000000001",
 beforeEach(() => {
   localStorage.clear();
   vi.resetAllMocks();
+  mock.api.mockImplementation(async (_path, _token, options) => {
+    const e = JSON.parse(options.body).entry;
+    return {
+      id: e.id,
+      target_kind: e.kind,
+      target_id: e.targetId,
+      body: e.body.trim(),
+      created_at: new Date().toISOString(),
+    };
+  });
   Element.prototype.scrollTo = vi.fn();
   vi.stubGlobal("matchMedia", () => ({
     matches: true,

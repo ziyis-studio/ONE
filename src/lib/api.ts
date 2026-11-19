@@ -1,6 +1,6 @@
 import type { Workspace } from "../domain/model";
 import type { Command } from "../domain/commands";
-import { API_PROXY } from "./config";
+import { apiUrl } from "./config";
 
 export class ApiError extends Error {
   constructor(
@@ -17,18 +17,18 @@ export async function api<T>(
   options: RequestInit = {},
 ): Promise<T> {
   const headers = new Headers(options.headers);
-  headers.set("Authorization", `Bearer ${token}`);
-  if (options.body) headers.set("Content-Type", "application/json");
-  const [route, query] = path.split("?", 2);
-  const params = new URLSearchParams(query);
-  params.set("path", route);
-  const response = await fetch(`${API_PROXY}?${params}`, {
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  if (options.body && !headers.has("Content-Type"))
+    headers.set("Content-Type", "application/json");
+  const response = await fetch(apiUrl(path), {
     ...options,
     headers,
     cache: "no-store",
-    signal: AbortSignal.timeout(30_000),
+    signal: options.signal
+      ? AbortSignal.any([options.signal, AbortSignal.timeout(30_000)])
+      : AbortSignal.timeout(30_000),
   });
-  const body = await response.json();
+  const body = response.status === 204 ? {} : await response.json();
   if (!response.ok)
     throw new ApiError(
       response.status,
@@ -48,3 +48,37 @@ export const sendCommand = (token: string, command: Command) =>
       body: JSON.stringify(command),
     },
   );
+
+export async function accessToken() {
+  const { supabase } = await import("./auth");
+  const { data, error } = await supabase.auth.getSession();
+  if (error || !data.session) throw new Error("Please sign in again.");
+  return data.session.access_token;
+}
+export async function downloadAttachment(ref: string): Promise<Blob> {
+  const path = ref.startsWith("planner-file://")
+    ? "/v1/files/" + ref.slice(15)
+    : "/v1/images/" + ref.slice(16);
+  const response = await fetch(apiUrl(path), {
+    headers: { Authorization: `Bearer ${await accessToken()}` },
+    cache: "no-store",
+    signal: AbortSignal.timeout(30000),
+  });
+  if (!response.ok) throw new Error("Attachment could not be downloaded.");
+  return response.blob();
+}
+export async function uploadAttachment(
+  file: Blob,
+  ref?: string,
+): Promise<string> {
+  const image = file.type.startsWith("image/");
+  const path =
+    (image ? "/v1/images" : "/v1/files") +
+    (ref ? "/" + ref.split("://")[1] : "");
+  const result = await api<{ ref: string }>(path, await accessToken(), {
+    method: "POST",
+    headers: { "Content-Type": file.type || "application/octet-stream" },
+    body: file,
+  });
+  return ref || result.ref;
+}

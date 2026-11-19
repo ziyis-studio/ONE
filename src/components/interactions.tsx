@@ -366,10 +366,12 @@ export function FilterPicker({
 }
 export type SaveState = "idle" | "saving" | "saved" | "error";
 export function SaveButton({
+  form,
   state,
   label,
   disabled = false,
 }: {
+  form?: string;
   state: SaveState;
   label: string;
   disabled?: boolean;
@@ -385,6 +387,8 @@ export function SaveButton({
           : label;
   return (
     <button
+      type="submit"
+      form={form}
       className="primary-button one-save-button"
       disabled={disabled || state === "saving" || state === "saved"}
       aria-label={text}

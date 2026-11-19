@@ -1,6 +1,6 @@
-import type { TimeBlock } from "../domain/model";
-import { POMODORO_MODES } from "./pomodoro";
-import type { PomodoroRecord } from "./pomodoro";
+import type { TimeBlock } from "./domain/model";
+import { POMODORO_MODES } from "../../src/lib/pomodoro";
+import type { PomodoroRecord } from "../../src/lib/pomodoro";
 
 /** The sample mirrors the database's automatic completion-to-time-block mapping. */
 export function pomodoroTimeBlock(

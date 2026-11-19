@@ -39,70 +39,67 @@ export function useActions() {
       expectedUpdatedAt: task.updatedAt,
     });
   }
-  async function moveTask(task: Task, stage: Stage) {
-    if (taskStage(task) === stage) return;
-    if (stage === "done") {
-      await execute({
-        type: "task.complete",
-        id: task.id,
-        expectedUpdatedAt: task.updatedAt,
-      });
-      return;
-    }
-    if (stage === "hold") {
-      if (task.completedAt) {
-        const result = await execute({
-          type: "task.reopen",
-          id: task.id,
-          expectedUpdatedAt: task.updatedAt,
-        });
-        task = result.snapshot.tasks.find((t) => t.id === task.id)!;
-      }
-      await execute({
-        type: "task.update",
-        id: task.id,
-        expectedUpdatedAt: task.updatedAt,
-        patch: { workStatus: "on_hold" },
-      });
-      return;
-    }
-    if (task.workStatus === "on_hold") {
-      const result = await execute({
-        type: "task.update",
-        id: task.id,
-        expectedUpdatedAt: task.updatedAt,
-        patch: { workStatus: "active" },
-      });
-      task = result.snapshot.tasks.find((t) => t.id === task.id)!;
-    }
-    await execute({
-      type: stage === "todo" ? "task.reopen" : "task.continue",
+  async function moveTask(task: Task, stage: Stage, beforeId?: string | null) {
+    if (taskStage(task) === stage && beforeId === undefined) return;
+    return execute({
+      type: "task.move",
       id: task.id,
+      stage,
       expectedUpdatedAt: task.updatedAt,
+      ...(beforeId !== undefined
+        ? {
+            beforeId,
+            items: data.tasks.map(({ id, updatedAt }) => ({ id, updatedAt })),
+          }
+        : {}),
     });
   }
-  async function moveProject(project: Project, stage: Exclude<Stage, "todo">) {
-    if (projectStage(project) === stage) return;
-    if (stage === "done")
-      return execute({ type: "project.complete", id: project.id });
-    if (project.completedAt) {
-      const result = await execute({ type: "project.reopen", id: project.id });
-      project = result.snapshot.projects.find((p) => p.id === project.id)!;
-    }
-    const workStatus = stage === "hold" ? "on_hold" : "active";
-    if ((project.workStatus || "active") !== workStatus)
-      return execute({
-        type: "project.update",
-        id: project.id,
-        expectedUpdatedAt: project.updatedAt,
-        input: {
-          title: project.title,
-          description: project.description,
-          icon: project.icon,
-          tags: project.tags,
-          workStatus,
-        },
-      });
+  async function moveProject(
+    project: Project,
+    stage: Exclude<Stage, "todo">,
+    beforeId?: string | null,
+  ) {
+    if (projectStage(project) === stage && beforeId === undefined) return;
+    return execute({
+      type: "project.move",
+      id: project.id,
+      stage,
+      expectedUpdatedAt: project.updatedAt,
+      ...(beforeId !== undefined
+        ? {
+            beforeId,
+            items: data.projects.map(({ id, updatedAt }) => ({
+              id,
+              updatedAt,
+            })),
+          }
+        : {}),
+    });
+  }
+  async function reorder(
+    kind: "task" | "project",
+    id: string,
+    direction: -1 | 1,
+    stageOnly = false,
+  ) {
+    const items = [...(kind === "task" ? data.tasks : data.projects)];
+    const source = items.find((item) => item.id === id);
+    if (!source) return;
+    const stage = (item: Task | Project) =>
+      kind === "task" ? taskStage(item as Task) : projectStage(item as Project);
+    const candidates = stageOnly
+      ? items.filter((item) => stage(item) === stage(source))
+      : items;
+    const at = candidates.findIndex((item) => item.id === id),
+      target = candidates[at + direction];
+    if (!target) return;
+    const next = items.filter((item) => item.id !== id),
+      targetAt = next.findIndex((item) => item.id === target.id);
+    next.splice(targetAt + (direction === 1 ? 1 : 0), 0, source);
+    return execute({
+      type: kind === "task" ? "task.reorder" : "project.reorder",
+      items: next.map(({ id, updatedAt }) => ({ id, updatedAt })),
+    });
   }
   async function toggleHabit(occurrenceId: string) {
     const execution = data.executions.find(
@@ -173,5 +170,13 @@ export function useActions() {
   const safely = (action: () => Promise<unknown>) => {
     void action().catch(() => {});
   };
-  return { toggleTask, moveTask, moveProject, toggleHabit, rename, safely };
+  return {
+    toggleTask,
+    moveTask,
+    moveProject,
+    reorder,
+    toggleHabit,
+    rename,
+    safely,
+  };
 }

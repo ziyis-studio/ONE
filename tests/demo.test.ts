@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { createDemo } from "../src/lib/demo";
-import { applyCommand } from "../src/domain/commands";
+import { createDemo } from "./support/demo";
+import { applyCommand } from "./support/domain/commands";
 describe("explicit offline sample", () => {
   it("creates a valid complete workspace using real domain commands", () => {
     const state = createDemo("Asia/Kuala_Lumpur");

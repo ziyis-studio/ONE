@@ -54,7 +54,7 @@ export function PomodoroProvider({
   zone: string;
   today: string;
   notify: (message: string) => void;
-  onDemoRecords?: (records: PomodoroRecord[]) => boolean;
+  onDemoRecords?: (records: PomodoroRecord[]) => boolean | Promise<boolean>;
   onSyncedBlocks?: (ids: string[]) => void;
 }) {
   const key = "one-pomodoro-v1:" + scope;
@@ -78,14 +78,21 @@ export function PomodoroProvider({
   useEffect(() => {
     if (cloud || !onDemoRecords) return;
     const pending = state.records.filter((record) => !record.timeBlockId);
-    if (!pending.length || !onDemoRecords(pending)) return;
-    const ids = new Set(pending.map((record) => record.id));
-    setState((current) => ({
-      ...current,
-      records: current.records.map((record) =>
-        ids.has(record.id) ? { ...record, timeBlockId: record.id } : record,
-      ),
-    }));
+    if (!pending.length) return;
+    let current = true;
+    void Promise.resolve(onDemoRecords(pending)).then((saved) => {
+      if (!saved || !current) return;
+      const ids = new Set(pending.map((record) => record.id));
+      setState((value) => ({
+        ...value,
+        records: value.records.map((record) =>
+          ids.has(record.id) ? { ...record, timeBlockId: record.id } : record,
+        ),
+      }));
+    });
+    return () => {
+      current = false;
+    };
   }, [cloud, onDemoRecords, state.records]);
   const announced = useRef(
     state.status === "complete" ? state.completedAt : null,

@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { supabase } from "./auth";
-import { dayBounds } from "../domain/time";
+import { api, accessToken } from "./api";
 import type { PomodoroRecord } from "./pomodoro";
 
 export type RecordSyncStatus = "local" | "syncing" | "saved" | "offline";
@@ -11,6 +10,8 @@ type Row = {
   completed_at: string;
   duration_seconds: number;
   time_block_id: string | null;
+  task_id?: string | null;
+  task_title?: string;
 };
 
 export function usePomodoroRecords(
@@ -51,44 +52,37 @@ export function usePomodoroRecords(
       try {
         let createdBlocks: string[] = [];
         if (pending.length) {
-          const { data: inserted, error } = await supabase
-            .from("pomodoro_sessions")
-            .upsert(
-              pending.map((record) => ({
-                owner_id: owner,
-                id: record.id,
-                mode: record.mode,
-                started_at: new Date(record.startedAt).toISOString(),
-                completed_at: new Date(record.completedAt).toISOString(),
-                duration_seconds: record.durationSeconds,
+          const inserted = await api<{ time_block_id: string | null }[]>(
+            "/v1/sessions",
+            await accessToken(),
+            {
+              method: "POST",
+              body: JSON.stringify({
                 timezone: zone,
-                task_id: record.taskId || null,
-                task_title: record.taskTitle || "",
-              })),
-              { onConflict: "owner_id,id", ignoreDuplicates: true },
-            )
-            .select("time_block_id")
-            .abortSignal(controller.signal);
-          if (error) throw error;
+                records: pending.map((r) => ({
+                  id: r.id,
+                  mode: r.mode,
+                  startedAt: r.startedAt,
+                  completedAt: r.completedAt,
+                  durationSeconds: r.durationSeconds,
+                  taskId: r.taskId || null,
+                  taskTitle: r.taskTitle || "",
+                })),
+              }),
+              signal: controller.signal,
+            },
+          );
           createdBlocks = (inserted || [])
             .map((row: { time_block_id: string | null }) => row.time_block_id)
             .filter((id): id is string => !!id);
           if (!controller.signal.aborted && createdBlocks.length)
             setLinkedBlocks(createdBlocks);
         }
-        const [start, end] = dayBounds(day, zone);
-        const { data, error } = await supabase
-          .from("pomodoro_sessions")
-          .select(
-            "id,mode,started_at,completed_at,duration_seconds,time_block_id",
-          )
-          .eq("owner_id", owner)
-          .gte("completed_at", new Date(start).toISOString())
-          .lt("completed_at", new Date(end).toISOString())
-          .order("completed_at")
-          .limit(1000)
-          .abortSignal(controller.signal);
-        if (error) throw error;
+        const data = await api<Row[]>(
+          "/v1/sessions?" + new URLSearchParams({ day, zone }),
+          await accessToken(),
+          { signal: controller.signal },
+        );
         if (!controller.signal.aborted) {
           setRecords(
             (data as Row[]).map((row) => ({
@@ -98,6 +92,8 @@ export function usePomodoroRecords(
               completedAt: Date.parse(row.completed_at),
               durationSeconds: row.duration_seconds,
               timeBlockId: row.time_block_id,
+              ...(row.task_id ? { taskId: row.task_id } : {}),
+              ...(row.task_title ? { taskTitle: row.task_title } : {}),
             })),
           );
           setLinkedBlocks([

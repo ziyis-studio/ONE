@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, test, expect, vi } from "vitest";
 import { emptyWorkspace } from "../src/domain/model";
-import { copyBackup, backupCopyId } from "../src/domain/recovery";
+import { copyBackup, backupCopyId } from "./support/domain/recovery";
 import {
   parsePortableBackup,
   restoreDrafts,
