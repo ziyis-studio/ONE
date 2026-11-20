@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { z } from "zod";
+import { mealKinds, mealPhotoSchema, nutrientKeys } from "../domain/meals";
 import type { Editor } from "./workspace";
 import {
   databaseFieldTypes,
@@ -26,6 +27,12 @@ export const draftValuesSchema = z
     end: z.string(),
     awake: z.number().finite(),
     sleepNote: text,
+    mealKind: z.enum(mealKinds).optional(),
+    mealPhotos: z.array(mealPhotoSchema).max(6).optional(),
+    mealNutrients: z
+      .record(z.enum(nutrientKeys), z.string().max(30))
+      .optional(),
+    nutritionSource: z.enum(["manual", "external"]).optional(),
     taskIds: z.array(z.string()).max(10000),
     fields: z
       .array(
@@ -52,6 +59,7 @@ export const editorSchema = z
       "block",
       "habit",
       "sleep",
+      "meal",
       "thought",
       "note",
       "database",

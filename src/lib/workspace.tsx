@@ -30,6 +30,7 @@ export type Page =
   | "schedule"
   | "habits"
   | "sleep"
+  | "meals"
   | "thoughts"
   | "notes"
   | "settings";
@@ -39,6 +40,7 @@ export type EditorKind =
   | "block"
   | "habit"
   | "sleep"
+  | "meal"
   | "thought"
   | "note"
   | "database"
@@ -103,6 +105,7 @@ const pages: Page[] = [
   "schedule",
   "habits",
   "sleep",
+  "meals",
   "thoughts",
   "notes",
   "settings",

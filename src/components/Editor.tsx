@@ -1,3 +1,8 @@
+import MealPhotos from "./MealPhotos";
+import { mealKinds, nutrientKeys } from "../domain/meals";
+import type { MealPhoto, Nutrient } from "../domain/meals";
+import { mealLabels, nutrientLabels } from "../lib/meals";
+import "./meals.css";
 import MarkdownNotes from "./MarkdownNotes";
 import TimeRangeField from "./TimeRangeField";
 import { Smile, Meh, Frown, Battery, BatteryLow } from "lucide-react";
@@ -72,29 +77,32 @@ export default function Editor() {
     note = data.notes.find((n) => n.id === id),
     block = data.timeBlocks.find((b) => b.id === id),
     sleep = data.sleepRecords.find((s) => s.id === id),
+    meal = data.meals.find((m) => m.id === id),
     habit = data.habits.find((h) => h.id === id),
     database = data.noteDatabases.find(
       (db) => db.id === (kind === "database" ? id : editor!.databaseId),
     ),
     record = data.databaseRecords.find((r) => r.id === id);
   const entity =
-    kind === "task"
-      ? task
-      : kind === "project"
-        ? project
-        : kind === "thought"
-          ? thought
-          : kind === "note"
-            ? note
-            : kind === "block"
-              ? block
-              : kind === "sleep"
-                ? sleep
-                : kind === "habit"
-                  ? habit
-                  : kind === "database"
-                    ? database
-                    : record;
+    kind === "meal"
+      ? meal
+      : kind === "task"
+        ? task
+        : kind === "project"
+          ? project
+          : kind === "thought"
+            ? thought
+            : kind === "note"
+              ? note
+              : kind === "block"
+                ? block
+                : kind === "sleep"
+                  ? sleep
+                  : kind === "habit"
+                    ? habit
+                    : kind === "database"
+                      ? database
+                      : record;
   const [revision, setRevision] = useState(entity?.updatedAt);
   const [title, setTitle] = useState(
     entity && "title" in entity
@@ -135,17 +143,21 @@ export default function Editor() {
     [endsOn, setEndsOn] = useState(habit?.endsOn || "");
   const [neverEnd, setNeverEnd] = useState(!habit?.endsOn);
   const [start, setStart] = useState(
-    block || sleep
-      ? dayKey((block || sleep)!.startsAt, zone) +
+    kind === "meal"
+      ? meal
+        ? dayKey(meal.ateAt, zone) + "T" + timeKey(meal.ateAt, zone)
+        : (editor!.date || today) + "T" + timeKey(new Date(), zone)
+      : block || sleep
+        ? dayKey((block || sleep)!.startsAt, zone) +
           "T" +
           timeKey((block || sleep)!.startsAt, zone)
-      : kind === "sleep"
-        ? addDays(editor!.date || today, -1) + "T23:00"
-        : editor!.startsAt
-          ? dayKey(editor!.startsAt, zone) +
-            "T" +
-            timeKey(editor!.startsAt, zone)
-          : (editor!.date || today) + "T09:00",
+        : kind === "sleep"
+          ? addDays(editor!.date || today, -1) + "T23:00"
+          : editor!.startsAt
+            ? dayKey(editor!.startsAt, zone) +
+              "T" +
+              timeKey(editor!.startsAt, zone)
+            : (editor!.date || today) + "T09:00",
   );
   const [end, setEnd] = useState(
     block || sleep
@@ -160,6 +172,22 @@ export default function Editor() {
   );
   const [awake, setAwake] = useState(sleep?.awakeMinutes || 0),
     [sleepNote, setSleepNote] = useState(sleep?.note || "");
+  const [mealKind, setMealKind] = useState<(typeof mealKinds)[number]>(
+    meal?.kind || "lunch",
+  );
+  const [mealPhotos, setMealPhotos] = useState<MealPhoto[]>(meal?.photos || []);
+  const [mealNutrients, setMealNutrients] = useState<Record<Nutrient, string>>(
+    () =>
+      Object.fromEntries(
+        nutrientKeys.map((key) => [
+          key,
+          meal?.[key] == null ? "" : String(meal[key]),
+        ]),
+      ) as Record<Nutrient, string>,
+  );
+  const [nutritionSource, setNutritionSource] = useState<"manual" | "external">(
+    meal?.nutritionSource || "manual",
+  );
   const [taskIds, setTaskIds] = useState(
     id
       ? data.blockTaskLinks
@@ -213,6 +241,10 @@ export default function Editor() {
     end,
     awake,
     sleepNote,
+    mealKind,
+    mealPhotos,
+    mealNutrients,
+    nutritionSource,
     taskIds,
     fields,
     noteId,
@@ -247,6 +279,18 @@ export default function Editor() {
       setEnd(v.end);
       setAwake(v.awake);
       setSleepNote(v.sleepNote);
+      setMealKind(v.mealKind || "lunch");
+      setMealPhotos(v.mealPhotos || []);
+      setMealNutrients(
+        v.mealNutrients || {
+          calories: "",
+          protein: "",
+          carbs: "",
+          fat: "",
+          fiber: "",
+        },
+      );
+      setNutritionSource(v.nutritionSource || "manual");
       setTaskIds(v.taskIds);
       setFields(v.fields);
       setNoteId(v.noteId);
@@ -433,6 +477,40 @@ export default function Editor() {
         throw new Error("Choose at least one repeat day.");
       let command: Command;
       switch (kind) {
+        case "meal": {
+          const invalidNumber = (
+            event.currentTarget as HTMLFormElement
+          ).querySelector<HTMLInputElement>('input[type="number"]:invalid');
+          if (invalidNumber) {
+            invalidNumber.focus();
+            throw new Error(
+              "Use non-negative nutrition values with up to two decimal places.",
+            );
+          }
+          const nutrition = Object.fromEntries(
+            nutrientKeys.map((key) => [
+              key,
+              mealNutrients[key].trim() === ""
+                ? null
+                : Number(mealNutrients[key]),
+            ]),
+          );
+          command = {
+            type: "meal.save",
+            ...(id ? { id, expectedUpdatedAt: revision } : {}),
+            input: {
+              title,
+              description,
+              kind: mealKind,
+              ateAt: wallTime(start.slice(0, 10), start.slice(11, 16), zone),
+              timeZone: zone,
+              photos: mealPhotos,
+              nutritionSource,
+              ...nutrition,
+            },
+          };
+          break;
+        }
         case "task":
           command = id
             ? {
@@ -625,31 +703,37 @@ export default function Editor() {
     )
       return;
     const command: Command =
-      kind === "task"
-        ? { type: "task.delete", id }
-        : kind === "project"
-          ? { type: "project.delete", id }
-          : kind === "thought"
-            ? { type: "thought.delete", id }
-            : kind === "note"
-              ? { type: "note.delete", id, expectedUpdatedAt: revision }
-              : kind === "habit"
-                ? { type: "habit.delete", id, expectedUpdatedAt: revision }
-                : kind === "block"
-                  ? { type: "block.delete", id, expectedUpdatedAt: revision }
-                  : kind === "sleep"
-                    ? { type: "sleep.delete", id, expectedUpdatedAt: revision }
-                    : kind === "database"
+      kind === "meal"
+        ? { type: "meal.delete", id, expectedUpdatedAt: revision! }
+        : kind === "task"
+          ? { type: "task.delete", id }
+          : kind === "project"
+            ? { type: "project.delete", id }
+            : kind === "thought"
+              ? { type: "thought.delete", id }
+              : kind === "note"
+                ? { type: "note.delete", id, expectedUpdatedAt: revision }
+                : kind === "habit"
+                  ? { type: "habit.delete", id, expectedUpdatedAt: revision }
+                  : kind === "block"
+                    ? { type: "block.delete", id, expectedUpdatedAt: revision }
+                    : kind === "sleep"
                       ? {
-                          type: "database.delete",
+                          type: "sleep.delete",
                           id,
-                          expectedUpdatedAt: revision!,
+                          expectedUpdatedAt: revision,
                         }
-                      : {
-                          type: "database.record.delete",
-                          id,
-                          expectedUpdatedAt: revision!,
-                        };
+                      : kind === "database"
+                        ? {
+                            type: "database.delete",
+                            id,
+                            expectedUpdatedAt: revision!,
+                          }
+                        : {
+                            type: "database.record.delete",
+                            id,
+                            expectedUpdatedAt: revision!,
+                          };
     try {
       await execute(command);
       draft.clear();
@@ -794,8 +878,88 @@ export default function Editor() {
                       : "A little " + kind + "…"
                 }
                 maxLength={300}
-                required={kind !== "thought" && kind !== "block"}
+                required={
+                  kind !== "thought" && kind !== "block" && kind !== "meal"
+                }
               />
+            )}
+            {kind === "meal" && (
+              <>
+                <div className="meal-editor-timing">
+                  <SelectField
+                    label="Meal type"
+                    value={mealKind}
+                    onChange={(value) => setMealKind(value as typeof mealKind)}
+                    options={mealKinds.map((value) => ({
+                      value,
+                      label: mealLabels[value],
+                    }))}
+                  />
+                  <DateTimeField
+                    label="Eaten at"
+                    value={start}
+                    onChange={setStart}
+                    withTime
+                    required
+                    today={today}
+                  />
+                </div>
+                <Field label="What did you eat?">
+                  <textarea
+                    aria-label="What did you eat?"
+                    value={description}
+                    onChange={(event) => setDescription(event.target.value)}
+                    maxLength={10000}
+                    rows={4}
+                    placeholder="Food, portions, ingredients… whatever you want to remember."
+                  />
+                </Field>
+                <MealPhotos
+                  photos={mealPhotos}
+                  onChange={setMealPhotos}
+                  disabled={
+                    busy || saveState === "saving" || saveState === "saved"
+                  }
+                  onBusyChange={setAttachmentBusy}
+                />
+                <section
+                  className="meal-nutrition-editor"
+                  aria-label="Meal nutrition"
+                >
+                  <header>
+                    <strong>Nutrition</strong>
+                    <small>
+                      For the entire meal · leave unknown values blank
+                    </small>
+                  </header>
+                  <div>
+                    {nutrientKeys.map((key) => (
+                      <Field
+                        key={key}
+                        label={`${nutrientLabels[key]} (${key === "calories" ? "kcal" : "g"})`}
+                      >
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          min="0"
+                          max="100000"
+                          step="0.01"
+                          aria-label={`${nutrientLabels[key]} (${key === "calories" ? "kcal" : "g"})`}
+                          value={mealNutrients[key]}
+                          placeholder="Not recorded"
+                          onChange={(event) => {
+                            setMealNutrients((old) => ({
+                              ...old,
+                              [key]: event.target.value,
+                            }));
+                            setNutritionSource("manual");
+                          }}
+                        />
+                      </Field>
+                    ))}
+                  </div>
+                </section>
+              </>
             )}
             {kind === "sleep" && (
               <div className="editor-sleep-heading">

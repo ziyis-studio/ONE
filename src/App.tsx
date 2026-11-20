@@ -9,6 +9,7 @@ import {
   FolderClosed,
   Repeat2,
   Moon,
+  Utensils,
   Lightbulb,
   FileText,
   Search,
@@ -37,6 +38,7 @@ import Navigation, {
   SidebarToggle,
 } from "./components/Navigation";
 const Auth = lazy(() => import("./components/Auth"));
+const Meals = lazy(() => import("./components/Meals"));
 const Editor = lazy(() => import("./components/Editor"));
 const Settings = lazy(() => import("./components/Settings"));
 const Tasks = lazy(() =>
@@ -233,6 +235,7 @@ function Shell({
     { kind: "block", label: "A little time", icon: CalendarDays },
     { kind: "habit", label: "A habit", icon: Repeat2 },
     { kind: "sleep", label: "A night of rest", icon: Moon },
+    { kind: "meal", label: "A meal", icon: Utensils },
     { kind: "thought", label: "A thought", icon: Lightbulb },
     { kind: "note", label: "A note", icon: FileText },
   ];
@@ -249,6 +252,8 @@ function Shell({
       <Habits />
     ) : page === "sleep" ? (
       <Sleep />
+    ) : page === "meals" ? (
+      <Meals />
     ) : page === "thoughts" ? (
       <Thoughts />
     ) : page === "notes" ? (
@@ -454,6 +459,12 @@ function SearchDialog({ onClose }: { onClose: () => void }) {
       id: t.id,
       title: t.title || t.content,
       content: t.content,
+    })),
+    ...data.meals.map((m) => ({
+      kind: "meal" as const,
+      id: m.id,
+      title: m.title || m.kind,
+      content: m.description,
     })),
     ...data.habits.map((h) => ({
       kind: "habit" as const,

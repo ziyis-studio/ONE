@@ -105,6 +105,7 @@ describe("ONE interface flows", () => {
       "Schedule",
       "Habits",
       "Sleep",
+      "Meals",
       "Thoughts",
       "Notes",
       "Settings",

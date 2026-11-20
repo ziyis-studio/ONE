@@ -5,7 +5,7 @@ export async function readDemo(zone: string): Promise<Workspace> {
   try {
     const saved = JSON.parse(localStorage.getItem(DEMO_KEY) || "null");
     if (saved?.schemaVersion === 1 && saved.tasks && saved.noteDatabases)
-      return saved;
+      return { ...saved, meals: saved.meals || [] };
   } catch {
     /* A new explicit sample can be requested. */
   }

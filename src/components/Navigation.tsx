@@ -13,6 +13,7 @@ import {
   FolderClosed,
   Repeat2,
   Moon,
+  Utensils,
   Lightbulb,
   FileText,
   Settings2,
@@ -37,6 +38,7 @@ const destinations: { id: Page; label: string; icon: LucideIcon }[] = [
   { id: "projects", label: "Projects", icon: FolderClosed },
   { id: "habits", label: "Habits", icon: Repeat2 },
   { id: "sleep", label: "Sleep", icon: Moon },
+  { id: "meals", label: "Meals", icon: Utensils },
   { id: "thoughts", label: "Thoughts", icon: Lightbulb },
   { id: "notes", label: "Notes", icon: FileText },
   { id: "settings", label: "Settings", icon: Settings2 },
@@ -250,10 +252,10 @@ export default function Navigation({
             aria-label="Your workspace"
             className="one-side-destinations"
           >
-            {destinations.slice(0, -1).map(link)}
+            {destinations.filter((item) => item.id !== "settings").map(link)}
           </motion.nav>
           <div className="one-side-footer">
-            {link(destinations[8])}
+            {link(destinations.find((item) => item.id === "settings")!)}
             <MorphMenu
               label="Your account settings"
               className="one-side-account"
