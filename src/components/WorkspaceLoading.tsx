@@ -11,6 +11,7 @@ const titles: Record<Page, string> = {
   schedule: "Schedule",
   habits: "Habits",
   sleep: "Sleep",
+  meals: "Meals",
   thoughts: "Thoughts",
   notes: "Notes",
   settings: "Settings",
@@ -212,6 +213,16 @@ export default function WorkspaceLoading({ page }: { page: Page }) {
                 ))}
               </section>
               <Card className="one-loading-mini-calendar" />
+            </div>
+          </>
+        ) : page === "meals" ? (
+          <>
+            <Toolbar />
+            <Summary />
+            <div className="notes-grid">
+              {[0, 1, 2].map((i) => (
+                <Card key={i} />
+              ))}
             </div>
           </>
         ) : page === "notes" ? (

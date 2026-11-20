@@ -56,6 +56,13 @@ export interface SleepInput {
 }
 export type Command =
   | {
+      type: "meal.save";
+      id?: string;
+      input: import("./meals").MealInput;
+      expectedUpdatedAt?: string;
+    }
+  | { type: "meal.delete"; id: string; expectedUpdatedAt: string }
+  | {
       type: "task.move";
       id: string;
       stage: "todo" | "progress" | "hold" | "done";

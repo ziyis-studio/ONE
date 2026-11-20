@@ -113,6 +113,7 @@ export default function RecoverySettings() {
         block: data.timeBlocks,
         habit: data.habits,
         sleep: data.sleepRecords,
+        meal: data.meals,
         database: data.noteDatabases,
         record: data.databaseRecords,
       };
