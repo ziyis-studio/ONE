@@ -61,7 +61,7 @@ export default function Meals() {
       });
     return () => controller.abort();
   }, [date, zone, demo, data, key, version]);
-  const day = result?.key === key ? result.value : null;
+  const day = !error && result?.key === key ? result.value : null;
   const meals = day?.meals || [];
   const max = Math.max(1, ...(day?.history.map((d) => d.calories || 0) || []));
   function select(value: string) {
@@ -90,34 +90,41 @@ export default function Meals() {
       </div>
       <div className="meal-date-toolbar">
         <div className="meal-date-controls">
-          <IconButton
-            label="Previous meal day"
-            onClick={() => select(addDays(date, -1))}
+          <div
+            className="meal-date-navigation"
+            role="group"
+            aria-label="Meal day navigation"
           >
-            <ArrowLeft size={16} />
-          </IconButton>
-          <DateTimeField
-            label="Meal date"
-            value={date}
-            onChange={select}
-            today={today}
-          />
-          <IconButton
-            label="Next meal day"
-            disabled={date >= today}
-            onClick={() => select(addDays(date, 1))}
-          >
-            <ArrowRight size={16} />
-          </IconButton>
+            <IconButton
+              label="Previous meal day"
+              onClick={() => select(addDays(date, -1))}
+            >
+              <ArrowLeft size={16} />
+            </IconButton>
+            <DateTimeField
+              label="Meal date"
+              value={date}
+              onChange={select}
+              today={today}
+              hideLabel
+            />
+            <IconButton
+              label="Next meal day"
+              disabled={date >= today}
+              onClick={() => select(addDays(date, 1))}
+            >
+              <ArrowRight size={16} />
+            </IconButton>
+          </div>
           <button
-            className="text-button"
+            className="meal-today-button"
             onClick={() => setDate(today)}
             disabled={date === today}
           >
             Today
           </button>
         </div>
-        <div>
+        <div className="meal-toolbar-meta">
           <span className="fine">{zone.replaceAll("_", " ")}</span>
           <IconButton
             label="Refresh meals"
@@ -144,13 +151,19 @@ export default function Meals() {
               <small> kcal</small>
             </strong>
             <span>
-              {meals.length} {meals.length === 1 ? "meal" : "meals"}
+              {day
+                ? `${meals.length} ${meals.length === 1 ? "meal" : "meals"}`
+                : "—"}
             </span>
           </div>
           <p className="meal-coverage">
-            {day?.totals.calories.recorded
-              ? `${day.totals.calories.recorded} of ${meals.length} meals with calories recorded`
-              : "Calories can be added whenever you’re ready."}
+            {!day
+              ? error
+                ? "Daily summary unavailable."
+                : "Loading your daily summary…"
+              : day.totals.calories.recorded
+                ? `${day.totals.calories.recorded} of ${meals.length} meals with calories recorded`
+                : "Calories can be added whenever you’re ready."}
           </p>
           <ChartEntrance
             className="meal-energy-history"
@@ -207,9 +220,13 @@ export default function Meals() {
                   <small> g</small>
                 </strong>
                 <small>
-                  {day?.totals[n].recorded
-                    ? `${day.totals[n].recorded} / ${meals.length} meals`
-                    : "Not recorded"}
+                  {!day
+                    ? error
+                      ? "Unavailable"
+                      : "Loading…"
+                    : day.totals[n].recorded
+                      ? `${day.totals[n].recorded} / ${meals.length} meals`
+                      : "Not recorded"}
                 </small>
               </div>
             ))}
@@ -230,7 +247,11 @@ export default function Meals() {
               })}
         </h2>
         <span className="fine">
-          {meals.length} {meals.length === 1 ? "entry" : "entries"}
+          {day
+            ? `${meals.length} ${meals.length === 1 ? "entry" : "entries"}`
+            : error
+              ? "Unavailable"
+              : "Loading…"}
         </span>
       </div>
       {error ? (

@@ -1,6 +1,6 @@
 .meal-date-toolbar,
 .meal-date-controls,
-.meal-date-toolbar > div,
+.meal-toolbar-meta,
 .meal-list-heading {
   display: flex;
   align-items: center;
@@ -11,8 +11,54 @@
   margin: 4px 0 24px;
   flex-wrap: wrap;
 }
-.meal-date-controls .one-date-field {
-  max-width: 185px;
+.meal-date-controls {
+  gap: 8px;
+  max-width: 100%;
+}
+.meal-date-navigation {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid #ffffff12;
+  border-radius: 11px;
+  background: #191919;
+}
+.meal-date-navigation .one-date-field {
+  width: 146px;
+}
+.meal-date-navigation .one-date-group {
+  min-height: 34px;
+  padding: 0 5px;
+  border-color: transparent;
+  border-radius: 7px;
+  background: transparent;
+}
+.meal-date-navigation .one-date-input {
+  padding-block: 4px;
+}
+.meal-date-navigation .icon-button {
+  width: 32px;
+  height: 34px;
+  flex-shrink: 0;
+}
+.meal-today-button {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid #ffffff12;
+  border-radius: 9px;
+  background: #ffffff04;
+  color: #bbb;
+  font-size: 12px;
+}
+.meal-today-button:hover:not(:disabled) {
+  background: #ffffff0a;
+}
+.meal-today-button:disabled {
+  opacity: 0.45;
+}
+.meal-toolbar-meta {
+  gap: 10px;
 }
 .meal-summary {
   display: grid;
@@ -387,16 +433,13 @@
   .meal-date-toolbar {
     gap: 12px;
   }
-  .meal-date-toolbar > div:last-child {
+  .meal-toolbar-meta {
     width: 100%;
     justify-content: space-between;
   }
   .meal-date-controls {
     gap: 6px;
     flex-wrap: wrap;
-  }
-  .meal-date-controls .one-date-field {
-    max-width: 175px;
   }
   .meal-editor-timing {
     grid-template-columns: 1fr;

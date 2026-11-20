@@ -46,6 +46,7 @@ export function DateTimeField({
   onChange,
   withTime = false,
   required = false,
+  hideLabel = false,
   disabled = false,
   min,
   today,
@@ -55,6 +56,7 @@ export function DateTimeField({
   onChange: (value: string) => void;
   withTime?: boolean;
   required?: boolean;
+  hideLabel?: boolean;
   disabled?: boolean;
   min?: string;
   today: string;
@@ -95,7 +97,15 @@ export function DateTimeField({
         validationBehavior="aria"
         shouldCloseOnSelect={!withTime}
       >
-        <Label className="one-date-label">{label}</Label>
+        <Label
+          className={
+            hideLabel
+              ? "one-date-label one-date-label-hidden"
+              : "one-date-label"
+          }
+        >
+          {label}
+        </Label>
         <Group className="one-date-group">
           <DateInput key={inputVersion} className="one-date-input">
             {(segment) => (
