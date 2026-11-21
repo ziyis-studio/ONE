@@ -24,6 +24,7 @@ import {
   CalendarDateTime,
   parseDate,
   parseDateTime,
+  parseTime,
   Time,
 } from "@internationalized/date";
 import { CalendarDays, ChevronLeft, ChevronRight, Clock3 } from "lucide-react";
@@ -37,6 +38,57 @@ function parse(value: string, withTime: boolean): DateValue | null {
   } catch {
     return null;
   }
+}
+
+/** Shared segmented 24-hour time input; civil HH:mm values stay in the editor. */
+export function TimeOfDayField({
+  label,
+  value,
+  onChange,
+  disabled = false,
+  required = false,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  disabled?: boolean;
+  required?: boolean;
+}) {
+  let parsed: Time | null = null;
+  try {
+    if (value) parsed = parseTime(value);
+  } catch {
+    /* Invalid/incomplete edits stay visible as empty segments. */
+  }
+  return (
+    <I18nProvider locale="en-GB">
+      <TimeField
+        className="one-date-field one-time-field"
+        data-date-label={label}
+        data-time-only="true"
+        data-date-required={required || undefined}
+        value={parsed}
+        onChange={(next) => onChange(next ? next.toString().slice(0, 5) : "")}
+        hourCycle={24}
+        granularity="minute"
+        shouldForceLeadingZeros
+        placeholderValue={new Time(0, 0)}
+        isRequired={required}
+        isDisabled={disabled}
+        validationBehavior="aria"
+      >
+        <Label className="one-date-label">{label}</Label>
+        <Group className="one-date-group">
+          <DateInput className="one-date-input">
+            {(segment) => (
+              <DateSegment className="one-date-segment" segment={segment} />
+            )}
+          </DateInput>
+          <Clock3 size={17} aria-hidden="true" />
+        </Group>
+      </TimeField>
+    </I18nProvider>
+  );
 }
 
 /** Values stay as civil dates/times; the editor applies the workspace timezone on save. */
@@ -282,7 +334,7 @@ export function invalidDateField(
     ) {
       return {
         field,
-        message: `Choose a complete, valid date${segments.some((s) => s.dataset.type === "hour") ? " and time" : ""} for “${field.dataset.dateLabel}”.`,
+        message: `Choose a complete, valid ${field.dataset.timeOnly ? "time" : "date" + (segments.some((s) => s.dataset.type === "hour") ? " and time" : "")} for “${field.dataset.dateLabel}”.`,
       };
     }
   }

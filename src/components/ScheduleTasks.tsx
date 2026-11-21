@@ -78,11 +78,16 @@ export default function ScheduleTasks({
                   onPlan={() => onPlan(task.id, selected)}
                 />
                 {links.length > 0 && (
-                  <small>
+                  <button
+                    type="button"
+                    className="one-linked-blocks-button"
+                    aria-label={`View ${links.length} linked ${links.length === 1 ? "block" : "blocks"} for ${task.title}`}
+                    onClick={() => edit({ kind: "task", id: task.id })}
+                  >
                     {links.length}{" "}
                     {planned.has(task.id) ? "linked" : "previous"}{" "}
                     {links.length === 1 ? "block" : "blocks"}
-                  </small>
+                  </button>
                 )}
               </div>
               {planned.has(task.id) && (

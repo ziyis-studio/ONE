@@ -177,23 +177,43 @@
   gap: 14px;
   margin: 16px 0;
 }
-.time-range-inputs label {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.time-range-inputs > .one-time-field {
   min-width: 0;
 }
-.time-range-inputs label > span {
-  color: #aaa;
+.time-range-inputs .one-date-group {
+  min-height: 48px;
+  padding: 0 12px;
+  border-radius: 11px;
+  background: #191919;
+  border-color: #ffffff16;
+}
+.time-range-inputs .one-date-input {
+  padding: 8px 0;
+  font-size: 20px;
+  letter-spacing: 0.02em;
+}
+.time-range-inputs .one-date-label {
   font-size: 11px;
+  color: #aaa;
 }
-.time-range-inputs input {
-  min-width: 0;
-  width: 100%;
-  font-size: 19px;
-  letter-spacing: 0.03em;
-  padding: 12px;
-  color-scheme: dark;
+.time-range-inputs .one-date-group > svg {
+  color: #888;
+  flex-shrink: 0;
+}
+.time-range-inputs .one-date-group[data-focus-within] {
+  border-color: var(--one-accent-mark);
+  box-shadow: 0 0 0 2px var(--one-accent-soft, #7852ee20);
+}
+.time-range-inputs .one-date-segment[data-focused] {
+  background: var(--one-accent);
+  color: #fff;
+}
+.time-range-arrow {
+  align-self: end;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  color: #777;
 }
 .time-range-field summary {
   font-size: 11px;
@@ -295,9 +315,11 @@
   .time-range-inputs {
     gap: 8px;
   }
-  .time-range-inputs input {
-    padding: 10px 6px;
-    font-size: 17px;
+  .time-range-inputs .one-date-group {
+    padding-inline: 8px;
+  }
+  .time-range-inputs .one-date-input {
+    font-size: 18px;
   }
   .sleep-feeling-picker > div {
     gap: 5px;

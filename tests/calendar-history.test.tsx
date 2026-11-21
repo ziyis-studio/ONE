@@ -10,7 +10,7 @@ import {
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import App from "../src/App";
-import { readDate } from "./date-field-helpers";
+import { readDate, readTime } from "./date-field-helpers";
 import { createDemo, DEMO_KEY } from "./support/demo";
 import { addDays, dayKey, timeKey } from "../src/domain/time";
 vi.mock("../src/lib/auth", () => ({
@@ -207,12 +207,8 @@ describe("calendar and history interactions", () => {
     fireEvent.pointerMove(track, { pointerId: 1, clientY: 1200 });
     fireEvent.pointerUp(track, { pointerId: 1, clientY: 1200 });
     const dialog = await screen.findByRole("dialog");
-    expect(
-      (within(dialog).getByLabelText("Starts at") as HTMLInputElement).value,
-    ).toBe("19:00");
-    expect(
-      (within(dialog).getByLabelText("Ends at") as HTMLInputElement).value,
-    ).toBe("20:00");
+    expect(readTime(dialog, "Starts at")).toBe("19:00");
+    expect(readTime(dialog, "Ends at")).toBe("20:00");
     await userEvent.type(
       within(dialog).getByRole("textbox", { name: "Title" }),
       "New timeline block",

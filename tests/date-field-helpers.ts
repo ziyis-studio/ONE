@@ -30,3 +30,37 @@ export async function enterDate(
     await userEvent.keyboard(digits);
   }
 }
+
+export function readTime(scope: HTMLElement, name: string) {
+  const field = [
+    ...scope.querySelectorAll<HTMLElement>(".one-time-field"),
+  ].find((node) => node.dataset.dateLabel === name);
+  if (!field) throw new Error(`Missing time field ${name}`);
+  return ["hour", "minute"]
+    .map((part) =>
+      within(field)
+        .getByRole("spinbutton", { name: new RegExp(part, "i") })
+        .getAttribute("aria-valuenow")!
+        .padStart(2, "0"),
+    )
+    .join(":");
+}
+export async function enterTime(
+  scope: HTMLElement,
+  name: string,
+  value: string,
+) {
+  const field = [
+    ...scope.querySelectorAll<HTMLElement>(".one-time-field"),
+  ].find((node) => node.dataset.dateLabel === name);
+  if (!field) throw new Error(`Missing time field ${name}`);
+  for (const [part, digits] of [
+    ["hour", value.slice(0, 2)],
+    ["minute", value.slice(3, 5)],
+  ]) {
+    await userEvent.click(
+      within(field).getByRole("spinbutton", { name: new RegExp(part, "i") }),
+    );
+    await userEvent.keyboard(digits);
+  }
+}

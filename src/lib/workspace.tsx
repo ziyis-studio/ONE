@@ -47,6 +47,12 @@ export type EditorKind =
   | "record";
 export type Editor = {
   returnProjectId?: string;
+  returnTo?: {
+    kind: "task" | "project";
+    id: string;
+    projectId?: string;
+    returnProjectId?: string;
+  };
   kind: EditorKind;
   id?: string;
   projectId?: string;

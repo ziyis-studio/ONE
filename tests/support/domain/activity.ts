@@ -25,9 +25,29 @@ export const activityQuerySchema = z
     beforeAt: z.iso.datetime({ offset: true }).optional(),
     beforeId: z.uuid().optional(),
   })
-  .strict()
+  // Hosting rewrites may attach transport query fields. Only these validated
+  // fields reach the owner-scoped RPC; unrelated query metadata is ignored.
+  .strip()
   .refine(
     (q) => !!q.beforeAt === !!q.beforeId,
     "A complete cursor is required.",
   );
 export type ActivityQuery = z.infer<typeof activityQuerySchema>;
+
+export type LinkedActivityBlock = {
+  id: string;
+  title: string;
+  description: string;
+  startsAt: string;
+  endsAt: string;
+  timeZone: string;
+  timing: "past" | "current" | "upcoming";
+  durationMinutes: number;
+  recordedType: "focus" | "short" | "long" | null;
+  tasks: { id: string; title: string }[];
+};
+export type ActivityPage = {
+  items: ActivityLog[];
+  next: { beforeAt: string; beforeId: string } | null;
+  linkedBlocks: LinkedActivityBlock[];
+};
