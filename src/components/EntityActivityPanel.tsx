@@ -10,6 +10,8 @@ import {
 import { MessageSquare, Send, FileText, RefreshCw, X } from "lucide-react";
 import { useOne } from "../lib/workspace";
 import { api } from "../lib/api";
+import LinkedTimeBlocks from "./LinkedTimeBlocks";
+import type { ActivityPage, LinkedActivityBlock } from "../domain/activity";
 import type { ActivityLog } from "../domain/activity";
 import type { NoteTarget } from "../domain/model";
 import {
@@ -19,7 +21,6 @@ import {
   saveLogDraft,
   clearLogDraft,
   mergeLogs,
-  demoActivityPage,
 } from "../lib/activity";
 import type { LogKind } from "../lib/activity";
 import { dateLabel, dayKey, timeKey } from "../domain/time";
@@ -28,16 +29,13 @@ import { IconButton, Spinner } from "./ui";
 import { SelectField } from "./SelectField";
 import "./entity-activity.css";
 export type ActivityHandle = { flush: () => boolean };
-type Page = {
-  items: ActivityLog[];
-  next: { beforeAt: string; beforeId: string } | null;
-};
+type Page = ActivityPage;
 export default forwardRef<
   ActivityHandle,
   {
     kind: LogKind;
     id?: string;
-    onOpen: (target: { kind: "task" | "note"; id: string }) => void;
+    onOpen: (target: { kind: "task" | "note" | "block"; id: string }) => void;
   }
 >(function EntityActivityPanel({ kind, id, onOpen }, ref) {
   const { data, demo, scope, session, zone, busy, execute } = useOne(),
@@ -47,6 +45,7 @@ export default forwardRef<
     [loading, setLoading] = useState(!!id),
     [posting, setPosting] = useState(false),
     [error, setError] = useState("");
+  const [linkedBlocks, setLinkedBlocks] = useState<LinkedActivityBlock[]>([]);
   const [notesError, setNotesError] = useState("");
   const [tab, setTab] = useState<"log" | "notes">("log");
   const activityId = useId();
@@ -123,10 +122,18 @@ export default forwardRef<
       const cursor = older ? next : null;
       const query = new URLSearchParams({ kind, id, ...(cursor || {}) });
       const page: Page = demo
-        ? demoActivityPage(data, scope, kind, id, cursor || undefined)
+        ? await api<Page>("/v1/sample/activity-feed", "", {
+            method: "POST",
+            body: JSON.stringify({
+              workspace: data,
+              items: readActivities(scope),
+              query: { kind, id, ...(cursor || {}) },
+            }),
+          })
         : await api<Page>("/v1/activity?" + query, session?.access_token || "");
       if (alive.current && current === request.current) {
-        scrollToEnd.current = !older;
+        scrollToEnd.current = !older && !page.linkedBlocks?.length;
+        if (!older) setLinkedBlocks(page.linkedBlocks || []);
         setItems((old) =>
           older ? mergeLogs(old, page.items) : mergeLogs(page.items),
         );
@@ -315,10 +322,16 @@ export default forwardRef<
       >
         <p className="entity-log-description">
           {kind === "project"
-            ? "Project entries and updates from its tasks."
-            : "Notes and updates for this task."}
+            ? "Project entries, task updates and linked time blocks."
+            : "Notes, updates and linked time blocks for this task."}
         </p>
         <div className="entity-log-feed" ref={feed} aria-label="Log entries">
+          <LinkedTimeBlocks
+            blocks={linkedBlocks}
+            zone={zone}
+            project={kind === "project"}
+            onOpen={(id) => onOpen({ kind: "block", id })}
+          />
           {next && (
             <button
               type="button"
@@ -336,7 +349,9 @@ export default forwardRef<
               {loadFailed
                 ? "Entries could not be loaded."
                 : id
-                  ? "No entries yet."
+                  ? linkedBlocks.length
+                    ? "No written entries yet."
+                    : "No entries yet."
                   : "Save this " + kind + " to start its log."}
             </p>
           ) : (

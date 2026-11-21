@@ -68,6 +68,15 @@ export const editorSchema = z
     id: z.uuid().optional(),
     projectId: z.uuid().optional(),
     returnProjectId: z.uuid().optional(),
+    returnTo: z
+      .object({
+        kind: z.enum(["task", "project"]),
+        id: z.uuid(),
+        projectId: z.uuid().optional(),
+        returnProjectId: z.uuid().optional(),
+      })
+      .strict()
+      .optional(),
     taskId: z.uuid().optional(),
     databaseId: z.uuid().optional(),
     date: z.string().optional(),

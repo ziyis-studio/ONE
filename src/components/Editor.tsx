@@ -326,10 +326,12 @@ export default function Editor() {
       .filter(Boolean);
   const returnEditor = () =>
     edit(
-      editor?.returnProjectId &&
-        data.projects.some((p) => p.id === editor.returnProjectId)
-        ? { kind: "project", id: editor.returnProjectId }
-        : null,
+      editor?.returnTo
+        ? editor.returnTo
+        : editor?.returnProjectId &&
+            data.projects.some((p) => p.id === editor.returnProjectId)
+          ? { kind: "project", id: editor.returnProjectId }
+          : null,
     );
   const close = () => {
     if (
@@ -737,7 +739,8 @@ export default function Editor() {
     try {
       await execute(command);
       draft.clear();
-      edit(null);
+      if (editor?.returnTo) returnEditor();
+      else edit(null);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not delete.");
     }
@@ -853,9 +856,9 @@ export default function Editor() {
               )}
             </div>
           )}
-          {editor?.returnProjectId && (
+          {(editor?.returnProjectId || editor?.returnTo) && (
             <button type="button" className="text-button" onClick={close}>
-              ← Back to project
+              ← Back to {editor?.returnTo?.kind || "project"}
             </button>
           )}
           <fieldset
@@ -1692,7 +1695,24 @@ export default function Editor() {
             kind={kind}
             id={id}
             onOpen={(target) => {
-              if (!attachmentBusy && flushDrafts()) edit(target);
+              if (!attachmentBusy && flushDrafts())
+                edit(
+                  target.kind === "block"
+                    ? {
+                        ...target,
+                        returnTo: {
+                          kind,
+                          id: id!,
+                          ...(editor?.returnProjectId
+                            ? { returnProjectId: editor.returnProjectId }
+                            : {}),
+                          ...(editor?.projectId
+                            ? { projectId: editor.projectId }
+                            : {}),
+                        },
+                      }
+                    : target,
+                );
             }}
           />
         )}

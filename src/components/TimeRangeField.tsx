@@ -1,5 +1,5 @@
 import { Clock3 } from "lucide-react";
-import { DateTimeField } from "./DateTimeField";
+import { DateTimeField, TimeOfDayField } from "./DateTimeField";
 /** Direct editing keeps both ends visible; the command validates the zoned interval. */
 export default function TimeRangeField({
   start,
@@ -37,29 +37,23 @@ export default function TimeRangeField({
         }}
       />
       <div className="time-range-inputs">
-        <label>
-          <span>Starts at</span>
-          <input
-            type="time"
-            aria-label="Starts at"
-            required
-            value={start.slice(11, 16)}
-            disabled={disabled}
-            onChange={(e) => onStart(date + "T" + e.target.value)}
-          />
-        </label>
-        <span aria-hidden="true">→</span>
-        <label>
-          <span>Ends at</span>
-          <input
-            type="time"
-            aria-label="Ends at"
-            required
-            value={end.slice(11, 16)}
-            disabled={disabled}
-            onChange={(e) => onEnd(end.slice(0, 10) + "T" + e.target.value)}
-          />
-        </label>
+        <TimeOfDayField
+          label="Starts at"
+          value={start.slice(11, 16)}
+          required
+          disabled={disabled}
+          onChange={(time) => onStart(date + "T" + time)}
+        />
+        <span aria-hidden="true" className="time-range-arrow">
+          →
+        </span>
+        <TimeOfDayField
+          label="Ends at"
+          value={end.slice(11, 16)}
+          required
+          disabled={disabled}
+          onChange={(time) => onEnd(end.slice(0, 10) + "T" + time)}
+        />
       </div>
       <details open={!sameDay}>
         <summary>Ends on a different date</summary>

@@ -8,6 +8,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { sampleActivityPage } from "./support/activity-feed";
 import EntityActivityPanel from "../src/components/EntityActivityPanel";
 import { emptyWorkspace } from "../src/domain/model";
 import { readActivities, readLogDrafts } from "../src/lib/activity";
@@ -22,7 +23,10 @@ beforeEach(() => {
   localStorage.clear();
   vi.resetAllMocks();
   mock.api.mockImplementation(async (_path, _token, options) => {
-    const e = JSON.parse(options.body).entry;
+    const input = JSON.parse(options.body);
+    if (_path === "/v1/sample/activity-feed")
+      return sampleActivityPage(input.workspace, input.items, input.query);
+    const e = input.entry;
     return {
       id: e.id,
       target_kind: e.kind,
