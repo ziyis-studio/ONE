@@ -7,9 +7,11 @@ import { Empty } from "./ui";
 export default function ScheduleTasks({
   selected,
   onPlan,
+  onDragTask,
 }: {
   selected: string;
   onPlan: (taskId: string, day: string, minute?: number) => void;
+  onDragTask?: (id: string | null) => void;
 }) {
   const { data, edit, busy, now } = useOne();
   const [query, setQuery] = useViewState<string>("schedule.query", "");
@@ -56,7 +58,9 @@ export default function ScheduleTasks({
               onDragStart={(event) => {
                 event.dataTransfer.setData("text/one-task", task.id);
                 event.dataTransfer.effectAllowed = "move";
+                onDragTask?.(task.id);
               }}
+              onDragEnd={() => onDragTask?.(null)}
             >
               <GripVertical size={14} className="one-task-grip" />
               <div>

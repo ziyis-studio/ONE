@@ -48,6 +48,7 @@ export default function SchedulePage() {
   const [selected, setSelected] = useViewState<string>("schedule.date", today);
   const [view, setView] = useViewState<View>("schedule.view", "month");
   const [dragOver, setDragOver] = useState("");
+  const [draggedTask, setDraggedTask] = useState<string | null>(null);
   const days = weekDays(selected);
   const month = monthDays(selected);
   const [showTasks, setShowTasks] = useViewState<boolean>(
@@ -482,6 +483,9 @@ export default function SchedulePage() {
               onMove={saveMove}
               onAttach={attachTask}
               onPlan={dropTask}
+              draggedTaskTitle={
+                data.tasks.find((task) => task.id === draggedTask)?.title
+              }
             />
           )}
           <footer className="calendar-help">
@@ -493,7 +497,13 @@ export default function SchedulePage() {
             <span>{busy ? "Saving…" : "Changes save to your workspace."}</span>
           </footer>
         </section>
-        {showTasks && <ScheduleTasks selected={selected} onPlan={planTask} />}
+        {showTasks && (
+          <ScheduleTasks
+            selected={selected}
+            onPlan={planTask}
+            onDragTask={setDraggedTask}
+          />
+        )}
       </div>
     </>
   );

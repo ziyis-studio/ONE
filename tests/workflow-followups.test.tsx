@@ -330,7 +330,11 @@ describe("approved workspace follow-ups", () => {
     fireEvent.dragStart(source, { dataTransfer: transfer });
     expect(transfer.effectAllowed).toBe("move");
     const track = screen.getByTestId("schedule-track");
-    fireEvent.dragOver(track, { dataTransfer: transfer });
+    fireEvent.dragOver(track, { dataTransfer: transfer, clientY: 900 });
+    expect(
+      screen.getByRole("img", { name: `Preview ${task.title}: 15:00 – 15:30` }),
+    ).toBeTruthy();
+    expect(saved().timeBlocks).toEqual(state.timeBlocks);
     expect(transfer.dropEffect).toBe("move");
     fireEvent.drop(track, { dataTransfer: transfer, clientY: 900 });
     await waitFor(() =>
