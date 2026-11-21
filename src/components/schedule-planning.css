@@ -179,6 +179,29 @@ button.one-deadline:hover {
   outline-offset: 2px;
   background: #3b3b3b;
 }
+.schedule-create-preview.schedule-task-preview {
+  padding: 2px 5px;
+  border-color: var(--one-accent-mark);
+  background: color-mix(in srgb, var(--one-accent) 20%, transparent);
+  overflow: hidden;
+}
+.schedule-create-preview.schedule-task-preview strong {
+  font-size: 10px;
+  line-height: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.schedule-create-preview.schedule-task-preview small {
+  margin-top: 0;
+  font-size: 9px;
+  line-height: 11px;
+  color: #d1c6f4;
+  white-space: nowrap;
+}
+.schedule-create-preview.schedule-task-preview[data-compact] strong {
+  display: none;
+}
 .one-schedule-tasks {
   position: sticky;
   top: 20px;

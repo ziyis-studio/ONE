@@ -1,6 +1,10 @@
 import ScheduleKind, { scheduleKind } from "./ScheduleKind";
 import { useEffect, useRef, useState } from "react";
-import type { PointerEvent as ReactPointerEvent, RefObject } from "react";
+import type {
+  DragEvent as ReactDragEvent,
+  PointerEvent as ReactPointerEvent,
+  RefObject,
+} from "react";
 import { GripHorizontal } from "lucide-react";
 import type { TimeBlock } from "../domain/model";
 import ScheduleDeadline from "./ScheduleDeadline";
@@ -19,6 +23,7 @@ type Preview = {
   id?: string;
   start: number;
   duration: number;
+  title?: string;
 };
 type Gesture = Preview & {
   pointer: number;
@@ -49,8 +54,14 @@ export default function ScheduleTimeline({
   days,
   week,
   onDay,
+  draggedTaskTitle,
   ...actions
-}: Actions & { days: string[]; week: boolean; onDay: (day: string) => void }) {
+}: Actions & {
+  days: string[];
+  week: boolean;
+  onDay: (day: string) => void;
+  draggedTaskTitle?: string;
+}) {
   const { today, zone, data } = useOne();
   const dueDays = days.map((day) =>
     data.tasks
@@ -137,6 +148,7 @@ export default function ScheduleTimeline({
               day={day}
               week={week}
               scroller={scroller}
+              draggedTaskTitle={draggedTaskTitle}
               {...actions}
             />
           ))}
@@ -152,10 +164,12 @@ function TimelineTrack({
   onMove,
   onAttach,
   onPlan,
+  draggedTaskTitle,
 }: Actions & {
   day: string;
   week: boolean;
   scroller: RefObject<HTMLDivElement | null>;
+  draggedTaskTitle?: string;
 }) {
   const { data, zone, edit, busy, notify } = useOne();
   const blocks = blocksOnDay(data.timeBlocks, day, zone);
@@ -164,7 +178,27 @@ function TimelineTrack({
   const [preview, setPreview] = useState<Preview | null>(null),
     [pending, setPending] = useState<Preview | null>(null);
   const [taskOver, setTaskOver] = useState("");
-  const display = pending || preview;
+  const [taskPreview, setTaskPreview] = useState<Preview | null>(null);
+  const display = pending || taskPreview || preview;
+  const nativeDragging = taskPreview !== null || taskOver !== "";
+  useEffect(() => {
+    if (!nativeDragging) return;
+    const clear = () => {
+      setTaskPreview(null);
+      setTaskOver("");
+    };
+    const cancel = (event: KeyboardEvent) => {
+      if (event.key === "Escape") clear();
+    };
+    window.addEventListener("dragend", clear);
+    window.addEventListener("drop", clear);
+    window.addEventListener("keydown", cancel);
+    return () => {
+      window.removeEventListener("dragend", clear);
+      window.removeEventListener("drop", clear);
+      window.removeEventListener("keydown", cancel);
+    };
+  }, [nativeDragging]);
   const dragging = preview !== null;
   useEffect(() => {
     if (!dragging) return;
@@ -303,6 +337,44 @@ function TimelineTrack({
     } else if (current.kind === "move") edit({ kind: "block", id: current.id });
   }
 
+  function previewDrop(event: ReactDragEvent<HTMLDivElement>) {
+    if (busy || pending) return;
+    if (
+      event.dataTransfer.types.some((type) =>
+        ["text/one-task", "text/one-block"].includes(type),
+      )
+    ) {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+      if (event.dataTransfer.types.includes("text/one-task")) {
+        const start = Math.min(1425, pointerMinute(event.clientY));
+        setTaskOver("");
+        setTaskPreview((old) =>
+          old?.start === start && old.title === draggedTaskTitle
+            ? old
+            : {
+                kind: "create",
+                start,
+                duration: Math.min(30, 1440 - start),
+                title: draggedTaskTitle,
+              },
+        );
+      }
+    }
+  }
+  function previewAttachment(
+    event: ReactDragEvent<HTMLDivElement>,
+    id: string,
+  ) {
+    if (busy || pending || !event.dataTransfer.types.includes("text/one-task"))
+      return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.dataTransfer.dropEffect = "move";
+    setTaskOver(id);
+    setTaskPreview(null);
+  }
+
   return (
     <div
       ref={track}
@@ -313,18 +385,19 @@ function TimelineTrack({
       onPointerDown={(event) => {
         if (event.target === event.currentTarget) begin(event, "create");
       }}
-      onDragOver={(event) => {
-        if (
-          event.dataTransfer.types.some((type) =>
-            ["text/one-task", "text/one-block"].includes(type),
-          )
-        ) {
-          event.preventDefault();
-          event.dataTransfer.dropEffect = "move";
+      onDragEnter={previewDrop}
+      onDragOver={previewDrop}
+      onDragLeave={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+          setTaskPreview(null);
+          setTaskOver("");
         }
       }}
       onDrop={(event) => {
         event.preventDefault();
+        setTaskPreview(null);
+        setTaskOver("");
+        if (busy || pending) return;
         const taskId = event.dataTransfer.getData("text/one-task");
         const minute = Math.min(1425, pointerMinute(event.clientY));
         if (taskId) {
@@ -332,6 +405,7 @@ function TimelineTrack({
             kind: "create",
             start: minute,
             duration: Math.min(30, 1440 - minute),
+            title: data.tasks.find((task) => task.id === taskId)?.title,
           });
           void onPlan(taskId, day, minute).finally(() => setPending(null));
         } else {
@@ -369,14 +443,8 @@ function TimelineTrack({
                 event.dataTransfer.setData("text/one-block", block.id);
                 event.dataTransfer.effectAllowed = "move";
               }}
-              onDragOver={(event) => {
-                if (event.dataTransfer.types.includes("text/one-task")) {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  event.dataTransfer.dropEffect = "move";
-                  setTaskOver(block.id);
-                }
-              }}
+              onDragEnter={(event) => previewAttachment(event, block.id)}
+              onDragOver={(event) => previewAttachment(event, block.id)}
               onDragLeave={(event) => {
                 if (!event.currentTarget.contains(event.relatedTarget as Node))
                   setTaskOver("");
@@ -387,6 +455,8 @@ function TimelineTrack({
                   event.preventDefault();
                   event.stopPropagation();
                   setTaskOver("");
+                  setTaskPreview(null);
+                  if (busy || pending) return;
                   void onAttach(block, taskId);
                 }
               }}
@@ -482,10 +552,22 @@ function TimelineTrack({
       )}
       {display?.kind === "create" && (
         <div
-          className="schedule-create-preview"
+          className={
+            "schedule-create-preview" +
+            (taskPreview || pending?.title ? " schedule-task-preview" : "")
+          }
+          role={taskPreview ? "img" : undefined}
+          aria-label={
+            taskPreview
+              ? `Preview ${draggedTaskTitle || "task"}: ${clockLabel(display.start)} – ${clockLabel(display.start + display.duration)}`
+              : undefined
+          }
+          data-compact={display.duration < 30 || undefined}
           style={{ top: display.start, height: display.duration }}
         >
-          <strong>{pending ? "Scheduling…" : "New time block"}</strong>
+          <strong>
+            {display.title || (pending ? "Scheduling…" : "New time block")}
+          </strong>
           <small>
             {clockLabel(display.start)} –{" "}
             {clockLabel(display.start + display.duration)}
