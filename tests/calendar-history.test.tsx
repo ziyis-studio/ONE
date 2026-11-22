@@ -261,7 +261,12 @@ describe("calendar and history interactions", () => {
     const tracks = container.querySelectorAll<HTMLElement>(".day-track");
     expect(tracks.length).toBe(7);
     expect(screen.getByText("23:00")).toBeTruthy();
-    const day = addDays(dayKey(state.timeBlocks[0].startsAt, zone), 1);
+    const original = dayKey(state.timeBlocks[0].startsAt, zone);
+    const nextDay = addDays(original, 1);
+    // Sunday's next day belongs to a different week; keep the target visible.
+    const day = [...tracks].some((track) => track.dataset.date === nextDay)
+      ? nextDay
+      : addDays(original, -1);
     const target = container.querySelector<HTMLElement>(
       `.day-track[data-date="${day}"]`,
     )!;

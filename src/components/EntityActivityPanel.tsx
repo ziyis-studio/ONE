@@ -7,7 +7,14 @@ import {
   useRef,
   useState,
 } from "react";
-import { MessageSquare, Send, FileText, RefreshCw, X } from "lucide-react";
+import {
+  MessageSquare,
+  Send,
+  FileText,
+  RefreshCw,
+  X,
+  CalendarClock,
+} from "lucide-react";
 import { useOne } from "../lib/workspace";
 import { api } from "../lib/api";
 import LinkedTimeBlocks from "./LinkedTimeBlocks";
@@ -36,8 +43,9 @@ export default forwardRef<
     kind: LogKind;
     id?: string;
     onOpen: (target: { kind: "task" | "note" | "block"; id: string }) => void;
+    onSchedule?: () => void;
   }
->(function EntityActivityPanel({ kind, id, onOpen }, ref) {
+>(function EntityActivityPanel({ kind, id, onOpen, onSchedule }, ref) {
   const { data, demo, scope, session, zone, busy, execute } = useOne(),
     reduced = useMotionPreference();
   const [items, setItems] = useState<ActivityLog[]>([]),
@@ -320,11 +328,6 @@ export default forwardRef<
         aria-labelledby={`${activityId}-log-tab`}
         hidden={tab !== "log"}
       >
-        <p className="entity-log-description">
-          {kind === "project"
-            ? "Project entries, task updates and linked time blocks."
-            : "Notes, updates and linked time blocks for this task."}
-        </p>
         <div className="entity-log-feed" ref={feed} aria-label="Log entries">
           <LinkedTimeBlocks
             blocks={linkedBlocks}
@@ -403,14 +406,30 @@ export default forwardRef<
           />
           <div>
             <small>⌘ / Ctrl + Enter</small>
-            <button
-              type="button"
-              className="secondary-button"
-              disabled={!id || loading || posting || busy || !draft.body.trim()}
-              onClick={() => void post()}
-            >
-              {posting ? <Spinner /> : <Send size={13} />}Add log
-            </button>
+            <span className="entity-log-actions">
+              {onSchedule && (
+                <button
+                  type="button"
+                  className="secondary-button"
+                  disabled={!id || busy || posting}
+                  onClick={onSchedule}
+                  title={!id ? "Save this task before scheduling" : undefined}
+                >
+                  <CalendarClock size={13} />
+                  Schedule
+                </button>
+              )}
+              <button
+                type="button"
+                className="secondary-button"
+                disabled={
+                  !id || loading || posting || busy || !draft.body.trim()
+                }
+                onClick={() => void post()}
+              >
+                {posting ? <Spinner /> : <Send size={13} />}Add log
+              </button>
+            </span>
           </div>
         </div>
         {error && (

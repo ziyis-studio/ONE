@@ -196,7 +196,7 @@ button.one-deadline:hover {
   margin-top: 0;
   font-size: 9px;
   line-height: 11px;
-  color: #d1c6f4;
+  color: var(--one-accent-mark);
   white-space: nowrap;
 }
 .schedule-create-preview.schedule-task-preview[data-compact] strong {
