@@ -3,6 +3,7 @@ import {
   ArrowUpRight,
   Hash,
   Network,
+  List,
   PencilLine,
   Search,
   Tag,
@@ -13,15 +14,19 @@ import { useOne } from "../lib/workspace";
 import { useViewState } from "../lib/view-state";
 import { useConfirm } from "../lib/confirmation";
 import { api } from "../lib/api";
-import type { TagGraph, TagGraphNode } from "../domain/tag-graph";
+import type { TagGraph, TagOption } from "../domain/tag-graph";
 import { Dialog, IconButton, Spinner } from "./ui";
 import { SelectField } from "./SelectField";
 import { PageDate } from "./PageDate";
 import TagGraphCanvas from "./TagGraphCanvas";
+import TagList from "./TagList";
+import { DiscreteTabs } from "./interactions";
 import "./tag-graph.css";
 export default function Tags() {
   const { data, demo, session, scope, edit, execute, busy, notify } = useOne();
   const confirm = useConfirm();
+  const [view, setView] = useViewState<string>("tags.view", "graph");
+  const [listOptions, setListOptions] = useState<TagOption[]>([]);
   const [query, setQuery] = useViewState<string>("tags.query", ""),
     [kind, setKind] = useViewState<"all" | "task" | "project" | "note">(
       "tags.kind",
@@ -48,6 +53,7 @@ export default function Tags() {
     [saving, setSaving] = useState(false);
   const writeLock = useRef(false);
   useEffect(() => {
+    if (view === "list") return;
     const abort = new AbortController();
     let active = true;
     const timer = setTimeout(async () => {
@@ -100,6 +106,7 @@ export default function Tags() {
     includeCompleted,
     includeUntagged,
     retry,
+    view,
   ]);
   const node = graph?.nodes.find((n) => n.id === selected);
   const adjacent = new Set<string>();
@@ -134,6 +141,10 @@ export default function Tags() {
       const normalized = form.name.trim().toLowerCase();
       setSelected("tag:" + encodeURIComponent(normalized));
       if (tag === form.from) setTag(normalized);
+      if (!form.from) {
+        setQuery("");
+        setTag(view === "list" ? normalized : "");
+      }
       setForm(null);
       notify(form.from ? "Tag updated." : "Tag created.");
     } catch (cause) {
@@ -145,7 +156,7 @@ export default function Tags() {
       setSaving(false);
     }
   }
-  async function removeTag(target: TagGraphNode) {
+  async function removeTag(target: { label: string }) {
     if (
       busy ||
       writeLock.current ||
@@ -191,6 +202,15 @@ export default function Tags() {
         </button>
       </div>
       <div className="tag-graph-filters">
+        <DiscreteTabs
+          value={view}
+          onChange={setView}
+          label="Tags view"
+          items={[
+            { value: "graph", label: "Graph", icon: <Network size={14} /> },
+            { value: "list", label: "List", icon: <List size={14} /> },
+          ]}
+        />
         <label className="search-field">
           <Search size={15} />
           <input
@@ -220,11 +240,16 @@ export default function Tags() {
           onChange={setTag}
           options={[
             { value: "", label: "All tags" },
-            ...(graph?.availableTags || []).map((t) => ({
-              value: t.name,
-              label: `#${t.name} · ${t.items}`,
-            })),
-            ...(tag && !graph?.availableTags.some((t) => t.name === tag)
+            ...(view === "list" ? listOptions : graph?.availableTags || []).map(
+              (t) => ({
+                value: t.name,
+                label: `#${t.name} · ${t.items}`,
+              }),
+            ),
+            ...(tag &&
+            !(view === "list" ? listOptions : graph?.availableTags || []).some(
+              (t) => t.name === tag,
+            )
               ? [{ value: tag, label: "#" + tag }]
               : []),
           ]}
@@ -246,7 +271,7 @@ export default function Tags() {
           Untagged
         </label>
       </div>
-      {error ? (
+      {error && view !== "list" ? (
         <div className="tag-graph-error" role="alert">
           <span>{error}</span>
           <button
@@ -261,22 +286,36 @@ export default function Tags() {
       <section
         className="tag-graph-card"
         aria-label="Tags and connected items"
-        aria-busy={loading}
+        aria-busy={view !== "list" && loading}
       >
         <header className="tag-graph-heading">
           <span>
-            <Network size={16} />
-            Graph
+            {view === "list" ? <List size={16} /> : <Network size={16} />}
+            {view === "list" ? "Tags" : "Graph"}
           </span>
-          <div className="tag-graph-legend" aria-label="Graph legend">
-            <span data-kind="tag">Tags</span>
-            <span data-kind="task">Tasks</span>
-            <span data-kind="project">Projects</span>
-            <span data-kind="note">Notes</span>
-          </div>
-          {loading && <Spinner size={14} />}
+          {view !== "list" && (
+            <div className="tag-graph-legend" aria-label="Graph legend">
+              <span data-kind="tag">Tags</span>
+              <span data-kind="task">Tasks</span>
+              <span data-kind="project">Projects</span>
+              <span data-kind="note">Notes</span>
+            </div>
+          )}
+          {loading && view !== "list" && <Spinner size={14} />}
         </header>
-        {graph?.nodes.length ? (
+        {view === "list" ? (
+          <TagList
+            filters={{ q: query, kind, tag, includeCompleted, includeUntagged }}
+            onSelectTag={setTag}
+            onOptions={setListOptions}
+            onRename={showForm}
+            onRemove={(name) => void removeTag({ label: name })}
+            onOpen={(item) => {
+              if (item.entityId && item.kind !== "tag")
+                edit({ kind: item.kind, id: item.entityId });
+            }}
+          />
+        ) : graph?.nodes.length ? (
           <div className={"tag-graph-body" + (node ? " has-selection" : "")}>
             <TagGraphCanvas
               graph={graph}
@@ -432,18 +471,20 @@ export default function Tags() {
             )}
           </div>
         )}
-        <footer className="tag-graph-footer">
-          <span>
-            {graph
-              ? `${graph.shownItems} items · ${graph.nodes.filter((n) => n.kind === "tag").length} tags · ${graph.links.length} connections`
-              : "Your tags and their connections"}
-          </span>
-          <span>
-            {graph?.truncated
-              ? `Showing a portion of ${graph.totalMatches} matching items. Narrow the search or filters.`
-              : "Click a node to explore · Double-click an item to open"}
-          </span>
-        </footer>
+        {view !== "list" && (
+          <footer className="tag-graph-footer">
+            <span>
+              {graph
+                ? `${graph.shownItems} items · ${graph.nodes.filter((n) => n.kind === "tag").length} tags · ${graph.links.length} connections`
+                : "Your tags and their connections"}
+            </span>
+            <span>
+              {graph?.truncated
+                ? `Showing a portion of ${graph.totalMatches} matching items. Narrow the search or filters.`
+                : "Click a node to explore · Double-click an item to open"}
+            </span>
+          </footer>
+        )}
       </section>
       {form && (
         <Dialog
@@ -460,32 +501,36 @@ export default function Tags() {
               void saveTag();
             }}
           >
-            <label>
-              Tag name
-              <input
-                autoFocus
-                value={form.name}
-                maxLength={40}
-                required
-                disabled={saving}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="e.g. home, ideas, health"
-              />
-            </label>
-            <p>
-              {form.from
-                ? "If this name already exists, their connections will be combined."
-                : "Add this tag to a task, project or note to connect it."}
-            </p>
-            {formError && <p role="alert">{formError}</p>}
-            <button
-              type="submit"
-              className="primary-button"
-              disabled={busy || saving || !form.name.trim()}
-            >
-              {saving ? <Spinner size={14} /> : <Tag size={14} />}{" "}
-              {form.from ? "Save tag" : "Create tag"}
-            </button>
+            <div className="tag-name-fields">
+              <label>
+                Tag name
+                <input
+                  autoFocus
+                  value={form.name}
+                  maxLength={40}
+                  required
+                  disabled={saving}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  placeholder="e.g. design"
+                />
+              </label>
+              <p>
+                {form.from
+                  ? "If this name already exists, their connections will be combined."
+                  : "Add this tag to a task, project or note to connect it."}
+              </p>
+              {formError && <p role="alert">{formError}</p>}
+            </div>
+            <footer className="tag-name-footer">
+              <button
+                type="submit"
+                className="primary-button"
+                disabled={busy || saving || !form.name.trim()}
+              >
+                {saving ? <Spinner size={14} /> : <Tag size={14} />}{" "}
+                {form.from ? "Save tag" : "Create tag"}
+              </button>
+            </footer>
           </form>
         </Dialog>
       )}

@@ -209,3 +209,86 @@ test("tags can be created, merged on rename and removed while keeping their conn
   expect(saved().tasks).toHaveLength(state.tasks.length);
   expect(saved().notes).toHaveLength(state.notes.length);
 });
+
+test("the picker selects existing tags and creates one without losing comma-containing names", async () => {
+  const { task } = await start();
+  await nav("Tasks");
+  const card = screen
+    .getByRole("button", { name: "Open task Survey SPC" })
+    .closest("article")!;
+  await userEvent.click(
+    within(card).getByRole("heading", { name: "Survey SPC" }),
+  );
+  const editor = await screen.findByRole("dialog", { name: "EDIT TASK" });
+  await userEvent.click(
+    within(editor).getByRole("button", { name: "Choose tags" }),
+  );
+  const picker = await screen.findByRole("dialog", { name: "Choose tags" });
+  await userEvent.click(
+    await within(picker).findByRole("option", { name: "home" }),
+  );
+  expect(
+    saved().tasks.find((t: { id: string }) => t.id === task.id).tags,
+  ).toEqual(["testing"]);
+  await userEvent.type(
+    within(picker).getByRole("textbox", { name: "Search tags" }),
+    "deep, focus",
+  );
+  await userEvent.click(
+    await within(picker).findByRole("button", {
+      name: 'Create tag "deep, focus"',
+    }),
+  );
+  await waitFor(() => expect(saved().tagCatalog.some((t: {name:string}) => t.name === "deep, focus")).toBe(true));
+  await userEvent.click(within(picker).getByRole("button", { name: "Done" }));
+  await within(editor).findByRole("button", { name: "Remove tag deep, focus" });
+  expect(
+    within(editor).getByRole("button", { name: "Save changes" }),
+  ).toBeTruthy();
+  await userEvent.click(
+    within(editor).getByRole("button", { name: "Save changes" }),
+  );
+  await waitFor(() =>
+    expect(
+      saved().tasks.find((t: { id: string }) => t.id === task.id).tags,
+    ).toEqual(["testing", "home", "deep, focus"]),
+  );
+});
+test("the Tags list opens complete connections and remembers its view", async () => {
+  const { note } = await start();
+  await nav("Tags");
+  await userEvent.click(screen.getByRole("button", { name: "List" }));
+  await screen.findByRole(
+    "button",
+    { name: "View items tagged #home" },
+    { timeout: 5000 },
+  );
+  await userEvent.click(
+    screen.getByRole("button", { name: "View items tagged #home" }),
+  );
+  await screen.findByRole(
+    "button",
+    { name: "Open task Survey SPC" },
+    { timeout: 5000 },
+  );
+  await userEvent.click(
+    screen.getByRole("button", { name: "Open note " + note.title }),
+  );
+  const dialog = await screen.findByRole("dialog", { name: "EDIT NOTE" });
+  expect(
+    within(dialog).getByRole("button", { name: "Choose tags" }),
+  ).toBeTruthy();
+  await userEvent.click(
+    within(dialog).getByRole("button", { name: "Close dialog" }),
+  );
+  await nav("Tasks");
+  await nav("Tags");
+  await screen.findByRole(
+    "button",
+    { name: "Open note " + note.title },
+    { timeout: 5000 },
+  );
+  expect(
+    screen.queryByRole("group", { name: "Tag relationship graph" }),
+  ).toBeNull();
+});

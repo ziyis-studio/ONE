@@ -1,3 +1,5 @@
+import TagPicker from "./TagPicker";
+import { readTagDraft } from "../lib/tag-draft";
 import MealPhotos from "./MealPhotos";
 import { mealKinds, nutrientKeys } from "../domain/meals";
 import type { MealPhoto, Nutrient } from "../domain/meals";
@@ -118,7 +120,7 @@ export default function Editor() {
     entity && "content" in entity ? entity.content : "",
   );
   const [tags, setTags] = useState(
-    entity && "tags" in entity ? entity.tags?.join(", ") || "" : "",
+    JSON.stringify(entity && "tags" in entity ? entity.tags || [] : []),
   );
   const [projectId, setProjectId] = useState(
     task?.projectId || editor!.projectId || "",
@@ -319,11 +321,7 @@ export default function Editor() {
                 id: l.noteId === id ? l.targetNoteId! : l.noteId,
               },
     );
-  const tagList = () =>
-    tags
-      .split(",")
-      .map((v) => v.trim())
-      .filter(Boolean);
+  const tagList = () => readTagDraft(tags);
   const returnEditor = () =>
     edit(
       editor?.returnTo
@@ -1010,14 +1008,13 @@ export default function Editor() {
                     <small>Save your changes before changing status.</small>
                   )}
                 </div>
-                <Field label="Tags">
-                  <input
-                    value={tags}
-                    onChange={(e) => setTags(e.target.value)}
-                    placeholder="Design, personal…"
-                    maxLength={2000}
-                  />
-                </Field>
+                <TagPicker
+                  value={tagList()}
+                  onChange={(values) => setTags(JSON.stringify(values))}
+                  disabled={
+                    busy || saveState === "saving" || saveState === "saved"
+                  }
+                />
               </div>
             )}
             {(kind === "task" || kind === "project") && (
@@ -1461,14 +1458,13 @@ export default function Editor() {
                   **bold** for a little emphasis.
                 </p>
                 {kind === "note" && (
-                  <Field label="Tags">
-                    <input
-                      value={tags}
-                      onChange={(e) => setTags(e.target.value)}
-                      placeholder="Ideas, personal, inspiration…"
-                      maxLength={2000}
-                    />
-                  </Field>
+                  <TagPicker
+                    value={tagList()}
+                    onChange={(values) => setTags(JSON.stringify(values))}
+                    disabled={
+                      busy || saveState === "saving" || saveState === "saved"
+                    }
+                  />
                 )}
               </>
             )}
