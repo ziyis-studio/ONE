@@ -15,6 +15,11 @@ vi.mock("../../src/lib/api", async (importOriginal) => {
     api: async (path: string, token: string, options: RequestInit = {}) => {
       if (path.startsWith("/v1/weather"))
         return { temperature: 28, code: 2, updatedAt: "2026-11-19T12:00" };
+      if (path === "/v1/sample/tag-graph") {
+        const { tagGraph, tagGraphQuery } = await import("./tag-graph");
+        const input = JSON.parse(String(options.body));
+        return tagGraph(input.workspace, tagGraphQuery.parse(input.query));
+      }
       if (path === "/v1/sample/activity-feed") {
         const { sampleActivityPage } = await import("./activity-feed");
         const input = JSON.parse(String(options.body));

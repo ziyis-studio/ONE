@@ -14,6 +14,7 @@ const titles: Record<Page, string> = {
   meals: "Meals",
   thoughts: "Thoughts",
   notes: "Notes",
+  tags: "Tags",
   settings: "Settings",
 };
 function Bar({

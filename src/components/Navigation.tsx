@@ -16,6 +16,7 @@ import {
   Utensils,
   Lightbulb,
   FileText,
+  Tags,
   Settings2,
   ArrowUpRight,
   PanelLeftOpen,
@@ -41,6 +42,7 @@ const destinations: { id: Page; label: string; icon: LucideIcon }[] = [
   { id: "meals", label: "Meals", icon: Utensils },
   { id: "thoughts", label: "Thoughts", icon: Lightbulb },
   { id: "notes", label: "Notes", icon: FileText },
+  { id: "tags", label: "Tags", icon: Tags },
   { id: "settings", label: "Settings", icon: Settings2 },
 ];
 export { destinations as navigation };

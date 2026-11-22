@@ -38,6 +38,7 @@ import Navigation, {
   SidebarToggle,
 } from "./components/Navigation";
 const Auth = lazy(() => import("./components/Auth"));
+const Tags = lazy(() => import("./components/Tags"));
 const Meals = lazy(() => import("./components/Meals"));
 const Editor = lazy(() => import("./components/Editor"));
 const Settings = lazy(() => import("./components/Settings"));
@@ -256,6 +257,8 @@ function Shell({
       <Meals />
     ) : page === "thoughts" ? (
       <Thoughts />
+    ) : page === "tags" ? (
+      <Tags />
     ) : page === "notes" ? (
       <Notes />
     ) : (

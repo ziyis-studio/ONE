@@ -65,6 +65,17 @@ button.one-card-open:focus-visible {
 .task-card p.one-task-description {
   margin: 0;
 }
+.task-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin: -4px 0 10px;
+  max-height: 48px;
+  overflow-y: auto;
+  font-size: 9px;
+  color: var(--one-accent-mark);
+  overflow-wrap: anywhere;
+}
 .one-project-card.one-project-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 160px;

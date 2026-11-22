@@ -1694,6 +1694,31 @@ export default function Editor() {
             ref={activityDraft}
             kind={kind}
             id={id}
+            onSchedule={
+              kind === "task"
+                ? () => {
+                    if (!id || attachmentBusy || !flushDrafts()) return;
+                    edit({
+                      kind: "block",
+                      taskId: id,
+                      date:
+                        task?.deadline && task.deadline >= today
+                          ? task.deadline
+                          : today,
+                      returnTo: {
+                        kind: "task",
+                        id,
+                        ...(editor?.returnProjectId
+                          ? { returnProjectId: editor.returnProjectId }
+                          : {}),
+                        ...(editor?.projectId
+                          ? { projectId: editor.projectId }
+                          : {}),
+                      },
+                    });
+                  }
+                : undefined
+            }
             onOpen={(target) => {
               if (!attachmentBusy && flushDrafts())
                 edit(

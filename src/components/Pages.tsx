@@ -415,9 +415,7 @@ function TaskCard({
         descriptionId={descriptionId}
       />
       <div className="task-card-top">
-        <span className="tag">
-          {task.tags?.[0] || project?.title || "Personal"}
-        </span>
+        <span className="tag">{project?.title || "Personal"}</span>
         <span className="task-card-actions">
           <span ref={setRenameContainer} />
           <CheckButton
@@ -428,6 +426,13 @@ function TaskCard({
           />
         </span>
       </div>
+      {!!task.tags?.length && (
+        <div className="task-card-tags" aria-label="Task tags">
+          {task.tags.map((tag) => (
+            <span key={tag}>#{tag}</span>
+          ))}
+        </div>
+      )}
       <div className="task-card-main">
         <InlineTitle
           kind="task"

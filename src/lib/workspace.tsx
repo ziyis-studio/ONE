@@ -33,6 +33,7 @@ export type Page =
   | "meals"
   | "thoughts"
   | "notes"
+  | "tags"
   | "settings";
 export type EditorKind =
   | "task"
@@ -114,6 +115,7 @@ const pages: Page[] = [
   "meals",
   "thoughts",
   "notes",
+  "tags",
   "settings",
 ];
 function currentPage(): Page {
