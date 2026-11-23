@@ -15,6 +15,7 @@ import {
   layoutDayBlocks,
   snapMinute,
   minuteTimestamp,
+  rescheduledBlock,
 } from "../lib/schedule";
 import { dayKey, dateLabel, timeKey, minutesBetween } from "../domain/time";
 import "./schedule-planning.css";
@@ -24,7 +25,11 @@ type Preview = {
   start: number;
   duration: number;
   title?: string;
+  native?: boolean;
+  height?: number;
+  range?: string;
 };
+type NativeBlockDrag = { block: TimeBlock; offset: number };
 type Gesture = Preview & {
   pointer: number;
   originY: number;
@@ -69,6 +74,32 @@ export default function ScheduleTimeline({
       .toSorted((a, b) => Number(!!a.completedAt) - Number(!!b.completedAt)),
   );
   const scroller = useRef<HTMLDivElement>(null);
+  const [nativeBlock, setNativeBlock] = useState<NativeBlockDrag | null>(null);
+  const [movingId, setMovingId] = useState("");
+  const nativeActive = nativeBlock !== null;
+  useEffect(() => {
+    if (!nativeActive) return;
+    const clear = () => setNativeBlock(null);
+    const cancel = (event: KeyboardEvent) => {
+      if (event.key === "Escape") clear();
+    };
+    window.addEventListener("dragend", clear);
+    window.addEventListener("drop", clear);
+    window.addEventListener("keydown", cancel);
+    return () => {
+      window.removeEventListener("dragend", clear);
+      window.removeEventListener("drop", clear);
+      window.removeEventListener("keydown", cancel);
+    };
+  }, [nativeActive]);
+  const moveNative: Actions["onMove"] = async (...args) => {
+    setMovingId(args[0].id);
+    try {
+      await actions.onMove(...args);
+    } finally {
+      setMovingId("");
+    }
+  };
   const key = days.join(":");
   useEffect(() => {
     scroller.current?.scrollTo({ top: 7 * 60 });
@@ -149,6 +180,10 @@ export default function ScheduleTimeline({
               week={week}
               scroller={scroller}
               draggedTaskTitle={draggedTaskTitle}
+              nativeBlock={nativeBlock}
+              nativeSourceId={nativeBlock?.block.id || movingId}
+              onBlockDrag={setNativeBlock}
+              onNativeMove={moveNative}
               {...actions}
             />
           ))}
@@ -165,11 +200,19 @@ function TimelineTrack({
   onAttach,
   onPlan,
   draggedTaskTitle,
+  nativeBlock,
+  nativeSourceId,
+  onBlockDrag,
+  onNativeMove,
 }: Actions & {
   day: string;
   week: boolean;
   scroller: RefObject<HTMLDivElement | null>;
   draggedTaskTitle?: string;
+  nativeBlock: NativeBlockDrag | null;
+  nativeSourceId: string;
+  onBlockDrag: (drag: NativeBlockDrag) => void;
+  onNativeMove: Actions["onMove"];
 }) {
   const { data, zone, edit, busy, notify } = useOne();
   const blocks = blocksOnDay(data.timeBlocks, day, zone);
@@ -178,13 +221,13 @@ function TimelineTrack({
   const [preview, setPreview] = useState<Preview | null>(null),
     [pending, setPending] = useState<Preview | null>(null);
   const [taskOver, setTaskOver] = useState("");
-  const [taskPreview, setTaskPreview] = useState<Preview | null>(null);
-  const display = pending || taskPreview || preview;
-  const nativeDragging = taskPreview !== null || taskOver !== "";
+  const [dropPreview, setDropPreview] = useState<Preview | null>(null);
+  const display = pending || dropPreview || preview;
+  const nativeDragging = dropPreview !== null || taskOver !== "";
   useEffect(() => {
     if (!nativeDragging) return;
     const clear = () => {
-      setTaskPreview(null);
+      setDropPreview(null);
       setTaskOver("");
     };
     const cancel = (event: KeyboardEvent) => {
@@ -218,16 +261,26 @@ function TimelineTrack({
     target: string,
     minute?: number,
     duration?: number,
+    native?: Preview,
   ) {
     const parts = timeKey(block.startsAt, zone).split(":").map(Number);
-    setPending({
-      kind: "move",
-      id: block.id,
-      start: minute ?? parts[0] * 60 + parts[1],
-      duration: duration ?? minutesBetween(block.startsAt, block.endsAt),
-    });
+    setPending(
+      native || {
+        kind: "move",
+        id: block.id,
+        start: minute ?? parts[0] * 60 + parts[1],
+        duration: duration ?? minutesBetween(block.startsAt, block.endsAt),
+      },
+    );
     try {
-      await onMove(block, target, minute, duration);
+      await (native ? onNativeMove : onMove)(block, target, minute, duration);
+    } catch (cause) {
+      notify(
+        cause instanceof Error
+          ? cause.message
+          : "Could not move this time block.",
+        true,
+      );
     } finally {
       setPending(null);
     }
@@ -337,6 +390,41 @@ function TimelineTrack({
     } else if (current.kind === "move") edit({ kind: "block", id: current.id });
   }
 
+  function blockDropPreview(block: TimeBlock, clientY: number): Preview {
+    const offset = nativeBlock?.block.id === block.id ? nativeBlock.offset : 0;
+    const start = Math.min(1425, pointerMinute(clientY - offset));
+    if (
+      dropPreview?.native &&
+      dropPreview.id === block.id &&
+      dropPreview.start === start
+    )
+      return dropPreview;
+    const input = rescheduledBlock(block, day, zone, start);
+    const shifted = { ...block, ...input };
+    const height = layoutDayBlocks([shifted], day, zone)[0]?.duration || 1;
+    const last = dayKey(input.endsAt, zone);
+    const daysLater = Math.round(
+      (Date.parse(last) - Date.parse(day)) / 86400000,
+    );
+    const end =
+      last !== day && timeKey(input.endsAt, zone) === "00:00" && daysLater === 1
+        ? "24:00"
+        : timeKey(input.endsAt, zone);
+    const suffix =
+      daysLater > 0 && end !== "24:00"
+        ? ` (+${daysLater} ${daysLater === 1 ? "day" : "days"})`
+        : "";
+    return {
+      kind: "move",
+      id: block.id,
+      start,
+      duration: minutesBetween(block.startsAt, block.endsAt),
+      title: timeBlockTitle(block, data),
+      native: true,
+      height,
+      range: `${clockLabel(start)} – ${end}${suffix}`,
+    };
+  }
   function previewDrop(event: ReactDragEvent<HTMLDivElement>) {
     if (busy || pending) return;
     if (
@@ -349,7 +437,7 @@ function TimelineTrack({
       if (event.dataTransfer.types.includes("text/one-task")) {
         const start = Math.min(1425, pointerMinute(event.clientY));
         setTaskOver("");
-        setTaskPreview((old) =>
+        setDropPreview((old) =>
           old?.start === start && old.title === draggedTaskTitle
             ? old
             : {
@@ -359,6 +447,18 @@ function TimelineTrack({
                 title: draggedTaskTitle,
               },
         );
+      } else if (nativeBlock) {
+        try {
+          const next = blockDropPreview(nativeBlock.block, event.clientY);
+          setDropPreview((old) =>
+            old?.native && old.id === next.id && old.start === next.start
+              ? old
+              : next,
+          );
+        } catch {
+          event.dataTransfer.dropEffect = "none";
+          setDropPreview(null);
+        }
       }
     }
   }
@@ -372,7 +472,7 @@ function TimelineTrack({
     event.stopPropagation();
     event.dataTransfer.dropEffect = "move";
     setTaskOver(id);
-    setTaskPreview(null);
+    setDropPreview(null);
   }
 
   return (
@@ -389,13 +489,13 @@ function TimelineTrack({
       onDragOver={previewDrop}
       onDragLeave={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget as Node)) {
-          setTaskPreview(null);
+          setDropPreview(null);
           setTaskOver("");
         }
       }}
       onDrop={(event) => {
         event.preventDefault();
-        setTaskPreview(null);
+        setDropPreview(null);
         setTaskOver("");
         if (busy || pending) return;
         const taskId = event.dataTransfer.getData("text/one-task");
@@ -412,7 +512,17 @@ function TimelineTrack({
           const block = data.timeBlocks.find(
             (item) => item.id === event.dataTransfer.getData("text/one-block"),
           );
-          if (block) void saveMove(block, day, minute);
+          if (block) {
+            try {
+              const next = blockDropPreview(block, event.clientY);
+              void saveMove(block, day, next.start, undefined, next);
+            } catch (cause) {
+              notify(
+                cause instanceof Error ? cause.message : "Choose another time.",
+                true,
+              );
+            }
+          }
         }
       }}
       onPointerMove={move}
@@ -424,7 +534,8 @@ function TimelineTrack({
     >
       {layoutDayBlocks(blocks, day, zone).map(
         ({ block, start, duration, column, columns }) => {
-          const active = display?.id === block.id ? display : null;
+          const active =
+            display?.id === block.id && !display.native ? display : null;
           const top = active?.start ?? start,
             height = active?.duration ?? duration;
           return (
@@ -437,11 +548,26 @@ function TimelineTrack({
               }
               key={block.id}
               data-block-id={block.id}
+              data-native-source={nativeSourceId === block.id || undefined}
               data-task-over={taskOver === block.id || undefined}
               draggable={week && !busy}
               onDragStart={(event) => {
                 event.dataTransfer.setData("text/one-block", block.id);
                 event.dataTransfer.effectAllowed = "move";
+                const box = event.currentTarget.getBoundingClientRect();
+                const hidden = Math.max(
+                  0,
+                  minutesBetween(
+                    block.startsAt,
+                    minuteTimestamp(day, start, zone),
+                  ),
+                );
+                onBlockDrag({
+                  block,
+                  offset:
+                    hidden +
+                    Math.max(0, Math.min(duration, event.clientY - box.top)),
+                });
               }}
               onDragEnter={(event) => previewAttachment(event, block.id)}
               onDragOver={(event) => previewAttachment(event, block.id)}
@@ -455,7 +581,7 @@ function TimelineTrack({
                   event.preventDefault();
                   event.stopPropagation();
                   setTaskOver("");
-                  setTaskPreview(null);
+                  setDropPreview(null);
                   if (busy || pending) return;
                   void onAttach(block, taskId);
                 }
@@ -550,27 +676,37 @@ function TimelineTrack({
           );
         },
       )}
-      {display?.kind === "create" && (
+      {(display?.kind === "create" || display?.native) && (
         <div
           className={
             "schedule-create-preview" +
-            (taskPreview || pending?.title ? " schedule-task-preview" : "")
+            (dropPreview || pending?.title ? " schedule-task-preview" : "")
           }
-          role={taskPreview ? "img" : undefined}
+          role={dropPreview || display.native ? "img" : undefined}
           aria-label={
-            taskPreview
-              ? `Preview ${draggedTaskTitle || "task"}: ${clockLabel(display.start)} – ${clockLabel(display.start + display.duration)}`
+            dropPreview || display.native
+              ? `Preview ${display.title || draggedTaskTitle || "task"}: ${display.range || `${clockLabel(display.start)} – ${clockLabel(display.start + display.duration)}`}`
               : undefined
           }
-          data-compact={display.duration < 30 || undefined}
-          style={{ top: display.start, height: display.duration }}
+          data-native-preview={display.native || undefined}
+          data-near-start={display.start < 30 || undefined}
+          data-compact={(display.height ?? display.duration) < 30 || undefined}
+          style={{
+            top: display.start,
+            height: display.height ?? display.duration,
+          }}
         >
+          {display.native && (
+            <span className="schedule-block-preview-label">
+              {display.range}
+            </span>
+          )}
           <strong>
             {display.title || (pending ? "Scheduling…" : "New time block")}
           </strong>
           <small>
-            {clockLabel(display.start)} –{" "}
-            {clockLabel(display.start + display.duration)}
+            {display.range ||
+              `${clockLabel(display.start)} – ${clockLabel(display.start + display.duration)}`}
           </small>
         </div>
       )}

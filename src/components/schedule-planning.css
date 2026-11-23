@@ -357,3 +357,33 @@ button.one-deadline:hover {
   z-index: 6;
   background: #1c1c1c;
 }
+
+.editable-track .scheduled-block[data-native-source] {
+  opacity: 0.3;
+}
+
+.schedule-create-preview[data-native-preview] {
+  overflow: visible;
+}
+.schedule-block-preview-label {
+  position: absolute;
+  bottom: calc(100% + 5px);
+  left: -1px;
+  white-space: nowrap;
+  border: 1px solid var(--one-accent-mark);
+  border-radius: 5px;
+  background: #262626;
+  color: #eee;
+  padding: 4px 7px;
+  font-size: 10px;
+  line-height: 1.4;
+  box-shadow: 0 3px 12px #00000030;
+}
+.day-track:last-child .schedule-block-preview-label {
+  left: auto;
+  right: -1px;
+}
+.schedule-create-preview[data-near-start] .schedule-block-preview-label {
+  top: calc(100% + 5px);
+  bottom: auto;
+}
