@@ -76,3 +76,5 @@ The first dashboard card requests current conditions through Planner API, which 
 Enhance ONE task mapping and verification: [docs/enhance-one.md](docs/enhance-one.md).
 
 User journey review and verification: [docs/user-journey-review.md](docs/user-journey-review.md).
+
+Use **Delete entire series** in a task, a linked Schedule block, or Tasks → Repeat schedules to clear every date of an active or stopped series. The confirmation shows task/plan counts; cancel preserves the series, and Undo/Trash restores it. Shared plans and recorded focus history remain. **Stop repeating** retains already generated items; **Delete occurrence** removes one dated task.

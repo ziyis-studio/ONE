@@ -1,4 +1,4 @@
-import { Repeat2 } from "lucide-react";
+import { Repeat2, Trash2 } from "lucide-react";
 import { SelectField } from "./SelectField";
 import { DateTimeField, TimeOfDayField } from "./DateTimeField";
 import { useOne } from "../lib/workspace";
@@ -10,6 +10,7 @@ import {
   recurrenceRuleSchema,
 } from "../domain/task-recurrence";
 import type { RecurrenceRule, TaskRecurrence } from "../domain/task-recurrence";
+import { recurrenceDeletion } from "../domain/recurrence-deletion";
 import "./task-repeat.css";
 
 export default function TaskRepeatField({
@@ -18,16 +19,19 @@ export default function TaskRepeatField({
   startDate,
   series,
   disabled,
+  onDeleted,
 }: {
   value: RecurrenceRule | null;
   onChange: (rule: RecurrenceRule | null) => void;
   startDate: string;
   series?: TaskRecurrence;
   disabled: boolean;
+  onDeleted?: () => void;
 }) {
-  const { today, zone, execute } = useOne();
+  const { today, zone, data, execute } = useOne();
   const confirm = useConfirm();
-  if (series)
+  if (series) {
+    const plan = recurrenceDeletion(data, series.id);
     return (
       <section className="task-repeat-field" aria-label="Repeat schedule">
         <div className="task-repeat-heading">
@@ -44,37 +48,72 @@ export default function TaskRepeatField({
             : ""}
         </p>
         <p>Each occurrence can be edited and completed separately.</p>
-        {series.active && (
+        <p>
+          {plan.taskIds.size} occurrences · {plan.blockIds.size} planned time
+          blocks
+        </p>
+        <div className="task-repeat-actions">
+          {series.active && (
+            <button
+              type="button"
+              className="secondary-button"
+              disabled={disabled}
+              onClick={async () => {
+                if (
+                  !(await confirm({
+                    title: "Stop repeating?",
+                    description:
+                      "No new occurrences will be created. Tasks and time blocks already on your schedule will stay.",
+                    confirmLabel: "Stop repeating",
+                  }))
+                )
+                  return;
+                try {
+                  await execute({
+                    type: "task.recurrence.stop",
+                    id: series.id,
+                    expectedUpdatedAt: series.updatedAt,
+                  });
+                } catch {
+                  /* Workspace reports the error. */
+                }
+              }}
+            >
+              Stop repeating
+            </button>
+          )}
           <button
             type="button"
-            className="secondary-button"
+            className="delete-button"
             disabled={disabled}
             onClick={async () => {
               if (
                 !(await confirm({
-                  title: "Stop repeating?",
-                  description:
-                    "No new occurrences will be created. Tasks and time blocks already on your schedule will stay.",
-                  confirmLabel: "Stop repeating",
+                  title: "Delete entire series?",
+                  description: `“${series.title}”: all ${plan.taskIds.size} occurrences, including completed tasks, and ${plan.blockIds.size} exclusively linked planned time blocks will be deleted. The repeat schedule will be removed. You can restore the series from Trash in Settings.`,
+                  confirmLabel: "Delete entire series",
                 }))
               )
                 return;
               try {
                 await execute({
-                  type: "task.recurrence.stop",
+                  type: "task.recurrence.delete",
                   id: series.id,
                   expectedUpdatedAt: series.updatedAt,
                 });
+                onDeleted?.();
               } catch {
                 /* Workspace reports the error. */
               }
             }}
           >
-            Stop repeating
+            <Trash2 size={14} />
+            Delete entire series
           </button>
-        )}
+        </div>
       </section>
     );
+  }
   const set = (patch: Partial<RecurrenceRule>) =>
     value && onChange({ ...value, ...patch });
   const valid = value && recurrenceRuleSchema.safeParse(value).success;
