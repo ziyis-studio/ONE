@@ -1,4 +1,6 @@
 import TagPicker from "./TagPicker";
+import TaskRepeatField from "./TaskRepeatField";
+import type { RecurrenceRule } from "../domain/task-recurrence";
 import { readTagDraft } from "../lib/tag-draft";
 import MealPhotos from "./MealPhotos";
 import { mealKinds, nutrientKeys } from "../domain/meals";
@@ -128,6 +130,12 @@ export default function Editor() {
   const [deadline, setDeadline] = useState(
     task?.deadline || editor!.date || "",
   );
+  const [taskRecurrence, setTaskRecurrence] = useState<RecurrenceRule | null>(
+    null,
+  );
+  const taskSeries = data.taskRecurrences.find(
+    (r) => r.id === task?.recurrenceId,
+  );
   const [status, setStatus] = useState<"active" | "on_hold">(
     task?.workStatus || project?.workStatus || "active",
   );
@@ -231,6 +239,7 @@ export default function Editor() {
     tags,
     projectId,
     deadline,
+    taskRecurrence,
     status,
     initialStage,
     icon,
@@ -269,6 +278,7 @@ export default function Editor() {
       setTags(v.tags);
       setProjectId(v.projectId);
       setDeadline(v.deadline);
+      setTaskRecurrence(v.taskRecurrence || null);
       setStatus(v.status);
       setInitialStage(v.initialStage);
       setIcon(v.icon);
@@ -520,6 +530,7 @@ export default function Editor() {
                 patch: {
                   title,
                   description,
+                  ...(taskRecurrence ? { recurrence: taskRecurrence } : {}),
                   deadline: deadline || null,
                   projectId: projectId || null,
                   tags: tagList(),
@@ -532,6 +543,7 @@ export default function Editor() {
                   initialStage,
                   title,
                   description,
+                  ...(taskRecurrence ? { recurrence: taskRecurrence } : {}),
                   deadline: deadline || null,
                   projectId: projectId || null,
                   tags: tagList(),
@@ -1065,6 +1077,17 @@ export default function Editor() {
                   }
                 />
               </div>
+            )}
+            {kind === "task" && (
+              <TaskRepeatField
+                value={taskRecurrence}
+                onChange={setTaskRecurrence}
+                startDate={deadline || today}
+                series={taskSeries}
+                disabled={
+                  busy || saveState === "saving" || saveState === "saved"
+                }
+              />
             )}
             {(kind === "project" || kind === "habit") && (
               <div className="field-block">

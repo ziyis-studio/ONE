@@ -1,3 +1,4 @@
+import { useRecurringTaskRange } from "../lib/use-recurring-tasks";
 import ScheduleKind, { ScheduleLegend, scheduleKind } from "./ScheduleKind";
 import { PageDate } from "./PageDate";
 import { useRef, useState } from "react";
@@ -51,6 +52,14 @@ export default function SchedulePage() {
   const [draggedTask, setDraggedTask] = useState<string | null>(null);
   const days = weekDays(selected);
   const month = monthDays(selected);
+  useRecurringTaskRange(
+    view === "month" ? month[0] : view === "week" ? days[0] : selected,
+    view === "month"
+      ? month.at(-1)!
+      : view === "week"
+        ? days.at(-1)!
+        : selected,
+  );
   const [showTasks, setShowTasks] = useViewState<boolean>(
     "schedule.tasks",
     true,

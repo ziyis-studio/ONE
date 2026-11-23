@@ -5,6 +5,7 @@ import type { ProjectIconName } from "./project-icons";
 export type OrderRevision = Pick<Entity, "id" | "updatedAt">;
 
 export interface TaskInput {
+  recurrence?: import("./task-recurrence").RecurrenceRule | null;
   initialStage?: "todo" | "progress" | "hold" | "done";
   tags?: string[];
   workStatus?: "active" | "on_hold";
@@ -55,6 +56,8 @@ export interface SleepInput {
   note?: string;
 }
 export type Command =
+  | { type: "tasks.materialize"; from: string; to: string }
+  | { type: "task.recurrence.stop"; id: string; expectedUpdatedAt: string }
   | {
       type: "meal.save";
       id?: string;
@@ -140,6 +143,7 @@ export type Command =
           | "deadline"
           | "tags"
           | "workStatus"
+          | "recurrence"
         >
       >;
       expectedUpdatedAt?: string;

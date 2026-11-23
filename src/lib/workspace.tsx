@@ -1,3 +1,4 @@
+import { RecurringTasksLoader } from "./use-recurring-tasks";
 import { readActivities, storeActivities, mergeLogs } from "./activity";
 import {
   createContext,
@@ -593,6 +594,7 @@ export function WorkspaceProvider({
           onDemoRecords={!loading && !busy ? saveDemoPomodoro : undefined}
           onSyncedBlocks={syncPomodoroBlocks}
         >
+          <RecurringTasksLoader />
           {children}
         </PomodoroProvider>
       </ViewStateProvider>

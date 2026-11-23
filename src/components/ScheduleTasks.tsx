@@ -1,7 +1,7 @@
 import TaskScheduleHint from "./TaskScheduleHint";
 import { plannedTaskIds } from "../lib/schedule";
 import { useViewState } from "../lib/view-state";
-import { GripVertical, Plus, Search } from "lucide-react";
+import { GripVertical, Plus, Search, Repeat2 } from "lucide-react";
 import { useOne } from "../lib/workspace";
 import { Empty } from "./ui";
 export default function ScheduleTasks({
@@ -19,6 +19,10 @@ export default function ScheduleTasks({
   const tasks = data.tasks.filter(
     (task) =>
       !task.completedAt &&
+      (!task.recurrenceId ||
+        !task.deadline ||
+        task.deadline <= selected ||
+        task.scheduledOn === selected) &&
       `${task.title} ${data.projects.find((project) => project.id === task.projectId)?.title || ""}`
         .toLowerCase()
         .includes(query.toLowerCase()),
@@ -75,6 +79,12 @@ export default function ScheduleTasks({
                     (project) => project.id === task.projectId,
                   )?.title || "Personal"}
                 </span>
+                {task.recurrenceId && (
+                  <span className="task-repeat-badge">
+                    <Repeat2 size={11} />
+                    {task.deadline}
+                  </span>
+                )}
                 <TaskScheduleHint
                   task={task}
                   planned={planned.has(task.id)}
