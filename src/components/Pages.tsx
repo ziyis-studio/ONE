@@ -1,3 +1,5 @@
+import TaskRepeatField from "./TaskRepeatField";
+import { Repeat2 } from "lucide-react";
 import { useCardDrag } from "../lib/card-drag";
 import type { CardDragBinding } from "../lib/card-drag";
 import TaskTiming from "./TaskTiming";
@@ -114,9 +116,11 @@ function Tabs({
 const matches = (query: string, ...values: (string | undefined)[]) =>
   values.join(" ").toLowerCase().includes(query.toLowerCase());
 export function TasksPage() {
-  const { data, edit, busy, now } = useOne();
+  const { data, edit, busy, now, today } = useOne();
   const { toggleTask, moveTask, rename, safely } = useActions();
   const [showAllDone, setShowAllDone] = useState(false);
+  const [showUpcomingRepeats, setShowUpcomingRepeats] = useState(false);
+  const [showRepeatSchedules, setShowRepeatSchedules] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const [view, setView] = useViewState<string>("tasks.view", "board"),
     [query, setQuery] = useViewState<string>("tasks.query", ""),
@@ -127,8 +131,29 @@ export function TasksPage() {
     project === "all" || data.projects.some((item) => item.id === project)
       ? project
       : "all";
+  const nextRepeats = new Map<string, string>();
+  for (const task of data.tasks)
+    if (
+      task.recurrenceId &&
+      !task.completedAt &&
+      task.deadline &&
+      task.deadline > today
+    ) {
+      const old = nextRepeats.get(task.recurrenceId);
+      if (!old || task.deadline < old)
+        nextRepeats.set(task.recurrenceId, task.deadline);
+    }
+  const repeatVisible = (t: Task) =>
+    showUpcomingRepeats ||
+    query.trim() ||
+    !t.recurrenceId ||
+    !t.deadline ||
+    t.deadline <= today ||
+    t.completedAt ||
+    nextRepeats.get(t.recurrenceId) === t.deadline;
   const filteredTasks = data.tasks.filter(
     (t) =>
+      repeatVisible(t) &&
       matches(query, t.title, t.description, t.tags?.join(" ")) &&
       (activeProject === "all" || t.projectId === activeProject),
   );
@@ -199,8 +224,45 @@ export function TasksPage() {
             })),
           ]}
         />
+        {!!data.taskRecurrences.length && (
+          <>
+            <button
+              type="button"
+              className="secondary-button"
+              aria-pressed={showRepeatSchedules}
+              onClick={() => setShowRepeatSchedules((v) => !v)}
+            >
+              <Repeat2 size={14} />
+              Repeat schedules
+            </button>
+            <label className="task-repeat-timed">
+              <input
+                type="checkbox"
+                checked={showUpcomingRepeats}
+                onChange={(e) => setShowUpcomingRepeats(e.target.checked)}
+              />
+              All upcoming repeats
+            </label>
+          </>
+        )}
         <span className="fine toolbar-count">{tasks.length} tasks</span>
       </div>
+      {showRepeatSchedules && (
+        <section className="recurrence-manager" aria-label="Repeat schedules">
+          {data.taskRecurrences.map((series) => (
+            <article key={series.id}>
+              <h3>{series.title}</h3>
+              <TaskRepeatField
+                value={null}
+                onChange={() => {}}
+                startDate={today}
+                series={series}
+                disabled={busy}
+              />
+            </article>
+          ))}
+        </section>
+      )}
       {!tasks.length && hasFilters && (
         <div className="collection-filter-empty" role="status">
           <span>No tasks match these filters.</span>
@@ -426,6 +488,12 @@ function TaskCard({
           />
         </span>
       </div>
+      {task.recurrenceId && (
+        <span className="task-repeat-badge">
+          <Repeat2 size={12} />
+          Repeating task
+        </span>
+      )}
       {!!task.tags?.length && (
         <div className="task-card-tags" aria-label="Task tags">
           {task.tags.map((tag) => (

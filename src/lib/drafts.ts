@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { z } from "zod";
+import { recurrenceRuleSchema } from "../domain/task-recurrence";
 import { mealKinds, mealPhotoSchema, nutrientKeys } from "../domain/meals";
 import type { Editor } from "./workspace";
 import {
@@ -15,6 +16,7 @@ export const draftValuesSchema = z
     tags: text,
     projectId: z.string(),
     deadline: z.string(),
+    taskRecurrence: recurrenceRuleSchema.nullable().optional(),
     status: z.enum(["active", "on_hold"]),
     initialStage: z.enum(["todo", "progress", "hold", "done"]),
     icon: z.string(),
