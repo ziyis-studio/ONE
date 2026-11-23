@@ -91,3 +91,13 @@
 .task-repeat-field .form-grid {
   margin: 0;
 }
+
+.task-repeat-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.task-repeat-actions .delete-button {
+  margin-left: auto;
+}

@@ -57,7 +57,11 @@ export interface SleepInput {
 }
 export type Command =
   | { type: "tasks.materialize"; from: string; to: string }
-  | { type: "task.recurrence.stop"; id: string; expectedUpdatedAt: string }
+  | {
+      type: "task.recurrence.stop" | "task.recurrence.delete";
+      id: string;
+      expectedUpdatedAt: string;
+    }
   | {
       type: "meal.save";
       id?: string;

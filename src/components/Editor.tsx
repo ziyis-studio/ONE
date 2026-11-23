@@ -87,6 +87,19 @@ export default function Editor() {
       (db) => db.id === (kind === "database" ? id : editor!.databaseId),
     ),
     record = data.databaseRecords.find((r) => r.id === id);
+  const linkedBlockSeries =
+    kind === "block" && block
+      ? data.taskRecurrences.filter((series) =>
+          data.blockTaskLinks.some(
+            (link) =>
+              link.timeBlockId === block.id &&
+              data.tasks.some(
+                (task) =>
+                  task.id === link.taskId && task.recurrenceId === series.id,
+              ),
+          ),
+        )
+      : [];
   const entity =
     kind === "meal"
       ? meal
@@ -704,10 +717,16 @@ export default function Editor() {
     if (
       !id ||
       !(await confirm({
-        title: `Delete this ${label}?`,
+        title:
+          taskSeries && kind === "task"
+            ? "Delete this occurrence?"
+            : `Delete this ${label}?`,
         description:
           (title ? `“${title}” will be deleted. ` : "") +
           (kind === "database" ? "Its records will also be deleted. " : "") +
+          (taskSeries && kind === "task"
+            ? "Other occurrences will remain. Use Delete entire series in Repeat schedule to remove every date. "
+            : "") +
           "You can restore it from Trash in Settings.",
         confirmLabel: `Delete ${label}`,
       })) ||
@@ -1084,11 +1103,38 @@ export default function Editor() {
                 onChange={setTaskRecurrence}
                 startDate={deadline || today}
                 series={taskSeries}
+                onDeleted={() => {
+                  draft.clear();
+                  returnEditor();
+                }}
                 disabled={
                   busy || saveState === "saving" || saveState === "saved"
                 }
               />
             )}
+            {linkedBlockSeries.map((series) => (
+              <section
+                key={series.id}
+                aria-label={`Task repeat schedule: ${series.title}`}
+              >
+                <h3 className="field-label">
+                  {series.title} · Repeat schedule
+                </h3>
+                <TaskRepeatField
+                  value={null}
+                  onChange={() => {}}
+                  startDate={today}
+                  series={series}
+                  disabled={
+                    busy || saveState === "saving" || saveState === "saved"
+                  }
+                  onDeleted={() => {
+                    draft.clear();
+                    edit(null);
+                  }}
+                />
+              </section>
+            ))}
             {(kind === "project" || kind === "habit") && (
               <div className="field-block">
                 <span className="field-label">A LITTLE PERSONALITY</span>
@@ -1769,7 +1815,7 @@ export default function Editor() {
               disabled={busy || attachmentBusy}
             >
               <Trash2 size={14} />
-              Delete
+              {taskSeries && kind === "task" ? "Delete occurrence" : "Delete"}
             </button>
           )}
           <span />

@@ -164,3 +164,89 @@ test("repeat rules survive editor draft dismissal and restoration", async () => 
     }),
   ).toBeTruthy();
 }, 20000);
+
+test("clears a stopped daily testing series and its time blocks from the manager, supports cancellation and Undo", async () => {
+  const { applyCommand } = await import("./support/domain/commands");
+  const base = createDemo("Asia/Kuala_Lumpur");
+  const created = applyCommand(base, {
+    type: "task.create",
+    input: {
+      title: "testing",
+      recurrence: {
+        frequency: "daily",
+        interval: 1,
+        startsOn: "2026-11-24",
+        endsOn: "2026-11-27",
+        monthDay: 24,
+        time: "09:00",
+        duration: 30,
+        timeZone: "Asia/Kuala_Lumpur",
+      },
+    },
+  }).snapshot;
+  const series = created.taskRecurrences[0],
+    before = applyCommand(created, {
+      type: "task.recurrence.stop",
+      id: series.id,
+      expectedUpdatedAt: series.updatedAt,
+    }).snapshot;
+  const taskIds = before.tasks
+      .filter((t) => t.recurrenceId === series.id)
+      .map((t) => t.id),
+    blockIds = before.blockTaskLinks
+      .filter((l) => taskIds.includes(l.taskId))
+      .map((l) => l.timeBlockId);
+  localStorage.setItem(DEMO_KEY, JSON.stringify(before));
+  render(<App />);
+  await userEvent.click(
+    await screen.findByRole("button", { name: "Explore ONE" }),
+  );
+  await screen.findByRole("heading", { name: "Today." });
+  const navigation = new Promise<void>((resolve) => {
+    const listener = (e: HashChangeEvent) => {
+      if (e.newURL.endsWith("#/tasks")) {
+        window.removeEventListener("hashchange", listener);
+        resolve();
+      }
+    };
+    window.addEventListener("hashchange", listener);
+  });
+  await userEvent.click(screen.getAllByRole("button", { name: "Tasks" })[0]);
+  await navigation;
+  await userEvent.click(
+    await screen.findByRole("button", { name: "Repeat schedules" }),
+  );
+  let manager = screen.getByRole("region", { name: "Repeat schedules" });
+  await userEvent.click(
+    within(manager).getByRole("button", { name: "Delete entire series" }),
+  );
+  let confirmation = await screen.findByRole("alertdialog");
+  expect(within(confirmation).getByText(/all 4 occurrences/)).toBeTruthy();
+  await userEvent.click(
+    within(confirmation).getByRole("button", { name: "Cancel" }),
+  );
+  expect(saved().tasks.filter((t: any) => taskIds.includes(t.id))).toHaveLength(
+    4,
+  );
+  await userEvent.click(
+    within(manager).getByRole("button", { name: "Delete entire series" }),
+  );
+  confirmation = await screen.findByRole("alertdialog");
+  await userEvent.click(
+    within(confirmation).getByRole("button", { name: "Delete entire series" }),
+  );
+  await waitFor(() => expect(saved().taskRecurrences).toHaveLength(0));
+  expect(saved().tasks.some((t: any) => taskIds.includes(t.id))).toBe(false);
+  expect(saved().timeBlocks.some((b: any) => blockIds.includes(b.id))).toBe(
+    false,
+  );
+  expect(saved().tasks).toHaveLength(base.tasks.length);
+  await userEvent.click(await screen.findByRole("button", { name: "Undo" }));
+  await waitFor(() => expect(saved().taskRecurrences).toHaveLength(1));
+  expect(saved().tasks.filter((t: any) => taskIds.includes(t.id))).toHaveLength(
+    4,
+  );
+  expect(
+    saved().timeBlocks.filter((b: any) => blockIds.includes(b.id)),
+  ).toHaveLength(4);
+}, 25000);
