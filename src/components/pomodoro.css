@@ -131,3 +131,60 @@
     height: 40px;
   }
 }
+
+.pomodoro-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pomodoro-heading-actions > .icon-button {
+  width: 28px;
+  height: 30px;
+  flex-shrink: 0;
+}
+.pomodoro-duration-settings {
+  width: 300px;
+  padding: 18px;
+  color: #ddd;
+}
+.pomodoro-duration-settings h3 {
+  margin: 0 0 16px;
+  font-size: 15px;
+}
+.pomodoro-duration-settings input {
+  width: 100%;
+  background: #191919;
+  color: #eee;
+  border: 1px solid #ffffff1c;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font: inherit;
+}
+.pomodoro-duration-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+.pomodoro-duration-presets [aria-pressed="true"] {
+  background: var(--one-accent-mark);
+  color: #fff;
+}
+.pomodoro-duration-settings p {
+  color: #999;
+  font-size: 11px;
+  line-height: 1.6;
+}
+.pomodoro-duration-settings [role="alert"] {
+  color: #ccc;
+}
+.pomodoro-duration-settings footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 18px;
+}
+.pomodoro-next-duration {
+  color: #999;
+  font-size: 10px;
+}

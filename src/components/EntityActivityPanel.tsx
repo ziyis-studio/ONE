@@ -1,3 +1,4 @@
+import { useConfirm } from "../lib/confirmation";
 import {
   forwardRef,
   useEffect,
@@ -14,6 +15,7 @@ import {
   RefreshCw,
   X,
   CalendarClock,
+  Trash2,
 } from "lucide-react";
 import { useOne } from "../lib/workspace";
 import { api } from "../lib/api";
@@ -48,6 +50,9 @@ export default forwardRef<
 >(function EntityActivityPanel({ kind, id, onOpen, onSchedule }, ref) {
   const { data, demo, scope, session, zone, busy, execute } = useOne(),
     reduced = useMotionPreference();
+  const confirm = useConfirm();
+  const [deleting, setDeleting] = useState("");
+  const deletingLock = useRef(false);
   const [items, setItems] = useState<ActivityLog[]>([]),
     [next, setNext] = useState<Page["next"]>(null),
     [loading, setLoading] = useState(!!id),
@@ -121,7 +126,7 @@ export default forwardRef<
     };
   }, []);
   async function load(older = false) {
-    if (!id) return;
+    if (!id || deletingLock.current) return;
     const current = ++request.current;
     setLoading(true);
     setError("");
@@ -171,7 +176,15 @@ export default forwardRef<
   async function post() {
     const current = latest.current,
       body = current.body.trim();
-    if (!id || !body || postingLock.current || busy || loading) return;
+    if (
+      !id ||
+      !body ||
+      postingLock.current ||
+      deletingLock.current ||
+      busy ||
+      loading
+    )
+      return;
     postingLock.current = true;
     setPosting(true);
     setError("");
@@ -219,6 +232,55 @@ export default forwardRef<
     } finally {
       postingLock.current = false;
       if (alive.current) setPosting(false);
+    }
+  }
+  async function removeLog(row: ActivityLog) {
+    if (deletingLock.current || postingLock.current || loading || busy) return;
+    deletingLock.current = true;
+    try {
+      if (
+        !(await confirm({
+          title: "Delete this log?",
+          description: `“${row.body.slice(0, 160)}${row.body.length > 160 ? "…" : ""}” will be permanently deleted.`,
+          confirmLabel: "Delete log",
+        }))
+      )
+        return;
+      setDeleting(row.id);
+      setError("");
+      ++request.current;
+      if (demo) {
+        await api("/v1/sample/activity/remove", "", {
+          method: "POST",
+          body: JSON.stringify({
+            workspace: data,
+            items: readActivities(scope),
+            entry: {
+              id: row.id,
+              kind: row.target_kind,
+              targetId: row.target_id,
+            },
+          }),
+        });
+        storeActivities(
+          scope,
+          readActivities(scope).filter((item) => item.id !== row.id),
+        );
+      } else
+        await api("/v1/activity/" + row.id, session?.access_token || "", {
+          method: "DELETE",
+          body: JSON.stringify({
+            kind: row.target_kind,
+            targetId: row.target_id,
+          }),
+        });
+      if (alive.current)
+        setItems((old) => old.filter((item) => item.id !== row.id));
+    } catch (cause) {
+      if (alive.current) setError(message(cause, "delete the log"));
+    } finally {
+      deletingLock.current = false;
+      if (alive.current) setDeleting("");
     }
   }
   async function linkNote(noteId: string, remove = false) {
@@ -315,7 +377,7 @@ export default forwardRef<
           <IconButton
             label="Refresh log"
             onClick={() => void load()}
-            disabled={loading || posting}
+            disabled={loading || posting || !!deleting}
           >
             <RefreshCw size={14} />
           </IconButton>
@@ -339,7 +401,7 @@ export default forwardRef<
             <button
               type="button"
               className="text-button"
-              disabled={loading}
+              disabled={loading || !!deleting}
               onClick={() => void load(true)}
             >
               Load older entries
@@ -369,6 +431,13 @@ export default forwardRef<
                     })}{" "}
                     · {timeKey(row.created_at, zone)}
                   </time>
+                  <IconButton
+                    label="Delete log"
+                    disabled={loading || posting || !!deleting || busy}
+                    onClick={() => void removeLog(row)}
+                  >
+                    {deleting === row.id ? <Spinner /> : <Trash2 size={13} />}
+                  </IconButton>
                 </header>
                 {kind === "project" && row.target_kind === "task" && (
                   <button
@@ -423,7 +492,12 @@ export default forwardRef<
                 type="button"
                 className="secondary-button"
                 disabled={
-                  !id || loading || posting || busy || !draft.body.trim()
+                  !id ||
+                  loading ||
+                  posting ||
+                  !!deleting ||
+                  busy ||
+                  !draft.body.trim()
                 }
                 onClick={() => void post()}
               >

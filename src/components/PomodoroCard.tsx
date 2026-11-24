@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { Button, DialogTrigger, Popover, Dialog } from "react-aria-components";
 import { useOne } from "../lib/workspace";
 import {
   Target,
@@ -7,6 +9,7 @@ import {
   Play,
   RotateCcw,
   X,
+  Settings2,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { usePomodoro } from "../lib/pomodoro-context";
@@ -28,6 +31,7 @@ export default function PomodoroCard() {
     unlinkTask,
     remainingMs,
     completedToday,
+    focusMinutesToday,
     start,
     pause,
     reset,
@@ -38,7 +42,7 @@ export default function PomodoroCard() {
   const reduced = useMotionPreference(),
     running = state.status === "running",
     complete = state.status === "complete";
-  const duration = POMODORO_MODES[state.mode].seconds,
+  const duration = state.durationSeconds,
     ratio = 1 - remainingMs / (duration * 1000);
   const head = pomodoroHead(ratio);
   const next = nextPomodoroMode(state),
@@ -57,30 +61,33 @@ export default function PomodoroCard() {
       title="Pomodoro"
       className="pomodoro-card"
       meta={
-        <DiscreteTabs
-          label="Pomodoro mode"
-          compact
-          iconsOnly
-          value={state.mode}
-          onChange={selectMode}
-          items={[
-            {
-              value: "focus",
-              label: "Focus",
-              icon: <Target size={16} aria-hidden="true" />,
-            },
-            {
-              value: "short",
-              label: "Short break",
-              icon: <Coffee size={16} aria-hidden="true" />,
-            },
-            {
-              value: "long",
-              label: "Long break",
-              icon: <Armchair size={16} aria-hidden="true" />,
-            },
-          ]}
-        />
+        <div className="pomodoro-heading-actions">
+          <DiscreteTabs
+            label="Pomodoro mode"
+            compact
+            iconsOnly
+            value={state.mode}
+            onChange={selectMode}
+            items={[
+              {
+                value: "focus",
+                label: "Focus",
+                icon: <Target size={16} aria-hidden="true" />,
+              },
+              {
+                value: "short",
+                label: "Short break",
+                icon: <Coffee size={16} aria-hidden="true" />,
+              },
+              {
+                value: "long",
+                label: "Long break",
+                icon: <Armchair size={16} aria-hidden="true" />,
+              },
+            ]}
+          />
+          <FocusDurationSettings />
+        </div>
       }
     >
       <div className="pomodoro-body">
@@ -165,6 +172,12 @@ export default function PomodoroCard() {
                   : label}
             </span>
           </div>
+          {state.mode === "focus" &&
+            state.focusMinutes * 60 !== state.durationSeconds && (
+              <small className="pomodoro-next-duration">
+                Next focus: {state.focusMinutes} min
+              </small>
+            )}
           {state.mode === "focus" && state.taskTitle && (
             <div className="pomodoro-task-row">
               <button
@@ -205,10 +218,108 @@ export default function PomodoroCard() {
           </div>
           <small className="pomodoro-summary">
             {completedToday} {completedToday === 1 ? "session" : "sessions"} ·{" "}
-            {completedToday * 25}m focus today
+            {focusMinutesToday}m focus today
           </small>
         </div>
       </div>
     </Card>
+  );
+}
+
+function FocusDurationSettings() {
+  const { state, setFocusMinutes } = usePomodoro();
+  const [draft, setDraft] = useState(String(state.focusMinutes));
+  const [error, setError] = useState("");
+  return (
+    <DialogTrigger
+      onOpenChange={(open) => {
+        if (open) {
+          setDraft(String(state.focusMinutes));
+          setError("");
+        }
+      }}
+    >
+      <Button className="icon-button" aria-label="Change focus duration">
+        <Settings2 size={15} />
+      </Button>
+      <Popover className="one-date-popover" placement="bottom end" offset={8}>
+        <Dialog
+          className="pomodoro-duration-settings"
+          aria-label="Focus duration"
+        >
+          {({ close }) => (
+            <form
+              noValidate
+              onSubmit={(event) => {
+                event.preventDefault();
+                const minutes = Number(draft);
+                if (
+                  !Number.isInteger(minutes) ||
+                  minutes < 1 ||
+                  minutes > 180
+                ) {
+                  setError("Choose a whole number from 1 to 180 minutes.");
+                  return;
+                }
+                setFocusMinutes(minutes);
+                close();
+              }}
+            >
+              <h3>Focus duration</h3>
+              <label className="form-field">
+                <span>Minutes</span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={180}
+                  step={1}
+                  value={draft}
+                  onChange={(event) => {
+                    setDraft(event.target.value);
+                    setError("");
+                  }}
+                  aria-invalid={!!error}
+                />
+              </label>
+              <div className="pomodoro-duration-presets">
+                {[15, 25, 45, 60, 90].map((minutes) => (
+                  <button
+                    type="button"
+                    className="tiny-pill"
+                    aria-pressed={draft === String(minutes)}
+                    key={minutes}
+                    onClick={() => {
+                      setDraft(String(minutes));
+                      setError("");
+                    }}
+                  >
+                    {minutes} min
+                  </button>
+                ))}
+              </div>
+              <p>
+                {state.status === "running" || state.status === "paused"
+                  ? "Applies to your next focus. Your current session keeps its duration."
+                  : "Choose 1–180 minutes. Breaks keep their 5/15 minute durations."}
+              </p>
+              {error && <p role="alert">{error}</p>}
+              <footer>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={close}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="primary-button">
+                  Apply
+                </button>
+              </footer>
+            </form>
+          )}
+        </Dialog>
+      </Popover>
+    </DialogTrigger>
   );
 }
