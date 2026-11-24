@@ -62,6 +62,12 @@ vi.mock("../../src/lib/api", async (importOriginal) => {
           idMap,
         };
       }
+      if (path.endsWith("/activity/remove"))
+        return {
+          items: input.items.filter(
+            (item: { id: string }) => item.id !== input.entry.id,
+          ),
+        };
       if (path.endsWith("/activity")) {
         const e = input.entry;
         return {

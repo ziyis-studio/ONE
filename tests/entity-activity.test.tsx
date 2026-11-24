@@ -1,11 +1,14 @@
+import { ConfirmationProvider } from "../src/lib/confirmation";
+import type { ReactNode } from "react";
 // @vitest-environment jsdom
 import { beforeEach, afterEach, test, expect, vi } from "vitest";
 import {
   cleanup,
-  render,
+  render as baseRender,
   screen,
   fireEvent,
   waitFor,
+  within,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { sampleActivityPage } from "./support/activity-feed";
@@ -13,6 +16,8 @@ import EntityActivityPanel from "../src/components/EntityActivityPanel";
 import { emptyWorkspace } from "../src/domain/model";
 import { readActivities, readLogDrafts } from "../src/lib/activity";
 import { chooseOption } from "./select-field-helpers";
+const render = (node: ReactNode) =>
+  baseRender(<ConfirmationProvider>{node}</ConfirmationProvider>);
 const mock = vi.hoisted(() => ({ context: null as any, api: vi.fn() }));
 vi.mock("../src/lib/workspace", () => ({ useOne: () => mock.context }));
 vi.mock("../src/lib/api", () => ({ api: mock.api }));
@@ -24,6 +29,12 @@ beforeEach(() => {
   vi.resetAllMocks();
   mock.api.mockImplementation(async (_path, _token, options) => {
     const input = JSON.parse(options.body);
+    if (_path === "/v1/sample/activity/remove")
+      return {
+        items: input.items.filter(
+          (item: { id: string }) => item.id !== input.entry.id,
+        ),
+      };
     if (_path === "/v1/sample/activity-feed")
       return sampleActivityPage(input.workspace, input.items, input.query);
     const e = input.entry;
@@ -246,4 +257,65 @@ test("a cloud load failure stays beside the log, retries successfully and shows 
   expect(mock.api.mock.calls[1][0]).toBe(
     `/v1/activity?kind=project&id=${project}`,
   );
+});
+
+test("project feed deletes a task's manual log by its source identity, supports cancel, keeps drafts and persists the removal", async () => {
+  const entry = {
+    id: crypto.randomUUID(),
+    target_kind: "task" as const,
+    target_id: task,
+    body: "Delete this testing log",
+    created_at: new Date().toISOString(),
+  };
+  const own = {
+    ...entry,
+    id: crypto.randomUUID(),
+    target_kind: "project" as const,
+    target_id: project,
+    body: "Keep project log",
+  };
+  const { storeActivities } = await import("../src/lib/activity");
+  storeActivities("demo", [entry, own]);
+  let view = render(
+    <EntityActivityPanel kind="project" id={project} onOpen={vi.fn()} />,
+  );
+  const text = await screen.findByText(entry.body),
+    row = text.closest("article")!;
+  fireEvent.change(screen.getByRole("textbox", { name: "Write a log entry" }), {
+    target: { value: "Unsent draft stays" },
+  });
+  await userEvent.click(
+    within(row).getByRole("button", { name: "Delete log" }),
+  );
+  let prompt = await screen.findByRole("alertdialog");
+  await userEvent.click(within(prompt).getByRole("button", { name: "Cancel" }));
+  expect(readActivities("demo")).toHaveLength(2);
+  await userEvent.click(
+    within(row).getByRole("button", { name: "Delete log" }),
+  );
+  prompt = await screen.findByRole("alertdialog");
+  await userEvent.click(
+    within(prompt).getByRole("button", { name: "Delete log" }),
+  );
+  await waitFor(() => expect(screen.queryByText(entry.body)).toBeNull());
+  const request = mock.api.mock.calls.find(
+    (c) => c[0] === "/v1/sample/activity/remove",
+  )!;
+  expect(JSON.parse(request[2].body).entry).toEqual({
+    id: entry.id,
+    kind: "task",
+    targetId: task,
+  });
+  expect(readActivities("demo").map((r) => r.id)).toEqual([own.id]);
+  expect(
+    (
+      screen.getByRole("textbox", {
+        name: "Write a log entry",
+      }) as HTMLTextAreaElement
+    ).value,
+  ).toBe("Unsent draft stays");
+  view.unmount();
+  render(<EntityActivityPanel kind="task" id={task} onOpen={vi.fn()} />);
+  await screen.findByText("No entries yet.");
+  expect(screen.queryByText(entry.body)).toBeNull();
 });

@@ -445,3 +445,18 @@
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+
+.entity-log-entry time {
+  margin-left: auto;
+}
+.entity-log-entry header .icon-button {
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  flex: 0 0 26px;
+  color: #888;
+}
+.entity-log-entry header .icon-button:hover {
+  color: #ddd;
+  background: #ffffff0b;
+}

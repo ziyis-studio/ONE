@@ -1,3 +1,8 @@
+import {
+  validSessionDuration,
+  MIN_FOCUS_MINUTES,
+  MAX_FOCUS_MINUTES,
+} from "../domain/session-duration";
 export const POMODORO_MODES = {
   focus: { label: "Focus", seconds: 25 * 60 },
   short: { label: "Short break", seconds: 5 * 60 },
@@ -16,6 +21,8 @@ export type PomodoroRecord = {
 };
 export type PomodoroState = {
   mode: PomodoroMode;
+  focusMinutes: number;
+  durationSeconds: number;
   taskId: string | null;
   taskTitle: string;
   status: "ready" | "running" | "paused" | "complete";
@@ -28,13 +35,20 @@ export type PomodoroState = {
   startedAt: number | null;
   records: PomodoroRecord[];
 };
-export function initialPomodoro(mode: PomodoroMode = "focus"): PomodoroState {
+export function initialPomodoro(
+  mode: PomodoroMode = "focus",
+  focusMinutes = 25,
+): PomodoroState {
+  const durationSeconds =
+    mode === "focus" ? focusMinutes * 60 : POMODORO_MODES[mode].seconds;
   return {
     mode,
+    focusMinutes,
+    durationSeconds,
     taskId: null,
     taskTitle: "",
     status: "ready",
-    remainingMs: POMODORO_MODES[mode].seconds * 1000,
+    remainingMs: durationSeconds * 1000,
     endsAt: null,
     completedAt: null,
     focusCount: 0,
@@ -46,10 +60,7 @@ export function initialPomodoro(mode: PomodoroMode = "focus"): PomodoroState {
 }
 export function remainingPomodoro(state: PomodoroState, now: number) {
   return state.status === "running" && state.endsAt !== null
-    ? Math.max(
-        0,
-        Math.min(POMODORO_MODES[state.mode].seconds * 1000, state.endsAt - now),
-      )
+    ? Math.max(0, Math.min(state.durationSeconds * 1000, state.endsAt - now))
     : state.remainingMs;
 }
 export function settlePomodoro(
@@ -80,7 +91,7 @@ export function settlePomodoro(
               taskTitle: state.mode === "focus" ? state.taskTitle : "",
               startedAt: state.startedAt,
               completedAt: state.endsAt,
-              durationSeconds: POMODORO_MODES[state.mode].seconds,
+              durationSeconds: state.durationSeconds,
             },
           ].slice(-128)
         : state.records,
@@ -100,7 +111,7 @@ export function changePomodoroMode(
 ): PomodoroState {
   const settled = settlePomodoro(state, now);
   return {
-    ...initialPomodoro(mode),
+    ...initialPomodoro(mode, settled.focusMinutes),
     taskId: settled.taskId,
     taskTitle: settled.taskTitle,
     focusCount: settled.focusCount,
@@ -154,7 +165,21 @@ export function parsePomodoro(raw: string | null, now: number): PomodoroState {
       !["ready", "running", "paused", "complete"].includes(state.status)
     )
       return initialPomodoro();
-    const duration = POMODORO_MODES[state.mode].seconds * 1000;
+    const focusMinutes = state.focusMinutes ?? 25;
+    if (
+      !Number.isInteger(focusMinutes) ||
+      focusMinutes < MIN_FOCUS_MINUTES ||
+      focusMinutes > MAX_FOCUS_MINUTES
+    )
+      return initialPomodoro();
+    const durationSeconds =
+      state.durationSeconds ??
+      (state.mode === "focus"
+        ? focusMinutes * 60
+        : POMODORO_MODES[state.mode].seconds);
+    if (!validSessionDuration(state.mode, durationSeconds))
+      return initialPomodoro();
+    const duration = durationSeconds * 1000;
     if (
       !Number.isFinite(state.remainingMs) ||
       state.remainingMs < 0 ||
@@ -200,7 +225,7 @@ export function parsePomodoro(raw: string | null, now: number): PomodoroState {
           record &&
           uuid.test(record.id) &&
           Object.hasOwn(POMODORO_MODES, record.mode) &&
-          record.durationSeconds === POMODORO_MODES[record.mode].seconds &&
+          validSessionDuration(record.mode, record.durationSeconds) &&
           Number.isFinite(record.startedAt) &&
           record.startedAt > 0 &&
           Number.isFinite(record.completedAt) &&
@@ -230,6 +255,8 @@ export function parsePomodoro(raw: string | null, now: number): PomodoroState {
       typeof state.taskTitle === "string" ? state.taskTitle.slice(0, 300) : "";
     return {
       ...state,
+      focusMinutes,
+      durationSeconds,
       taskId,
       taskTitle,
       sessionId,
@@ -271,4 +298,26 @@ export function focusTaskPomodoro(
     },
     now,
   );
+}
+
+/** New preferences never rewrite the duration or deadline of an active session. */
+export function setPomodoroFocusMinutes(
+  state: PomodoroState,
+  minutes: number,
+  now: number,
+): PomodoroState {
+  if (
+    !Number.isInteger(minutes) ||
+    minutes < MIN_FOCUS_MINUTES ||
+    minutes > MAX_FOCUS_MINUTES
+  )
+    throw new Error("Choose a whole number from 1 to 180 minutes.");
+  const settled = settlePomodoro(state, now);
+  return {
+    ...settled,
+    focusMinutes: minutes,
+    ...(settled.mode === "focus" && settled.status === "ready"
+      ? { durationSeconds: minutes * 60, remainingMs: minutes * 60000 }
+      : {}),
+  };
 }

@@ -78,3 +78,5 @@ Enhance ONE task mapping and verification: [docs/enhance-one.md](docs/enhance-on
 User journey review and verification: [docs/user-journey-review.md](docs/user-journey-review.md).
 
 Use **Delete entire series** in a task, a linked Schedule block, or Tasks → Repeat schedules to clear every date of an active or stopped series. The confirmation shows task/plan counts; cancel preserves the series, and Undo/Trash restores it. Shared plans and recorded focus history remain. **Stop repeating** retains already generated items; **Delete occurrence** removes one dated task.
+
+Activity logs have a per-entry Delete action with confirmation, including task entries shown in project logs. Deletion preserves other entries and unsent drafts and remains deleted after refresh. Focus duration is configurable from the Pomodoro settings icon (1–180 whole minutes, with presets). Preferences persist per workspace on this browser. Changing a running/paused session applies to the next focus; reset uses the configured length. Completed records, Schedule blocks, backups and today's minute totals use actual recorded durations; legacy timers and 25-minute history remain readable.

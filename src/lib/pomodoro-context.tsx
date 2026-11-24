@@ -20,6 +20,7 @@ import {
   settlePomodoro,
   startPomodoro,
   focusTaskPomodoro,
+  setPomodoroFocusMinutes,
 } from "./pomodoro";
 import type { PomodoroMode, PomodoroState, PomodoroRecord } from "./pomodoro";
 import { usePomodoroRecords } from "./pomodoro-records";
@@ -28,6 +29,8 @@ type Timer = {
   state: PomodoroState;
   remainingMs: number;
   completedToday: number;
+  focusMinutesToday: number;
+  setFocusMinutes: (minutes: number) => void;
   syncStatus: RecordSyncStatus;
   refreshRecords: () => void;
   start: () => void;
@@ -182,25 +185,42 @@ export function PomodoroProvider({
         : changePomodoroMode(current, mode, Date.now()),
     );
   }, []);
+  const setFocusMinutes = useCallback((minutes: number) => {
+    const time = Date.now();
+    setState((current) => setPomodoroFocusMinutes(current, minutes, time));
+    setNow(time);
+  }, []);
   const remainingMs = remainingPomodoro(state, now);
-  const completedToday = useMemo(
-    () =>
-      [
-        ...new Set([
-          ...state.focusHistory,
-          ...cloudRecords
-            .filter((record) => record.mode === "focus")
-            .map((record) => record.completedAt),
-        ]),
-      ].filter((time) => dayKey(new Date(time), zone) === today).length,
-    [state.focusHistory, cloudRecords, zone, today],
-  );
+  const { completedToday, focusMinutesToday } = useMemo(() => {
+    const records = [
+      ...new Map(
+        [...state.records, ...cloudRecords]
+          .filter((r) => r.mode === "focus")
+          .map((r) => [r.id, r]),
+      ).values(),
+    ];
+    const timestamps = new Set(records.map((r) => r.completedAt));
+    const todayRecords = records.filter(
+      (r) => dayKey(new Date(r.completedAt), zone) === today,
+    );
+    const legacy = [...new Set(state.focusHistory)].filter(
+      (time) => !timestamps.has(time) && dayKey(new Date(time), zone) === today,
+    );
+    return {
+      completedToday: todayRecords.length + legacy.length,
+      focusMinutesToday:
+        todayRecords.reduce((total, r) => total + r.durationSeconds / 60, 0) +
+        legacy.length * 25,
+    };
+  }, [state.records, state.focusHistory, cloudRecords, zone, today]);
   return (
     <Context.Provider
       value={{
         state,
         remainingMs,
         completedToday,
+        focusMinutesToday,
+        setFocusMinutes,
         syncStatus,
         refreshRecords,
         start,
