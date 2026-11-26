@@ -239,7 +239,13 @@ test("the picker selects existing tags and creates one without losing comma-cont
       name: 'Create tag "deep, focus"',
     }),
   );
-  await waitFor(() => expect(saved().tagCatalog.some((t: {name:string}) => t.name === "deep, focus")).toBe(true));
+  await waitFor(() =>
+    expect(
+      saved().tagCatalog.some(
+        (t: { name: string }) => t.name === "deep, focus",
+      ),
+    ).toBe(true),
+  );
   await userEvent.click(within(picker).getByRole("button", { name: "Done" }));
   await within(editor).findByRole("button", { name: "Remove tag deep, focus" });
   expect(
@@ -274,12 +280,12 @@ test("the Tags list opens complete connections and remembers its view", async ()
   await userEvent.click(
     screen.getByRole("button", { name: "Open note " + note.title }),
   );
-  const dialog = await screen.findByRole("dialog", { name: "EDIT NOTE" });
+  const dialog = await screen.findByRole("region", { name: "Note editor" });
   expect(
     within(dialog).getByRole("button", { name: "Choose tags" }),
   ).toBeTruthy();
   await userEvent.click(
-    within(dialog).getByRole("button", { name: "Close dialog" }),
+    within(dialog).getByRole("button", { name: "Back to notes" }),
   );
   await nav("Tasks");
   await nav("Tags");

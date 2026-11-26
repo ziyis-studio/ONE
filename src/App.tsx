@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { supabase } from "./lib/auth";
-import { WorkspaceProvider, useOne } from "./lib/workspace";
+import { WorkspaceProvider, useOne, noteEditorFromHash } from "./lib/workspace";
 import type { EditorKind } from "./lib/workspace";
 import { Logo, Dialog, Spinner } from "./components/ui";
 import { MorphMenu } from "./components/interactions";
@@ -146,7 +146,7 @@ function SessionApp() {
           key={recovery ? "recovery" : "login"}
           onDemo={() => {
             setDemo(true);
-            location.hash = "/home";
+            if (!noteEditorFromHash()) location.hash = "/home";
           }}
           recovery={recovery}
           onRecovered={() => setRecovery(false)}
@@ -154,7 +154,7 @@ function SessionApp() {
           onAuthenticated={() => {
             setAuthPending(false);
             setAuthError("");
-            location.hash = "/home";
+            if (!noteEditorFromHash()) location.hash = "/home";
           }}
           initialError={authError}
         />
@@ -190,6 +190,7 @@ function Shell({
     notice,
     notify,
     busy,
+    data,
   } = useOne();
   useEffect(() => {
     if (accountError) notify(accountError, true);
@@ -240,34 +241,47 @@ function Shell({
     { kind: "thought", label: "A thought", icon: Lightbulb },
     { kind: "note", label: "A note", icon: FileText },
   ];
-  const pageContent =
-    page === "home" ? (
-      <Dashboard />
-    ) : page === "tasks" ? (
-      <Tasks />
-    ) : page === "projects" ? (
-      <Projects />
-    ) : page === "schedule" ? (
-      <Schedule />
-    ) : page === "habits" ? (
-      <Habits />
-    ) : page === "sleep" ? (
-      <Sleep />
-    ) : page === "meals" ? (
-      <Meals />
-    ) : page === "thoughts" ? (
-      <Thoughts />
-    ) : page === "tags" ? (
-      <Tags />
-    ) : page === "notes" ? (
-      <Notes />
+  const notePage = editor?.kind === "note";
+  const pageContent = notePage ? (
+    editor.id && !data.notes.some((note) => note.id === editor.id) ? (
+      <section className="workspace-error">
+        <h1>This note is unavailable.</h1>
+        <p>It may have been deleted or moved to Trash.</p>
+        <button className="primary-button" onClick={() => navigate("notes")}>
+          Back to notes
+        </button>
+      </section>
     ) : (
-      <Settings onExit={onExit} />
-    );
+      <Editor key={JSON.stringify(editor)} />
+    )
+  ) : page === "home" ? (
+    <Dashboard />
+  ) : page === "tasks" ? (
+    <Tasks />
+  ) : page === "projects" ? (
+    <Projects />
+  ) : page === "schedule" ? (
+    <Schedule />
+  ) : page === "habits" ? (
+    <Habits />
+  ) : page === "sleep" ? (
+    <Sleep />
+  ) : page === "meals" ? (
+    <Meals />
+  ) : page === "thoughts" ? (
+    <Thoughts />
+  ) : page === "tags" ? (
+    <Tags />
+  ) : page === "notes" ? (
+    <Notes />
+  ) : (
+    <Settings onExit={onExit} />
+  );
   return (
     <div
       className="app-shell one-shell"
       data-sidebar={sidebarExpanded ? "expanded" : "collapsed"}
+      data-note-writing={notePage || undefined}
     >
       <a className="skip-link" href="#main-content">
         Skip to content
@@ -414,7 +428,7 @@ function Shell({
           </motion.div>
         )}
       </AnimatePresence>
-      {editor && (
+      {editor && !notePage && (
         <Suspense
           fallback={
             <div className="dialog-shade">

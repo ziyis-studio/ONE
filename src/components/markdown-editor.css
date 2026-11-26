@@ -1,0 +1,217 @@
+.markdown-composer {
+  overflow: visible;
+}
+.markdown-composer > header {
+  flex-wrap: wrap;
+  border-radius: 12px 12px 0 0;
+}
+.markdown-composer > header > div {
+  flex-wrap: wrap;
+}
+.markdown-composer > header button:hover {
+  color: var(--one-accent-mark);
+}
+.markdown-source {
+  margin: 4px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+.markdown-source:focus-within {
+  border-color: var(--one-accent-mark);
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--one-accent-mark) 10%, transparent);
+}
+.markdown-composer .markdown-input {
+  display: block;
+  width: 100%;
+  min-height: 150px;
+  margin: 0;
+  padding: 14px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: #ccc;
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.85;
+  tab-size: 2;
+  resize: vertical;
+}
+.markdown-composer .markdown-input:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+.markdown-composer .markdown-input::placeholder {
+  color: #737373;
+}
+.markdown-composer.is-document {
+  margin: 22px 0 0;
+  border: 0;
+}
+.markdown-composer.is-document > header {
+  padding: 10px 2px;
+}
+.markdown-composer.is-document > header > strong {
+  color: #888;
+  font-size: 11px;
+}
+.markdown-composer.is-document .markdown-source {
+  margin: 10px 0;
+}
+.markdown-composer.is-document .markdown-input {
+  min-height: 380px;
+  padding: 20px;
+  font-size: 16px;
+  line-height: 1.9;
+  resize: none;
+}
+.markdown-composer.is-document .markdown-preview {
+  min-height: 380px;
+  padding: 20px;
+  font-size: 16px;
+  line-height: 1.9;
+}
+.markdown-composer.is-document > small {
+  padding-left: 2px;
+}
+.markdown-composer .markdown-preview pre {
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 14px;
+  border-radius: 10px;
+  background: #181818;
+}
+.markdown-composer .markdown-preview img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 16px 0;
+  border-radius: 12px;
+}
+.markdown-composer .markdown-preview table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+.markdown-composer .markdown-preview th,
+.markdown-composer .markdown-preview td {
+  min-width: 100px;
+  border: 1px solid #ffffff20;
+  padding: 8px 12px;
+  text-align: left;
+}
+.markdown-composer .markdown-preview .contains-task-list {
+  list-style: none;
+  padding-left: 0;
+}
+.markdown-composer .markdown-preview input[type="checkbox"] {
+  accent-color: var(--one-accent);
+  margin-right: 7px;
+}
+.markdown-command-menu {
+  position: fixed;
+  width: min(300px, calc(100vw - 24px));
+  z-index: 150;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 6px;
+  border: 1px solid #444;
+  border-radius: 14px;
+  background: #252525;
+  box-shadow: 0 16px 48px #0006;
+  animation: markdown-menu-in 160ms ease-out;
+}
+.markdown-command-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px;
+  color: #888;
+  font-size: 10px;
+}
+.markdown-command-heading > span {
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--one-accent-mark);
+}
+.markdown-command-menu > button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 11px;
+  padding: 9px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: #aaa;
+  text-align: left;
+}
+.markdown-command-menu > button[aria-selected="true"] {
+  color: #eee;
+  background: #ffffff09;
+  border-color: color-mix(in srgb, var(--one-accent-mark) 30%, transparent);
+}
+.markdown-command-menu > button > svg {
+  flex-shrink: 0;
+}
+.markdown-command-menu > button > span {
+  display: grid;
+  gap: 3px;
+}
+.markdown-command-menu strong {
+  font-size: 12px;
+  font-weight: 500;
+}
+.markdown-command-menu small {
+  font-size: 10px;
+  color: #888;
+}
+.markdown-command-menu > p {
+  padding: 12px;
+  font-size: 12px;
+  color: #aaa;
+  line-height: 1.7;
+}
+.markdown-command-menu > footer {
+  position: sticky;
+  bottom: -6px;
+  padding: 9px 7px 5px;
+  border-top: 1px solid #ffffff0c;
+  background: #252525;
+  color: #777;
+  font-size: 9px;
+}
+@keyframes markdown-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (max-width: 700px) {
+  .markdown-composer.is-document .markdown-input,
+  .markdown-composer.is-document .markdown-preview {
+    padding: 14px;
+  }
+  .markdown-composer > header {
+    gap: 12px;
+  }
+  .markdown-composer > header > div {
+    gap: 15px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .markdown-source {
+    transition: none;
+  }
+  .markdown-command-menu {
+    animation: none;
+  }
+}

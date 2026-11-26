@@ -20,6 +20,8 @@ describe("ONE neutral foundation and configurable accent", () => {
       "src/components/confirmation.css",
       "src/components/sleep-history.css",
       "src/components/pomodoro.css",
+      "src/components/markdown-editor.css",
+      "src/components/note-page.css",
       "src/components/emotion-picker.css",
       "src/components/overview.css",
       "src/components/popup-exit.css",
