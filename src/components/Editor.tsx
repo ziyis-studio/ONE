@@ -8,7 +8,7 @@ import type { MealPhoto, Nutrient } from "../domain/meals";
 import { mealLabels, nutrientLabels } from "../lib/meals";
 import "./meals.css";
 import MarkdownNotes from "./MarkdownNotes";
-import NotePageFrame from "./NotePageFrame";
+import NotePageFrame, { NoteTitleRow } from "./NotePageFrame";
 import TimeRangeField from "./TimeRangeField";
 import { Smile, Meh, Frown, Battery, BatteryLow } from "lucide-react";
 import EntityActivityPanel from "./EntityActivityPanel";
@@ -931,23 +931,25 @@ export default function Editor() {
             }
           >
             {kind !== "sleep" && (
-              <input
-                className="editor-title"
-                aria-label="Title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder={
-                  kind === "thought"
-                    ? "Give it a title, if you like"
-                    : kind === "block"
-                      ? "Make time for…"
-                      : "A little " + kind + "…"
-                }
-                maxLength={300}
-                required={
-                  kind !== "thought" && kind !== "block" && kind !== "meal"
-                }
-              />
+              <NoteTitleRow>
+                <input
+                  className="editor-title"
+                  aria-label="Title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder={
+                    kind === "thought"
+                      ? "Give it a title, if you like"
+                      : kind === "block"
+                        ? "Make time for…"
+                        : "A little " + kind + "…"
+                  }
+                  maxLength={300}
+                  required={
+                    kind !== "thought" && kind !== "block" && kind !== "meal"
+                  }
+                />
+              </NoteTitleRow>
             )}
             {kind === "meal" && (
               <>

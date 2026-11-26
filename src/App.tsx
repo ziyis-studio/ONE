@@ -392,6 +392,7 @@ function Shell({
                 <Suspense fallback={<WorkspaceLoading page={page} />}>
                   <motion.div
                     key={page}
+                    transformTemplate={notePage ? () => "none" : undefined}
                     initial={{ opacity: 0, y: 7 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.24 }}
