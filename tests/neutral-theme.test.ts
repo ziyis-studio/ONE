@@ -24,6 +24,7 @@ describe("ONE neutral foundation and configurable accent", () => {
       "src/components/note-page.css",
       "src/components/emotion-picker.css",
       "src/components/overview.css",
+      "src/components/dashboard-completion.css",
       "src/components/popup-exit.css",
     ]) {
       const source = readFileSync(file, "utf8");

@@ -14,9 +14,50 @@ import { Card, CheckButton, Empty, EntityIcon } from "./ui";
 import WeatherCard from "./WeatherCard";
 import { PageDate } from "./PageDate";
 import PomodoroCard from "./PomodoroCard";
+import DashboardTaskCheck from "./DashboardTaskCheck";
+import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { useMotionPreference } from "../lib/motion-preference";
+import type { Task } from "../domain/model";
+import "./dashboard-completion.css";
 export default function Dashboard() {
   const { data, today, zone, now, edit, navigate, busy } = useOne();
   const { toggleTask, toggleHabit, safely } = useActions();
+  const reduced = useMotionPreference();
+  const [heldTask, setHeldTask] = useState<{
+    id: string;
+    index: number;
+  } | null>(null);
+  const holdTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
+      undefined,
+    ),
+    toggleLock = useRef(false),
+    alive = useRef(true);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+      clearTimeout(holdTimer.current);
+    };
+  }, []);
+  async function toggleWithFeedback(task: Task, index: number) {
+    if (busy || toggleLock.current) return;
+    toggleLock.current = true;
+    clearTimeout(holdTimer.current);
+    setHeldTask({ id: task.id, index });
+    try {
+      await toggleTask(task);
+    } catch {
+      /* The workspace reports a rejected save; keep its confirmed state. */
+    } finally {
+      toggleLock.current = false;
+      if (alive.current)
+        holdTimer.current = setTimeout(
+          () => setHeldTask(null),
+          reduced ? 0 : 720,
+        );
+    }
+  }
   const [thoughtView, setThoughtView] = useViewState<"recent" | "linked">(
     "home.thoughts",
     "recent",
@@ -37,6 +78,12 @@ export default function Dashboard() {
   const occurrences = data.occurrences.filter(
     (o) => o.plannedOn === today && data.habits.some((h) => h.id === o.habitId),
   );
+  const held = heldTask && tasks.find((task) => task.id === heldTask.id);
+  const visibleTasks = held
+    ? tasks.filter((task) => task.id !== held.id).slice(0, 3)
+    : tasks.slice(0, 4);
+  if (held && heldTask)
+    visibleTasks.splice(Math.min(heldTask.index, visibleTasks.length), 0, held);
   const executed = new Set(data.executions.map((e) => e.occurrenceId));
   const thoughts = data.thoughts
     .filter(
@@ -181,35 +228,64 @@ export default function Dashboard() {
           {tasks.length ? (
             <>
               <div className="focus-list">
-                {tasks.slice(0, 4).map((task) => (
-                  <div
-                    className={
-                      "focus-row " + (task.completedAt ? "completed" : "")
-                    }
-                    key={task.id}
-                  >
-                    <CheckButton
-                      checked={!!task.completedAt}
-                      label={
-                        (task.completedAt ? "Reopen " : "Complete ") +
-                        task.title
+                <AnimatePresence initial={false} mode="popLayout">
+                  {visibleTasks.map((task, index) => (
+                    <motion.div
+                      className={
+                        "focus-row " + (task.completedAt ? "completed" : "")
                       }
-                      disabled={busy}
-                      onClick={() => safely(() => toggleTask(task))}
-                    />
-                    <button
-                      className="focus-title"
-                      onClick={() => edit({ kind: "task", id: task.id })}
+                      key={task.id}
+                      data-reduced={reduced || undefined}
+                      layout={reduced ? false : "position"}
+                      initial={false}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: reduced ? 1 : 0, y: reduced ? 0 : 6 }}
+                      transition={{
+                        duration: reduced ? 0 : 0.18,
+                        layout: { type: "spring", stiffness: 400, damping: 32 },
+                      }}
                     >
-                      {task.title}
-                      <span>
-                        {data.projects.find((p) => p.id === task.projectId)
-                          ?.title || "Personal task"}
-                      </span>
-                    </button>
-                    <FocusTaskButton task={task} />
-                  </div>
-                ))}
+                      <DashboardTaskCheck
+                        checked={!!task.completedAt}
+                        label={
+                          (task.completedAt ? "Reopen " : "Complete ") +
+                          task.title
+                        }
+                        disabled={busy}
+                        onClick={() => void toggleWithFeedback(task, index)}
+                      />
+                      <button
+                        className="focus-title"
+                        onClick={() => edit({ kind: "task", id: task.id })}
+                      >
+                        <span className="focus-task-name">
+                          {task.title}
+                          <motion.span
+                            className="focus-task-strike"
+                            aria-hidden="true"
+                            initial={false}
+                            animate={{
+                              clipPath: task.completedAt
+                                ? "inset(0 0% 0 0)"
+                                : "inset(0 100% 0 0)",
+                            }}
+                            transition={{
+                              duration: reduced ? 0 : 0.28,
+                              delay: reduced || !task.completedAt ? 0 : 0.08,
+                            }}
+                          >
+                            {task.title}
+                          </motion.span>
+                        </span>
+                        <span>
+                          {data.projects.find((p) => p.id === task.projectId)
+                            ?.title || "Personal task"}
+                        </span>
+                      </button>
+                      <FocusTaskButton task={task} />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
               </div>
 
               <div className="card-bottom">
