@@ -203,8 +203,11 @@ button.one-deadline:hover {
   display: none;
 }
 .one-schedule-tasks {
+  display: flex;
+  flex-direction: column;
   position: sticky;
   top: 20px;
+  max-height: calc(100dvh - 40px);
   min-width: 0;
   border: 1px solid #ffffff0e;
   border-radius: 16px;
@@ -212,6 +215,7 @@ button.one-deadline:hover {
   padding: 17px 14px;
 }
 .one-schedule-tasks > header {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -226,12 +230,15 @@ button.one-deadline:hover {
   color: #888;
 }
 .one-schedule-tasks > p {
+  flex-shrink: 0;
   font-size: 11px;
   color: #858585;
   line-height: 1.6;
   margin: 11px 0 15px;
 }
 .one-schedule-search {
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -249,12 +256,96 @@ button.one-deadline:hover {
   font-size: 11px;
   padding: 10px 0;
 }
+.one-schedule-task-toolbar {
+  display: flex;
+  flex-shrink: 0;
+  gap: 7px;
+}
+.one-task-filter-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  gap: 4px;
+  min-width: 34px;
+  padding: 0 8px;
+  border: 1px solid #ffffff16;
+  border-radius: 9px;
+  background: #242424;
+  color: #999;
+  transition:
+    color 160ms ease,
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+.one-task-filter-toggle:hover,
+.one-task-filter-toggle[aria-expanded="true"],
+.one-task-filter-toggle[data-active] {
+  color: var(--one-accent-mark);
+  border-color: color-mix(in srgb, var(--one-accent-mark) 35%, transparent);
+  background: color-mix(in srgb, var(--one-accent-mark) 8%, #242424);
+}
+.one-task-filter-toggle > span {
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+}
+.one-schedule-task-filters {
+  flex-shrink: 0;
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  margin: 12px 0 0;
+  padding: 12px 0;
+  border: 0;
+  border-block: 1px solid #ffffff0d;
+  animation: one-schedule-filters-in 160ms ease-out;
+}
+.one-schedule-task-filters .one-select {
+  gap: 5px;
+}
+.one-schedule-task-filters .one-select-label {
+  font-size: 10px;
+  color: #888;
+}
+.one-schedule-task-filters .one-select-trigger {
+  min-height: 32px;
+  padding: 7px 9px;
+  border-radius: 8px;
+  font-size: 11px;
+}
+.one-task-filter-reset {
+  justify-self: start;
+  padding: 0;
+  color: #aaa;
+  font-size: 10px;
+}
+.one-task-filter-reset:hover {
+  color: var(--one-accent-mark);
+}
+.one-task-filter-toggle:focus-visible,
+.one-task-filter-reset:focus-visible,
+.one-linked-blocks-button:focus-visible {
+  outline: 2px solid var(--one-accent-mark);
+  outline-offset: 3px;
+}
+@keyframes one-schedule-filters-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 .one-planning-task-list {
   display: flex;
   flex-direction: column;
   gap: 7px;
   max-height: 535px;
+  min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
   margin-top: 14px;
 }
 .one-planning-task {
@@ -295,6 +386,47 @@ button.one-deadline:hover {
 .one-planning-task small {
   color: #aaa;
 }
+.one-planning-task-metadata {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 7px;
+}
+.one-planning-task-metadata .task-schedule-hint {
+  margin-top: 0;
+}
+.one-linked-blocks-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  min-height: 24px;
+  padding: 4px 6px;
+  border: 1px solid #ffffff12;
+  border-radius: 6px;
+  background: #ffffff04;
+  color: #999;
+  font-size: 9px;
+  line-height: 1.4;
+  text-align: left;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease;
+}
+.one-linked-blocks-button > svg {
+  flex-shrink: 0;
+}
+.one-linked-blocks-button > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.one-linked-blocks-button:hover {
+  color: var(--one-accent-mark);
+  background: color-mix(in srgb, var(--one-accent-mark) 8%, transparent);
+  border-color: color-mix(in srgb, var(--one-accent-mark) 30%, transparent);
+}
 .one-task-plan {
   flex-shrink: 0;
   display: grid;
@@ -315,6 +447,10 @@ button.one-deadline:hover {
   }
   .one-schedule-tasks {
     position: static;
+    max-height: none;
+  }
+  .one-schedule-task-filters {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .one-planning-task-list {
     display: grid;
@@ -323,6 +459,9 @@ button.one-deadline:hover {
   }
 }
 @media (max-width: 700px) {
+  .one-schedule-task-filters {
+    grid-template-columns: minmax(0, 1fr);
+  }
   .calendar-view-actions {
     gap: 6px;
   }
@@ -341,6 +480,15 @@ button.one-deadline:hover {
   }
   .one-planning-task-list {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .one-schedule-task-filters {
+    animation: none;
+  }
+  .one-task-filter-toggle,
+  .one-linked-blocks-button {
+    transition: none;
   }
 }
 
