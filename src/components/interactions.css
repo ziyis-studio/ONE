@@ -242,8 +242,17 @@
 .one-inline-open {
   flex: 1;
   min-width: 0;
-  padding: 0;
+  padding: 4px 6px;
+  margin: -4px -6px;
+  border-radius: 7px;
   text-align: left;
+  transition: background 160ms ease;
+}
+.one-inline-open:hover {
+  background: #ffffff08;
+}
+.one-inline-open:hover h3 {
+  color: #fff;
 }
 .one-inline-open h3 {
   margin: 0;
@@ -273,9 +282,16 @@
   align-items: center;
   width: 100%;
   background: #171717;
-  border: 1px solid #797979;
+  border: 1px solid #ffffff24;
   border-radius: 9px;
   padding: 3px;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+.one-inline-controls:focus-within {
+  border-color: var(--one-accent-mark);
+  box-shadow: 0 0 0 3px var(--one-accent-soft, #7852ee20);
 }
 .one-inline-controls input {
   width: 100%;
@@ -283,10 +299,15 @@
   height: 30px;
   background: transparent;
   border: 0;
+  border-radius: 6px;
   padding: 4px 7px;
   color: #eeeeee;
   font-size: 13px;
   outline: none;
+}
+.one-inline-controls input:focus-visible {
+  outline: none;
+  box-shadow: none;
 }
 .one-inline-controls button {
   flex: none;

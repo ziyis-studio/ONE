@@ -7,6 +7,7 @@ import "./workspace-polish.css";
 import "@fontsource-variable/dm-sans/wght.css";
 import App from "./App";
 import "./brand.css";
+import "./components/hover-surfaces.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

@@ -281,7 +281,7 @@ export default function RecoverySettings() {
         )}
       </section>
       <section
-        className="settings-card recovery-card"
+        className="settings-card recovery-card settings-backup"
         aria-labelledby="backup-heading"
       >
         <header>

@@ -11,6 +11,7 @@ import { Spinner } from "./ui";
 import AppearanceSettings from "./AppearanceSettings";
 import { useConfirm } from "../lib/confirmation";
 import { useResetViews } from "../lib/view-state";
+import "./settings.css";
 export default function Settings({ onExit }: { onExit: () => void }) {
   const { zone, setZone, session, demo, notify, reload } = useOne();
   const confirm = useConfirm();
@@ -93,131 +94,143 @@ export default function Settings({ onExit }: { onExit: () => void }) {
     ]),
   ];
   return (
-    <>
+    <div className="settings-page">
       <PageIntro
         title="Settings"
         subtitle="A few little things to make this space yours."
       />
-      <div className="settings-stack">
-        <AppearanceSettings />
-        <section className="settings-card">
-          <header>
-            <Globe2 size={20} />
-            <div>
-              <h2>Your sense of time</h2>
-              <p>Dates and times, wherever you are.</p>
-            </div>
-          </header>
-          <div className="settings-row">
-            <span>
-              Time zone<small>New plans use this time zone.</small>
-            </span>
-            <SelectField
-              label="Time zone"
-              hideLabel
-              className="one-settings-zone"
-              value={zone}
-              onChange={setZone}
-              options={zones.map((zone) => ({
-                value: zone,
-                label: zone.replaceAll("_", " "),
-              }))}
-            />
-          </div>
-          <div className="settings-row">
-            <span>
-              Motion
-              <small>
-                ONE follows your device’s reduced motion preference.
-              </small>
-            </span>
-            <span className="setting-value">System preference</span>
-          </div>
-        </section>
-        <section className="settings-card">
-          <header>
-            <ShieldCheck size={20} />
-            <div>
-              <h2>Your account</h2>
-              <p>
-                {demo
-                  ? "You’re exploring a sample workspace."
-                  : session?.user.email}
-              </p>
-            </div>
-          </header>
-          {!demo && (
-            <form
-              noValidate
-              onSubmit={(e) => {
-                e.preventDefault();
-                void saveProfile();
-              }}
+      <div className="settings-layout">
+        <div className="settings-preferences">
+          <AppearanceSettings />
+          <div className="settings-side">
+            <section
+              className="settings-card settings-time"
+              aria-labelledby="settings-time-heading"
             >
-              <label className="settings-row">
+              <header>
+                <Globe2 size={20} />
+                <div>
+                  <h2 id="settings-time-heading">Your sense of time</h2>
+                  <p>Dates and times, wherever you are.</p>
+                </div>
+              </header>
+              <div className="settings-row">
                 <span>
-                  Username
+                  Time zone<small>New plans use this time zone.</small>
+                </span>
+                <SelectField
+                  label="Time zone"
+                  hideLabel
+                  className="one-settings-zone"
+                  value={zone}
+                  onChange={setZone}
+                  options={zones.map((zone) => ({
+                    value: zone,
+                    label: zone.replaceAll("_", " "),
+                  }))}
+                />
+              </div>
+              <div className="settings-row">
+                <span>
+                  Motion
                   <small>
-                    3–32 letters, numbers, dots, dashes, or underscores.
+                    ONE follows your device’s reduced motion preference.
                   </small>
                 </span>
-                <div className="username-field">
-                  <input
-                    ref={usernameRef}
-                    aria-label="Username"
-                    value={username}
-                    onChange={(e) => {
-                      setUsername(e.target.value);
-                      setProfileError("");
-                    }}
-                    aria-invalid={!!profileError}
-                    aria-describedby={
-                      profileError ? "username-error" : undefined
-                    }
-                    disabled={loading || saving}
-                    required
-                    minLength={3}
-                    maxLength={32}
-                    pattern="[a-zA-Z0-9][a-zA-Z0-9_.-]{2,31}"
-                  />
-                  <button
-                    className="icon-button"
-                    aria-label="Save username"
-                    disabled={loading || saving}
-                  >
-                    {saving ? <Spinner /> : <Check size={16} />}
-                  </button>
+                <span className="setting-value">System preference</span>
+              </div>
+            </section>
+            <section
+              className="settings-card settings-account"
+              aria-labelledby="settings-account-heading"
+            >
+              <header>
+                <ShieldCheck size={20} />
+                <div>
+                  <h2 id="settings-account-heading">Your account</h2>
+                  <p>
+                    {demo
+                      ? "You’re exploring a sample workspace."
+                      : session?.user.email}
+                  </p>
                 </div>
-              </label>
-              {profileError && (
-                <p
-                  id="username-error"
-                  className="form-message error"
-                  role="alert"
+              </header>
+              {!demo && (
+                <form
+                  noValidate
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    void saveProfile();
+                  }}
                 >
-                  {profileError}
-                </p>
+                  <label className="settings-row">
+                    <span>
+                      Username
+                      <small>
+                        3–32 letters, numbers, dots, dashes, or underscores.
+                      </small>
+                    </span>
+                    <div className="username-field">
+                      <input
+                        ref={usernameRef}
+                        aria-label="Username"
+                        value={username}
+                        onChange={(e) => {
+                          setUsername(e.target.value);
+                          setProfileError("");
+                        }}
+                        aria-invalid={!!profileError}
+                        aria-describedby={
+                          profileError ? "username-error" : undefined
+                        }
+                        disabled={loading || saving}
+                        required
+                        minLength={3}
+                        maxLength={32}
+                        pattern="[a-zA-Z0-9][a-zA-Z0-9_.-]{2,31}"
+                      />
+                      <button
+                        className="icon-button"
+                        aria-label="Save username"
+                        disabled={loading || saving}
+                      >
+                        {saving ? <Spinner /> : <Check size={16} />}
+                      </button>
+                    </div>
+                  </label>
+                  {profileError && (
+                    <p
+                      id="username-error"
+                      className="form-message error"
+                      role="alert"
+                    >
+                      {profileError}
+                    </p>
+                  )}
+                </form>
               )}
-            </form>
-          )}
-          <div className="settings-row">
-            <span>
-              {demo ? "A space to explore" : "Your workspace is private"}
-              <small>
-                {demo
-                  ? "Changes stay in this browser. Your real workspace is separate."
-                  : "Your account controls access to your data."}
-              </small>
-            </span>
-            <button className="secondary-button" onClick={onExit}>
-              <LogOut size={14} />
-              {demo ? "Back to sign in" : "Sign out"}
-            </button>
+              <div className="settings-row">
+                <span>
+                  {demo ? "A space to explore" : "Your workspace is private"}
+                  <small>
+                    {demo
+                      ? "Changes stay in this browser. Your real workspace is separate."
+                      : "Your account controls access to your data."}
+                  </small>
+                </span>
+                <button className="secondary-button" onClick={onExit}>
+                  <LogOut size={14} />
+                  {demo ? "Back to sign in" : "Sign out"}
+                </button>
+              </div>
+            </section>
           </div>
-        </section>
-        <RecoverySettings />
+        </div>
+        <div className="settings-recovery-grid">
+          <RecoverySettings />
+        </div>
         {demo && (
-          <section className="settings-card">
+          <section className="settings-card settings-reset">
             <div className="settings-row">
               <span>
                 Begin again
@@ -271,6 +284,6 @@ export default function Settings({ onExit }: { onExit: () => void }) {
           ONE <span>·</span> A little space for everything that matters.
         </p>
       </div>
-    </>
+    </div>
   );
 }
