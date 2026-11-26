@@ -120,8 +120,21 @@ const pages: Page[] = [
   "settings",
 ];
 function currentPage(): Page {
-  const path = location.hash.replace("#/", "");
+  const path = location.hash.replace("#/", "").split("/")[0];
   return pages.includes(path as Page) ? (path as Page) : "home";
+}
+export function noteEditorFromHash(): Editor | null {
+  const match =
+    /^#\/notes\/(new|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i.exec(
+      location.hash,
+    );
+  const key = match?.[1].toLowerCase();
+  return key ? { kind: "note", ...(key === "new" ? {} : { id: key }) } : null;
+}
+function canLeaveNote() {
+  return window.dispatchEvent(
+    new Event("one-note-leave", { cancelable: true }),
+  );
 }
 export function WorkspaceProvider({
   children,
@@ -143,7 +156,26 @@ export function WorkspaceProvider({
   });
   const [now, setNow] = useState(new Date());
   const [page, setPage] = useState<Page>(currentPage);
-  const [editor, edit] = useState<Editor | null>(null);
+  const [editor, setEditor] = useState<Editor | null>(noteEditorFromHash);
+  const lastHash = useRef(location.hash);
+  const edit = useCallback((value: Editor | null) => {
+    const created =
+      location.hash === "#/notes/new" && value?.kind === "note" && value.id;
+    if (!created && noteEditorFromHash() && !canLeaveNote()) return;
+    setEditor(value);
+    if (value?.kind === "note") {
+      setPage("notes");
+      const next = "#/notes/" + (value.id || "new");
+      if (location.hash === "#/notes/new" && value.id)
+        history.replaceState(null, "", next);
+      else if (location.hash !== next) location.hash = next.slice(1);
+      window.scrollTo({ top: 0 });
+    } else if (noteEditorFromHash()) {
+      setPage("notes");
+      history.replaceState(null, "", "#/notes");
+    }
+    lastHash.current = location.hash;
+  }, []);
   const [busy, setBusy] = useState(false);
   const lock = useRef(false);
   const [loading, setLoading] = useState(true);
@@ -517,8 +549,18 @@ export function WorkspaceProvider({
   }, []);
   useEffect(() => {
     const update = () => {
+      if (!canLeaveNote()) {
+        history.replaceState(null, "", lastHash.current);
+        return;
+      }
       setPage(currentPage());
-      edit(null);
+      const next = noteEditorFromHash();
+      setEditor((current) =>
+        next && current?.kind === "note" && current.id === next.id
+          ? current
+          : next,
+      );
+      lastHash.current = location.hash;
     };
     window.addEventListener("hashchange", update);
     return () => window.removeEventListener("hashchange", update);
@@ -542,9 +584,11 @@ export function WorkspaceProvider({
     }).catch(() => {});
   }, [loading, error, today, zone, data.habits, execute]);
   function navigate(value: Page) {
+    if (!canLeaveNote()) return;
     setPage(value);
-    edit(null);
+    setEditor(null);
     location.hash = "/" + value;
+    lastHash.current = location.hash;
     window.scrollTo({ top: 0 });
   }
   function setZone(value: string) {

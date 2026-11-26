@@ -1,0 +1,125 @@
+.note-page {
+  min-width: 0;
+  padding-bottom: 110px;
+}
+.note-page-header {
+  position: sticky;
+  top: 0;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 14px 0;
+  border-bottom: 1px solid #ffffff0c;
+  background: #111;
+}
+.note-page-header > div {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  color: #888;
+}
+.note-page-header h1 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 340px;
+  margin: 0;
+  color: #999;
+  font-size: 12px;
+  font-weight: 400;
+}
+.note-page-back,
+.note-page-focus {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 0;
+  font-size: 11px;
+  color: #aaa;
+}
+.note-page-back:hover,
+.note-page-focus:hover {
+  color: var(--one-accent-mark);
+}
+.note-page-focus[aria-pressed="true"] {
+  color: var(--one-accent-mark);
+}
+.note-page-canvas {
+  max-width: 850px;
+  margin: 38px auto 0;
+}
+.note-page .editor-title {
+  background: transparent;
+  border-color: transparent;
+  border-radius: 12px;
+  padding: 12px 0;
+  font-size: clamp(28px, 4vw, 40px);
+  line-height: 1.35;
+}
+.note-page .editor-title:focus-visible {
+  outline-offset: 6px;
+}
+.note-page .tag-picker-field {
+  margin: 12px 0 22px;
+}
+.note-page .editor-footer {
+  position: fixed;
+  z-index: 25;
+  right: 32px;
+  bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 12px;
+  border: 1px solid #ffffff18;
+  border-radius: 14px;
+  background: #202020;
+  box-shadow: 0 12px 40px #0005;
+}
+.note-page .editor-footer > span:empty {
+  display: none;
+}
+.note-page .draft-status {
+  margin: 0 0 8px;
+  min-height: 18px;
+}
+.app-shell.one-shell:has(.note-page[data-focus-mode]) {
+  grid-template-columns: minmax(0, 1fr);
+}
+.one-shell:has(.note-page[data-focus-mode]) > .one-sidebar,
+.one-shell:has(.note-page[data-focus-mode]) > .one-mobile-dock,
+.one-shell:has(.note-page[data-focus-mode]) .topbar,
+.one-shell:has(.note-page[data-focus-mode]) .demo-banner {
+  display: none;
+}
+.one-shell:has(.note-page[data-focus-mode]) .workspace {
+  padding-top: 0;
+}
+@media (max-width: 700px) {
+  .note-page-header {
+    gap: 10px;
+  }
+  .note-page-header > div {
+    display: none;
+  }
+  .note-page-canvas {
+    margin-top: 22px;
+  }
+  .note-page .editor-footer {
+    right: 16px;
+    left: 16px;
+    bottom: 84px;
+    justify-content: space-between;
+    padding: 10px 12px;
+  }
+  .one-shell:has(.note-page[data-focus-mode]) .note-page .editor-footer {
+    bottom: 16px;
+  }
+  .note-page {
+    padding-bottom: 160px;
+  }
+}

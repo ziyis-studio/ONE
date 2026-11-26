@@ -925,22 +925,31 @@ export function NotesPage() {
         </span>
       </div>
       {view === "notes" ? (
-        <LayoutGroup id={collectionId}>
-          <motion.div layout className="notes-grid">
-            <AnimatePresence initial={false}>
-              {notes.map((note, i) => (
-                <NoteCard note={note} index={i} key={note.id} />
-              ))}
-            </AnimatePresence>
-            <button
-              className="new-note-card"
-              onClick={() => edit({ kind: "note" })}
-            >
-              <Plus size={22} strokeWidth={1.2} />
-              <span>A fresh page</span>
-            </button>
-          </motion.div>
-        </LayoutGroup>
+        query.trim() && !notes.length ? (
+          <Empty
+            title="No matching notes"
+            detail="Try another word or clear your search."
+            action={() => setQuery("")}
+            label="Clear search"
+          />
+        ) : (
+          <LayoutGroup id={collectionId}>
+            <motion.div layout className="notes-grid">
+              <AnimatePresence initial={false}>
+                {notes.map((note, i) => (
+                  <NoteCard note={note} index={i} key={note.id} />
+                ))}
+              </AnimatePresence>
+              <button
+                className="new-note-card"
+                onClick={() => edit({ kind: "note" })}
+              >
+                <Plus size={22} strokeWidth={1.2} />
+                <span>A fresh page</span>
+              </button>
+            </motion.div>
+          </LayoutGroup>
+        )
       ) : database ? (
         <>
           <div className="section-toolbar">

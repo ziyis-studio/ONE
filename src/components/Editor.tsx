@@ -8,6 +8,7 @@ import type { MealPhoto, Nutrient } from "../domain/meals";
 import { mealLabels, nutrientLabels } from "../lib/meals";
 import "./meals.css";
 import MarkdownNotes from "./MarkdownNotes";
+import NotePageFrame from "./NotePageFrame";
 import TimeRangeField from "./TimeRangeField";
 import { Smile, Meh, Frown, Battery, BatteryLow } from "lucide-react";
 import EntityActivityPanel from "./EntityActivityPanel";
@@ -15,16 +16,7 @@ import type { ActivityHandle } from "./EntityActivityPanel";
 import "./editor-status.css";
 import { useEffect, useState, useRef, useId } from "react";
 import type { FormEvent, ReactNode } from "react";
-import ReactMarkdown from "react-markdown";
-import {
-  Plus,
-  Trash2,
-  ArrowUpRight,
-  FileText,
-  Eye,
-  PencilLine,
-  CircleAlert,
-} from "lucide-react";
+import { Plus, Trash2, ArrowUpRight, CircleAlert } from "lucide-react";
 import { useConfirm } from "../lib/confirmation";
 import { useOne } from "../lib/workspace";
 import { useActions, stages, taskStage, projectStage } from "../lib/actions";
@@ -228,7 +220,6 @@ export default function Editor() {
   const [condition, setCondition] = useState("");
   const [newConditions, setNewConditions] = useState<string[]>([]);
   const [error, setError] = useState("");
-  const [preview, setPreview] = useState(false);
   const [attachmentBusy, setAttachmentBusy] = useState(false);
   const [changingStatus, setChangingStatus] = useState(false);
   const statusLock = useRef(false);
@@ -364,6 +355,32 @@ export default function Editor() {
     )
       returnEditor();
   };
+  const leaveNote = useRef<() => boolean>(() => true);
+  leaveNote.current = () => {
+    if (attachmentBusy || saving.current) {
+      notify("Wait for the current upload or save to finish.", true);
+      return false;
+    }
+    return flushDrafts();
+  };
+  useEffect(() => {
+    if (kind !== "note") return;
+    const leave = (event: Event) => {
+      if (!leaveNote.current()) event.preventDefault();
+    };
+    const unload = (event: BeforeUnloadEvent) => {
+      if (!leaveNote.current()) {
+        event.preventDefault();
+        event.returnValue = "";
+      }
+    };
+    window.addEventListener("one-note-leave", leave);
+    window.addEventListener("beforeunload", unload);
+    return () => {
+      window.removeEventListener("one-note-leave", leave);
+      window.removeEventListener("beforeunload", unload);
+    };
+  }, [kind]);
   const currentStage = id
     ? kind === "task" && task
       ? taskStage(task)
@@ -691,12 +708,26 @@ export default function Editor() {
           };
           break;
       }
-      await execute(command);
+      const result = await execute(command);
       if (!mounted.current) return;
       baseline.current = signature;
-      draft.clear();
+      if (kind === "note") draft.commit();
+      else draft.clear();
       setSaveState("saved");
       notify(id ? "Changes saved." : "A little space, made.");
+      if (kind === "note") {
+        if (!id && result.id) edit({ kind: "note", id: result.id });
+        else {
+          setRevision(
+            result.snapshot.notes.find((item) => item.id === id)?.updatedAt,
+          );
+          saveTimer.current = setTimeout(
+            () => setSaveState("idle"),
+            reduced ? 120 : 480,
+          );
+        }
+        return;
+      }
       saveTimer.current = setTimeout(
         () => {
           if (activityDraft.current?.flush() !== false) returnEditor();
@@ -823,7 +854,10 @@ export default function Editor() {
       </Dialog>
     );
   return (
-    <Dialog
+    <EditorSurface
+      kind={kind}
+      noteTitle={title}
+      returnLabel={editor?.returnTo?.kind}
       title={
         (id ? "EDIT " : "NEW ") +
         (kind === "block"
@@ -885,7 +919,7 @@ export default function Editor() {
               )}
             </div>
           )}
-          {(editor?.returnProjectId || editor?.returnTo) && (
+          {kind !== "note" && (editor?.returnProjectId || editor?.returnTo) && (
             <button type="button" className="text-button" onClick={close}>
               ← Back to {editor?.returnTo?.kind || "project"}
             </button>
@@ -1495,37 +1529,6 @@ export default function Editor() {
             )}
             {(kind === "note" || kind === "record") && (
               <>
-                <div className="markdown-toolbar">
-                  <span>
-                    <FileText size={13} />A little room to write
-                  </span>
-                  <button type="button" onClick={() => setPreview(!preview)}>
-                    {preview ? <PencilLine size={13} /> : <Eye size={13} />}{" "}
-                    {preview ? "Write" : "Preview"}
-                  </button>
-                </div>
-                {preview ? (
-                  <div className="markdown-preview">
-                    <ReactMarkdown>
-                      {content ||
-                        "*A fresh page. What would you like to keep?*"}
-                    </ReactMarkdown>
-                  </div>
-                ) : (
-                  <textarea
-                    className="note-writing"
-                    aria-label="Note content"
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                    placeholder="# A little clarity&#10;&#10;Start with a thought. See where it takes you."
-                    rows={12}
-                    maxLength={500000}
-                  />
-                )}
-                <p className="field-help">
-                  Markdown welcome. Use # for headings, - for lists, and
-                  **bold** for a little emphasis.
-                </p>
                 {kind === "note" && (
                   <TagPicker
                     value={tagList()}
@@ -1535,6 +1538,18 @@ export default function Editor() {
                     }
                   />
                 )}
+                <MarkdownNotes
+                  value={content}
+                  onChange={setContent}
+                  onBusyChange={setAttachmentBusy}
+                  disabled={
+                    busy || saveState === "saving" || saveState === "saved"
+                  }
+                  document
+                  label="A little room to write"
+                  ariaLabel="Note content"
+                  maxLength={500000}
+                />
               </>
             )}
             {kind === "database" && (
@@ -1787,7 +1802,7 @@ export default function Editor() {
             onOpen={(target) => {
               if (!attachmentBusy && flushDrafts())
                 edit(
-                  target.kind === "block"
+                  target.kind === "block" || target.kind === "note"
                     ? {
                         ...target,
                         returnTo: {
@@ -1841,6 +1856,38 @@ export default function Editor() {
           />
         </footer>
       </div>
+    </EditorSurface>
+  );
+}
+function EditorSurface({
+  kind,
+  noteTitle,
+  returnLabel,
+  title,
+  onClose,
+  wide,
+  children,
+}: {
+  kind: string;
+  noteTitle: string;
+  returnLabel?: string;
+  title: string;
+  onClose: () => void;
+  wide: boolean;
+  dirty?: boolean;
+  children: ReactNode;
+}) {
+  return kind === "note" ? (
+    <NotePageFrame
+      title={noteTitle}
+      onClose={onClose}
+      returnLabel={returnLabel}
+    >
+      {children}
+    </NotePageFrame>
+  ) : (
+    <Dialog title={title} onClose={onClose} wide={wide}>
+      {children}
     </Dialog>
   );
 }

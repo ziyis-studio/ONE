@@ -342,7 +342,7 @@ describe("ONE interface flows", () => {
     await userEvent.click(
       await screen.findByRole("button", { name: "New note" }),
     );
-    let dialog = await screen.findByRole("dialog");
+    let dialog = await screen.findByRole("region", { name: "Note editor" });
     await userEvent.type(
       within(dialog).getByRole("textbox", { name: "Title" }),
       "A small note",
@@ -359,6 +359,10 @@ describe("ONE interface flows", () => {
     ).toBeTruthy();
     await userEvent.click(
       within(dialog).getByRole("button", { name: "Create note" }),
+    );
+    await screen.findByRole("button", { name: "Save changes" });
+    await userEvent.click(
+      screen.getByRole("button", { name: "Back to notes" }),
     );
     await screen.findByRole("heading", { name: "A small note" });
     await userEvent.click(screen.getByRole("button", { name: "Databases" }));

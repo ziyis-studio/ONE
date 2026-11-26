@@ -227,6 +227,16 @@ export function useEditorDraft(options: {
     restore(original.current);
     setStatus("");
   };
+  const commit = () => {
+    clear();
+    cleared.current = false;
+    latest.current.dirty = false;
+    original.current = draftValuesSchema.parse(
+      JSON.parse(latest.current.signature),
+    );
+    setStatus("All changes saved");
+    setProblem(false);
+  };
   return {
     stored,
     status,
@@ -234,6 +244,7 @@ export function useEditorDraft(options: {
     resume,
     discard,
     clear,
+    commit,
     flush: () => flushRef.current(),
   };
 }
