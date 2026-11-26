@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { Button, DialogTrigger, Popover, Dialog } from "react-aria-components";
+import FocusDurationControl from "./FocusDurationControl";
 import { useOne } from "../lib/workspace";
 import {
   Target,
@@ -9,7 +8,6 @@ import {
   Play,
   RotateCcw,
   X,
-  Settings2,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { usePomodoro } from "../lib/pomodoro-context";
@@ -86,7 +84,6 @@ export default function PomodoroCard() {
               },
             ]}
           />
-          <FocusDurationSettings />
         </div>
       }
     >
@@ -95,6 +92,12 @@ export default function PomodoroCard() {
           className={"pomodoro-mark" + (running ? " is-running" : "")}
           data-timer-state={state.status}
           data-reduced={reduced || undefined}
+          role="progressbar"
+          aria-label={label + " progress"}
+          aria-valuemin={0}
+          aria-valuemax={duration}
+          aria-valuenow={duration - Math.ceil(remainingMs / 1000)}
+          aria-valuetext={pomodoroTime(remainingMs) + " remaining"}
           animate={{ scale: complete && !reduced ? [1, 1.04, 1] : 1 }}
           transition={{ duration: reduced ? 0 : 0.45 }}
         >
@@ -152,32 +155,24 @@ export default function PomodoroCard() {
           </svg>
         </motion.div>
         <div className="pomodoro-controls">
-          <div
-            className="pomodoro-dial"
-            role="progressbar"
-            aria-label={label + " progress"}
-            aria-valuemin={0}
-            aria-valuemax={duration}
-            aria-valuenow={duration - Math.ceil(remainingMs / 1000)}
-            aria-valuetext={pomodoroTime(remainingMs) + " remaining"}
-          >
-            <time role="timer" aria-live="off">
-              {pomodoroTime(remainingMs)}
-            </time>
-            <span>
-              {complete
-                ? "Complete"
-                : state.status === "paused"
-                  ? "Paused"
-                  : label}
-            </span>
-          </div>
-          {state.mode === "focus" &&
-            state.focusMinutes * 60 !== state.durationSeconds && (
-              <small className="pomodoro-next-duration">
-                Next focus: {state.focusMinutes} min
-              </small>
+          <div className="pomodoro-dial">
+            {state.mode === "focus" ? (
+              <FocusDurationControl />
+            ) : (
+              <>
+                <time role="timer" aria-live="off">
+                  {pomodoroTime(remainingMs)}
+                </time>
+                <span>
+                  {complete
+                    ? "Complete"
+                    : state.status === "paused"
+                      ? "Paused"
+                      : label}
+                </span>
+              </>
             )}
+          </div>
           {state.mode === "focus" && state.taskTitle && (
             <div className="pomodoro-task-row">
               <button
@@ -223,103 +218,5 @@ export default function PomodoroCard() {
         </div>
       </div>
     </Card>
-  );
-}
-
-function FocusDurationSettings() {
-  const { state, setFocusMinutes } = usePomodoro();
-  const [draft, setDraft] = useState(String(state.focusMinutes));
-  const [error, setError] = useState("");
-  return (
-    <DialogTrigger
-      onOpenChange={(open) => {
-        if (open) {
-          setDraft(String(state.focusMinutes));
-          setError("");
-        }
-      }}
-    >
-      <Button className="icon-button" aria-label="Change focus duration">
-        <Settings2 size={15} />
-      </Button>
-      <Popover className="one-date-popover" placement="bottom end" offset={8}>
-        <Dialog
-          className="pomodoro-duration-settings"
-          aria-label="Focus duration"
-        >
-          {({ close }) => (
-            <form
-              noValidate
-              onSubmit={(event) => {
-                event.preventDefault();
-                const minutes = Number(draft);
-                if (
-                  !Number.isInteger(minutes) ||
-                  minutes < 1 ||
-                  minutes > 180
-                ) {
-                  setError("Choose a whole number from 1 to 180 minutes.");
-                  return;
-                }
-                setFocusMinutes(minutes);
-                close();
-              }}
-            >
-              <h3>Focus duration</h3>
-              <label className="form-field">
-                <span>Minutes</span>
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  min={1}
-                  max={180}
-                  step={1}
-                  value={draft}
-                  onChange={(event) => {
-                    setDraft(event.target.value);
-                    setError("");
-                  }}
-                  aria-invalid={!!error}
-                />
-              </label>
-              <div className="pomodoro-duration-presets">
-                {[15, 25, 45, 60, 90].map((minutes) => (
-                  <button
-                    type="button"
-                    className="tiny-pill"
-                    aria-pressed={draft === String(minutes)}
-                    key={minutes}
-                    onClick={() => {
-                      setDraft(String(minutes));
-                      setError("");
-                    }}
-                  >
-                    {minutes} min
-                  </button>
-                ))}
-              </div>
-              <p>
-                {state.status === "running" || state.status === "paused"
-                  ? "Applies to your next focus. Your current session keeps its duration."
-                  : "Choose 1–180 minutes. Breaks keep their 5/15 minute durations."}
-              </p>
-              {error && <p role="alert">{error}</p>}
-              <footer>
-                <button
-                  type="button"
-                  className="secondary-button"
-                  onClick={close}
-                >
-                  Cancel
-                </button>
-                <button type="submit" className="primary-button">
-                  Apply
-                </button>
-              </footer>
-            </form>
-          )}
-        </Dialog>
-      </Popover>
-    </DialogTrigger>
   );
 }
