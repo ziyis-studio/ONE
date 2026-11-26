@@ -2,34 +2,12 @@
   min-width: 0;
   padding-bottom: 110px;
 }
-.note-page-header {
-  position: sticky;
-  top: 0;
-  z-index: 15;
-  display: flex;
+.note-title-row {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
   align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-  padding: 14px 0;
-  border-bottom: 1px solid #ffffff0c;
-  background: #111;
-}
-.note-page-header > div {
-  display: flex;
+  gap: 14px;
   min-width: 0;
-  align-items: center;
-  gap: 8px;
-  color: #888;
-}
-.note-page-header h1 {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 340px;
-  margin: 0;
-  color: #999;
-  font-size: 12px;
-  font-weight: 400;
 }
 .note-page-back,
 .note-page-focus {
@@ -37,7 +15,11 @@
   flex-shrink: 0;
   align-items: center;
   gap: 7px;
-  padding: 7px 0;
+  justify-content: center;
+  min-width: 32px;
+  min-height: 36px;
+  padding: 7px 4px;
+  border-radius: 8px;
   font-size: 11px;
   color: #aaa;
 }
@@ -50,13 +32,15 @@
 }
 .note-page-canvas {
   max-width: 850px;
-  margin: 38px auto 0;
+  margin: 18px auto 0;
 }
 .note-page .editor-title {
   background: transparent;
   border-color: transparent;
   border-radius: 12px;
   padding: 12px 0;
+  margin: 0;
+  min-width: 0;
   font-size: clamp(28px, 4vw, 40px);
   line-height: 1.35;
 }
@@ -73,12 +57,33 @@
   bottom: 24px;
   display: flex;
   align-items: center;
-  gap: 15px;
-  padding: 12px;
-  border: 1px solid #ffffff18;
-  border-radius: 14px;
+  gap: 14px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  pointer-events: none;
+}
+.note-page .editor-footer > button {
+  pointer-events: auto;
+  min-height: 40px;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px #0003;
+}
+.note-page .editor-footer .delete-button {
+  padding: 10px 14px;
+  border: 1px solid #ffffff20;
   background: #202020;
-  box-shadow: 0 12px 40px #0005;
+  color: #aaa;
+}
+.note-page .editor-footer .delete-button:hover {
+  background: #292929;
+  border-color: #ffffff40;
+  color: #eee;
+}
+.note-page .editor-footer .one-save-button {
+  margin-left: auto;
 }
 .note-page .editor-footer > span:empty {
   display: none;
@@ -100,21 +105,22 @@
   padding-top: 0;
 }
 @media (max-width: 700px) {
-  .note-page-header {
-    gap: 10px;
+  .note-title-row {
+    grid-template-columns: 32px minmax(0, 1fr) 32px;
+    gap: 8px;
   }
-  .note-page-header > div {
+  .note-title-row > button > span {
     display: none;
   }
   .note-page-canvas {
-    margin-top: 22px;
+    margin-top: 12px;
   }
   .note-page .editor-footer {
     right: 16px;
     left: 16px;
     bottom: 84px;
     justify-content: space-between;
-    padding: 10px 12px;
+    padding: 0;
   }
   .one-shell:has(.note-page[data-focus-mode]) .note-page .editor-footer {
     bottom: 16px;

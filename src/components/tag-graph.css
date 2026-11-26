@@ -183,6 +183,7 @@
   fill: transparent;
   stroke: transparent;
   stroke-width: 1;
+  vector-effect: non-scaling-stroke;
 }
 .graph-node-dot {
   fill: #c9c9c9;
@@ -208,23 +209,25 @@
   font-size: calc(11px / var(--graph-scale, 1));
   paint-order: stroke;
   stroke: #181818;
-  stroke-width: calc(3px / var(--graph-scale, 1));
+  stroke-width: calc(2px / var(--graph-scale, 1));
   stroke-linejoin: round;
 }
 .graph-node[data-kind="tag"] text {
   fill: var(--one-accent-mark);
   font-size: calc(12px / var(--graph-scale, 1));
 }
-.graph-node:hover text,
+.graph-node[data-hovered] text,
 .graph-node[data-selected] text,
 .graph-node:focus-visible text {
   fill: #fff;
+  stroke: none;
 }
-.graph-node:hover .graph-node-halo,
+.graph-node[data-hovered] .graph-node-halo,
 .graph-node[data-selected] .graph-node-halo,
 .graph-node:focus-visible .graph-node-halo {
-  fill: var(--one-accent-soft);
+  fill: color-mix(in srgb, var(--one-accent-mark) 10%, transparent);
   stroke: var(--one-accent-mark);
+  stroke-opacity: 0.45;
 }
 .tag-graph-detail {
   min-width: 0;
@@ -654,13 +657,13 @@
     filter 160ms;
 }
 .graph-node[data-hovered] .graph-node-dot {
-  transform: scale(1.3);
-  filter: drop-shadow(0 0 3px var(--one-accent-mark));
+  transform: scale(1.12);
+  stroke: var(--one-accent-mark);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
 }
 .graph-node[data-hovered] .graph-node-halo {
-  transform: scale(1.22);
-  fill: var(--one-accent-soft);
-  stroke: var(--one-accent-mark);
+  transform: scale(1.08);
 }
 .graph-hover-card {
   position: absolute;
