@@ -426,10 +426,10 @@ describe("workspace motion with real commands", () => {
     expect(saved().thoughts).toEqual(state.thoughts);
     await userEvent.click(screen.getByRole("button", { name: "Create" }));
     await userEvent.click(screen.getByRole("menuitem", { name: "A note" }));
-    const dialog = await screen.findByRole("dialog");
-    expect(within(dialog).getByText("NEW NOTE")).toBeTruthy();
+    const editor = await screen.findByRole("region", { name: "Note editor" });
+    expect(location.hash).toBe("#/notes/new");
     expect(document.activeElement).toBe(
-      within(dialog).getByRole("textbox", { name: "Title" }),
+      within(editor).getByRole("textbox", { name: "Title" }),
     );
   });
 });

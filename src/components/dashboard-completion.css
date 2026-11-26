@@ -1,0 +1,54 @@
+.tasks-card .focus-list {
+  position: relative;
+}
+.tasks-card .dashboard-task-check {
+  overflow: visible;
+  transform-origin: center;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease;
+}
+.tasks-card .dashboard-task-check > svg {
+  display: block;
+  pointer-events: none;
+}
+.tasks-card .focus-row {
+  width: 100%;
+  border-radius: 7px;
+  transition: background-color 220ms ease;
+}
+.tasks-card .focus-row.completed {
+  background-color: #ffffff03;
+}
+.tasks-card .focus-title {
+  transition: color 220ms ease;
+}
+.tasks-card .focus-row.completed .focus-title {
+  text-decoration: none;
+}
+.tasks-card .focus-title > .focus-task-name {
+  position: relative;
+  display: block;
+  margin-top: 0;
+  font-size: inherit;
+  color: inherit;
+  line-height: inherit;
+}
+.focus-task-strike {
+  position: absolute;
+  inset: 0;
+  text-decoration: line-through;
+  pointer-events: none;
+}
+.tasks-card .focus-row[data-reduced],
+.tasks-card .focus-row[data-reduced] .focus-title,
+.tasks-card .dashboard-task-check[data-reduced] {
+  transition: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tasks-card .dashboard-task-check,
+  .tasks-card .focus-row,
+  .tasks-card .focus-title {
+    transition: none;
+  }
+}
