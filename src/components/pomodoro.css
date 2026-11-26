@@ -144,6 +144,10 @@
   align-items: flex-start;
   max-width: 100%;
 }
+.focus-duration-control.is-ready {
+  width: max-content;
+  align-items: center;
+}
 .focus-duration-help {
   position: absolute;
   width: 1px;
@@ -157,26 +161,51 @@
 }
 .focus-duration-value,
 .focus-duration-countdown {
+  position: relative;
+  isolation: isolate;
   padding: 0;
   border: 0;
   background: transparent;
-  color: inherit;
+  color: #eee;
   cursor: text;
   border-radius: 5px;
   text-align: left;
+  transition: color 180ms ease;
+}
+.focus-duration-value::before,
+.focus-duration-countdown::before {
+  content: "";
+  position: absolute;
+  inset: -5px -7px;
+  z-index: -1;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  pointer-events: none;
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease;
 }
 .focus-duration-value:focus-visible,
 .focus-duration-countdown:focus-visible {
   outline: 1px solid var(--one-accent-mark);
   outline-offset: 4px;
 }
-.focus-duration-value {
-  border-bottom: 1px dashed transparent;
-  transition: border-color 160ms ease;
+.focus-duration-value:hover,
+.focus-duration-countdown:hover,
+.focus-duration-value:focus-visible,
+.focus-duration-countdown:focus-visible {
+  color: var(--one-accent-mark);
 }
-.focus-duration-control:hover .focus-duration-value,
-.focus-duration-control:focus-within .focus-duration-value {
-  border-bottom-color: var(--one-accent-mark);
+.focus-duration-value:hover::before,
+.focus-duration-countdown:hover::before,
+.focus-duration-value:focus-visible::before,
+.focus-duration-countdown:focus-visible::before {
+  background-color: color-mix(in srgb, var(--one-accent-mark) 10%, transparent);
+  border-color: color-mix(in srgb, var(--one-accent-mark) 30%, transparent);
+}
+.focus-duration-value time,
+.focus-duration-countdown time {
+  color: inherit;
 }
 .focus-duration-value time,
 .focus-duration-input-wrap {
@@ -188,7 +217,7 @@
   position: relative;
   display: inline-flex;
   justify-content: flex-end;
-  min-width: 3ch;
+  min-width: 2ch;
   overflow: clip;
   vertical-align: bottom;
   font-variant-numeric: tabular-nums;
@@ -227,6 +256,7 @@
 .focus-duration-actions {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 5px;
   min-height: 24px;
 }
@@ -296,6 +326,9 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .focus-duration-value,
+  .focus-duration-countdown,
+  .focus-duration-value::before,
+  .focus-duration-countdown::before,
   .focus-duration-step {
     transition: none;
   }
