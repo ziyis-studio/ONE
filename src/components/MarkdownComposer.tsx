@@ -28,6 +28,7 @@ import {
   insertMarkdown,
 } from "../lib/markdown-commands";
 import type { MarkdownCommand, MarkdownRange } from "../lib/markdown-commands";
+import { useDocumentTextareaSize } from "../lib/use-document-textarea-size";
 import "./markdown-editor.css";
 
 const icons: Record<string, LucideIcon> = {
@@ -154,11 +155,8 @@ export default function MarkdownComposer({
     area.current
       ?.closest("[data-one-dialog]")
       ?.getAttribute("data-one-dialog") || undefined;
+  useDocumentTextareaSize(area, value, document && !preview);
   useLayoutEffect(() => {
-    if (document && area.current) {
-      area.current.style.height = "auto";
-      area.current.style.height = `${area.current.scrollHeight}px`;
-    }
     if (area.current && nextCursor.current !== null && !preview && !uploading) {
       const cursor = nextCursor.current;
       area.current.focus({ preventScroll: true });
@@ -166,7 +164,7 @@ export default function MarkdownComposer({
       selected.current = { start: cursor, end: cursor, query: "" };
       nextCursor.current = null;
     }
-  }, [value, preview, document, uploading, menu]);
+  }, [value, preview, uploading, menu]);
   useLayoutEffect(() => {
     if (!menu || !area.current) return;
     const positionMenu = () =>
