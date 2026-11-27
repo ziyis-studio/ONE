@@ -355,15 +355,6 @@ function Shell({
               />
             </div>
           </header>
-          {demo && (
-            <div className="demo-banner">
-              <span>You’re exploring ONE. Make yourself at home.</span>
-              <button onClick={onExit}>
-                Make this space yours
-                <ArrowUpRight size={12} />
-              </button>
-            </div>
-          )}
           <div id="main-content" tabIndex={-1}>
             <ChartTooltipScope key={page}>
               {error ? (

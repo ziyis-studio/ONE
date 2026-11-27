@@ -1,0 +1,42 @@
+/* Rounded defaults also cover controls rendered in dialogs and portals.
+   Component rules retain their own pill, circle, or card radii. */
+:where(
+  button,
+  a,
+  input,
+  textarea,
+  summary,
+  [role="button"],
+  [role="option"],
+  [role="menuitem"]
+) {
+  border-radius: 8px;
+}
+
+/* Table rows share one hover surface with rounded ends. */
+.one-shell .data-table,
+.one-shell .tag-list-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.one-shell .data-table tbody tr > td:first-child,
+.one-shell .tag-list-table tbody tr > td:first-child {
+  border-radius: 8px 0 0 8px;
+}
+.one-shell .data-table tbody tr > td:last-child,
+.one-shell .tag-list-table tbody tr > td:last-child {
+  border-radius: 0 8px 8px 0;
+}
+.one-shell .tag-list-table tbody tr:hover {
+  background: transparent;
+}
+.one-shell .tag-list-table tbody tr:hover > td {
+  background: #ffffff03;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .one-inline-open,
+  .one-inline-controls {
+    transition: none;
+  }
+}

@@ -97,8 +97,7 @@
 }
 .one-shell:has(.note-page[data-focus-mode]) > .one-sidebar,
 .one-shell:has(.note-page[data-focus-mode]) > .one-mobile-dock,
-.one-shell:has(.note-page[data-focus-mode]) .topbar,
-.one-shell:has(.note-page[data-focus-mode]) .demo-banner {
+.one-shell:has(.note-page[data-focus-mode]) .topbar {
   display: none;
 }
 .one-shell:has(.note-page[data-focus-mode]) .workspace {

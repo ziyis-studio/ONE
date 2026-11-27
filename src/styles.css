@@ -386,7 +386,7 @@ svg {
   height: 47px;
   border: 0;
   border-bottom: 1px solid #ffffff26;
-  border-radius: 0;
+  border-radius: 8px;
   background: transparent;
   padding: 8px 0 14px;
   color: #ebebeb;
@@ -796,27 +796,6 @@ svg {
 .quick-menu button > svg:last-child {
   margin-left: auto;
   color: #6d6d6d;
-}
-.demo-banner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin: -27px 0 29px;
-  padding: 10px 14px;
-  border: 1px solid #a5a5a511;
-  border-radius: 10px;
-  background: #a5a5a505;
-  color: #8b8b8b;
-  font-size: 9px;
-}
-.demo-banner button {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  color: #b1b1b1;
-  font-size: 9px;
-  white-space: nowrap;
 }
 .page-intro {
   display: flex;
@@ -3105,10 +3084,6 @@ svg {
   color: #c0c0c0;
 }
 /* Search, preferences, and useful states. */
-.settings-stack {
-  max-width: 850px;
-  margin-top: 30px;
-}
 .settings-card {
   padding: 27px 29px;
   border: 1px solid var(--line);
@@ -3681,23 +3656,6 @@ svg {
   }
   .quick-button svg {
     width: 14px;
-  }
-  .demo-banner {
-    font-size: 8px;
-    line-height: 1.7;
-    padding: 9px 10px;
-    margin-top: -19px;
-    margin-bottom: 27px;
-    align-items: flex-start;
-    gap: 8px;
-  }
-  .demo-banner > span {
-    max-width: 56%;
-  }
-  .demo-banner button {
-    font-size: 8px;
-    padding: 0;
-    margin-top: 1px;
   }
   .page-intro {
     margin-bottom: 24px;
